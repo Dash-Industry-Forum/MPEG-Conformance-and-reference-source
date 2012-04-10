@@ -7,7 +7,7 @@
                         xmlns:iso="http://purl.oclc.org/dsdl/schematron"
                         xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
-                        title="Schema for validating DASH descriptions"
+                        title="Schema for validating MPDs"
                         schemaVersion="ISO19757-3"><!--   
 		   
 		   
@@ -18,19 +18,15 @@
    <svrl:fired-rule context="dash:MPD"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Period"/>
-   <svrl:fired-rule context="dash:Period"/>
-   <svrl:failed-assert test="if ((years-from-duration(@start) + months-from-duration(@start) + days-from-duration(@start) + hours-from-duration(@start) + minutes-from-duration(@start) + seconds-from-duration(@start)) &gt; (years-from-duration(following-sibling::dash:Period/@start) + months-from-duration(following-sibling::dash:Period/@start) + days-from-duration(following-sibling::dash:Period/@start) + hours-from-duration(following-sibling::dash:Period/@start) + minutes-from-duration(following-sibling::dash:Period/@start) + seconds-from-duration(following-sibling::dash:Period/@start))) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011'][2]">
-      <svrl:text>Periods shall be physically ordered in the MPD file in increasing order of their start time.</svrl:text>
+   <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:AdaptationSet"/>
+   <svrl:fired-rule context="dash:AdaptationSet"/>
+   <svrl:failed-assert test="if (@id = preceding-sibling::dash:AdaptationSet/@id) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011'][2]">
+      <svrl:text>The id of each AdaptationSet within a Period shall be unique.</svrl:text>
    </svrl:failed-assert>
-   <svrl:fired-rule context="dash:Period"/>
-   <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:AdaptationSet"/>
-   <svrl:fired-rule context="dash:AdaptationSet"/>
-   <svrl:fired-rule context="dash:AdaptationSet"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:Representation"/>
    <svrl:fired-rule context="dash:Representation"/>
    <svrl:fired-rule context="dash:Representation"/>
    <svrl:active-pattern/>
@@ -38,7 +34,10 @@
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:fired-rule context="dash:SegmentList"/>
-   <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

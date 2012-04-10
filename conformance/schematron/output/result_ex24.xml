@@ -7,7 +7,7 @@
                         xmlns:iso="http://purl.oclc.org/dsdl/schematron"
                         xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
-                        title="Schema for validating DASH descriptions"
+                        title="Schema for validating MPDs"
                         schemaVersion="ISO19757-3"><!--   
 		   
 		   
@@ -27,15 +27,19 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:SegmentTemplate"/>
-   <svrl:failed-assert test="if (@initialisation and (contains(@initialisation, '$Number$') or contains(@initialisation, '$Time$'))) then false() else true()"
+   <svrl:failed-assert test="if (@bitstreamSwitching and (contains(@bitstreamSwitching, '$Number$') or contains(@bitstreamSwitching, '$Time$'))) then false() else true()"
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011'][1]/*[local-name()='SegmentTemplate' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
-      <svrl:text>Neither $Number$ nor the $Time$ identifier shall be included in the initialisation attribute.</svrl:text>
+      <svrl:text>Neither $Number$ nor the $Time$ identifier shall be included in the bitstreamSwitching attribute.</svrl:text>
    </svrl:failed-assert>
    <svrl:fired-rule context="dash:SegmentTemplate"/>
-   <svrl:failed-assert test="if (@initialisation and (contains(@initialisation, '$Number$') or contains(@initialisation, '$Time$'))) then false() else true()"
+   <svrl:failed-assert test="if (@bitstreamSwitching and (contains(@bitstreamSwitching, '$Number$') or contains(@bitstreamSwitching, '$Time$'))) then false() else true()"
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011'][2]/*[local-name()='SegmentTemplate' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
-      <svrl:text>Neither $Number$ nor the $Time$ identifier shall be included in the initialisation attribute.</svrl:text>
+      <svrl:text>Neither $Number$ nor the $Time$ identifier shall be included in the bitstreamSwitching attribute.</svrl:text>
    </svrl:failed-assert>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

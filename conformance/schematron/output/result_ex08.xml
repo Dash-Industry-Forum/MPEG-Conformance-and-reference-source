@@ -7,7 +7,7 @@
                         xmlns:iso="http://purl.oclc.org/dsdl/schematron"
                         xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
-                        title="Schema for validating DASH descriptions"
+                        title="Schema for validating MPDs"
                         schemaVersion="ISO19757-3"><!--   
 		   
 		   
@@ -18,19 +18,27 @@
    <svrl:fired-rule context="dash:MPD"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Period"/>
-   <svrl:failed-assert test="if (string(@bitstreamSwitching) = 'true' and string(child::dash:AdaptationSet/@bitstreamSwitching) = 'false') then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
-      <svrl:text>If bitstreamSwitching is set to true all bitstreamSwitching declarations for AdaptationSet within this Period shall not be set to false.</svrl:text>
+   <svrl:fired-rule context="dash:Period"/>
+   <svrl:failed-assert test="if (@id = preceding::dash:Period/@id) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011'][2]">
+      <svrl:text>The id of each Period shall be unique.</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
+   <svrl:fired-rule context="dash:AdaptationSet"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:Representation"/>
    <svrl:fired-rule context="dash:Representation"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

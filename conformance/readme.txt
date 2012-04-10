@@ -9,8 +9,10 @@ The structure of the package is as following:
 |- schematron/			<- Schematron Rule based validator (stand-alone version included)
 |- src/				<- source file of the validator
 
+|- validator_examples/		<- examples for schema validation tests
 |- xlink_examples/		<- examples for testing the XLinkResolver
 |- build.xml			<- ant build file
+|- changelog.txt		<- file for indicating changes
 |- readme.txt			<- this file
 |- saxon9.jar			<- file needed by Saxon XSLT
 |- saxon9-dom.jar		<- file needed by Saxon DOM transformation

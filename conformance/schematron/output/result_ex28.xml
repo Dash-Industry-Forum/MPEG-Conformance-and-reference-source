@@ -7,7 +7,7 @@
                         xmlns:iso="http://purl.oclc.org/dsdl/schematron"
                         xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
-                        title="Schema for validating DASH descriptions"
+                        title="Schema for validating MPDs"
                         schemaVersion="ISO19757-3"><!--   
 		   
 		   
@@ -27,10 +27,15 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:SegmentBase"/>
    <svrl:failed-assert test="if (not(@indexRange) and @indexRangeExact) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='SegmentList' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='SegmentBase' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
       <svrl:text>If indexRange is not present indexRangeExact shall not be present.</svrl:text>
    </svrl:failed-assert>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

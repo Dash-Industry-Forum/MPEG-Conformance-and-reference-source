@@ -7,7 +7,7 @@
                         xmlns:iso="http://purl.oclc.org/dsdl/schematron"
                         xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
-                        title="Schema for validating DASH descriptions"
+                        title="Schema for validating MPDs"
                         schemaVersion="ISO19757-3"><!--   
 		   
 		   
@@ -27,6 +27,10 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

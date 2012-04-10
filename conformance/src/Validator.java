@@ -35,12 +35,12 @@ import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.xpath.XPathExpressionException;
 
-import org.iso.mpeg.mpegb.dash.MPD;
+import org.iso.mpeg.dash.MPD;
 import org.xml.sax.SAXException;
 
 
 /**
- * Program for validating MPEG-B DASH
+ * Program for validating MPEG-DASH
  *	  
  * @author Markus Waltl <markus.waltl@itec.uni-klu.ac.at>
  */
@@ -88,11 +88,11 @@ public class Validator {
 			if (OS.indexOf("windows") == -1)
 				system_os = "unix";
 			
-			File f = new File(args[0]);
+			/*File f = new File(args[0]);
 			if (!f.exists()) {
 				System.out.println("\nFile does not exist!\n");
 				return;
-			}		
+			}*/		
 			
 			boolean retVal = false;
 
@@ -117,20 +117,20 @@ public class Validator {
 			}			
 			
 			// Step 2:
-			// XML validation
-			System.out.println("\nStart XML validation\n====================\n");
+			// MPD validation
+			System.out.println("\nStart MPD validation\n====================\n");
 			retVal = parseDASH(url);
 			if (retVal)
-				System.out.println("XML validation successful - DASH is valid!\n\n");
+				System.out.println("MPD validation successful - DASH is valid!\n\n");
 			else {
-				System.out.println("XML validation not successful - DASH is not valid!\n\n");
+				System.out.println("MPD validation not successful - DASH is not valid!\n\n");
 				return;
 			}
 			
 			// Step 3:
 			// Schematron check
 			System.out.println("\nStart Schematron validation\n===========================\n");
-			retVal = XSLTTransformer.transform(f.getAbsolutePath(), Definitions.XSLTFILE);
+			retVal = XSLTTransformer.transform(Definitions.tmpOutputFile_, Definitions.XSLTFILE);
 			if (retVal)
 				System.out.println("Schematron validation successful - DASH is valid!\n\n");
 			else
@@ -190,7 +190,7 @@ public class Validator {
 	}
 	
 	public static void printUsage() {
-		System.out.println("usage: Validator -d <file>");
+		System.out.println("usage: Validator <file>");
 		System.out.println("=======================");
 		System.out.println("<file>   file to be validated");
 		System.out.println("");

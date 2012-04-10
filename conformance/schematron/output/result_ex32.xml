@@ -7,7 +7,7 @@
                         xmlns:iso="http://purl.oclc.org/dsdl/schematron"
                         xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
-                        title="Schema for validating DASH descriptions"
+                        title="Schema for validating MPDs"
                         schemaVersion="ISO19757-3"><!--   
 		   
 		   
@@ -30,10 +30,13 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:ProgramInformation"/>
-   <svrl:fired-rule context="dash:ProgramInformation"/>
-   <svrl:failed-assert test="if (@lang = preceding-sibling::dash:ProgramInformation/@lang) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='ProgramInformation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011'][2]">
-      <svrl:text>The lang attribute for each ProgramInformation element shall be unique.</svrl:text>
+   <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:ContentProtection"/>
+   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(contains(parent::dash:AdaptationSet/@mimeType, 'mp4')) and not(contains(parent::dash:Representation/@mimeType, 'mp4'))) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='ContentProtection' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+      <svrl:text>The URI urn:mpeg:dash:mp4protection:2011 is used for Adaptation Sets or Representations based on ISO/IEC14496-12.</svrl:text>
    </svrl:failed-assert>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
 </svrl:schematron-output>

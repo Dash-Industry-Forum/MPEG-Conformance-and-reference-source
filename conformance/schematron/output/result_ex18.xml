@@ -7,7 +7,7 @@
                         xmlns:iso="http://purl.oclc.org/dsdl/schematron"
                         xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
-                        title="Schema for validating DASH descriptions"
+                        title="Schema for validating MPDs"
                         schemaVersion="ISO19757-3"><!--   
 		   
 		   
@@ -20,24 +20,29 @@
    <svrl:fired-rule context="dash:Period"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
-   <svrl:fired-rule context="dash:AdaptationSet"/>
-   <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:ContentComponent"/>
-   <svrl:fired-rule context="dash:ContentComponent"/>
-   <svrl:failed-assert test="if (@id = preceding-sibling::dash:ContentComponent/@id) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011'][1]/*[local-name()='ContentComponent' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011'][2]">
-      <svrl:text>The id of each ContentComponent within an AdaptationSet shall be unique.</svrl:text>
+   <svrl:failed-assert test="if (not((@mimeType and @mimeType = 'video/mp4' or @mimeType = 'audio/mp4' or @mimeType = 'application/mp4' or @mimeType = 'application/ttml+xml') or (child::dash:Representation/@mimeType and child::dash:Representation/@mimeType = 'video/mp4' or child::dash:Representation/@mimeType = 'audio/mp4' or child::dash:Representation/@mimeType = 'application/mp4' or child::dash:Representation/@mimeType = 'application/ttml+xml') and (ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011') or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(ancestor::dash:MPD/@profiles))) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+      <svrl:text>For On-Demand, main and live profile, the @mimeType shall equal video/mp4,audio/mp4 or application/mp4.</svrl:text>
    </svrl:failed-assert>
-   <svrl:fired-rule context="dash:ContentComponent"/>
-   <svrl:fired-rule context="dash:ContentComponent"/>
+   <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Representation"/>
-   <svrl:fired-rule context="dash:Representation"/>
+   <svrl:failed-assert test="if (not(@mimeType) and not(parent::dash:AdaptationSet/@mimeType)) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+      <svrl:text>Either the Representation or the containing AdaptationSet shall have the mimeType attribute.</svrl:text>
+   </svrl:failed-assert>
+   <svrl:failed-assert test="if (not(@codecs) and not(parent::dash:AdaptationSet/@codecs)) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+      <svrl:text>Either the Representation or the containing AdaptationSet shall have the codecs attribute.</svrl:text>
+   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:SegmentList"/>
-   <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

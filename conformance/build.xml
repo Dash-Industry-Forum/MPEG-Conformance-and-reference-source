@@ -1,11 +1,11 @@
 <!--
-	ANT build file for compiling the MPEG-B DASH Validator.
-	09.01.2011, Waltl Markus
+	ANT build file for compiling the MPEG-DASH Validator.
+	09.01.2012, Waltl Markus
 -->
 
-<project name="MPEGBDASHValidator" default="compile-java" basedir=".">
+<project name="MPEGDASHValidator" default="compile-java" basedir=".">
 	<description>
-Ant build file for compiling MPEG-B DASH Validator.
+Ant build file for compiling MPEG-DASH Validator.
 
 Properties:
   src     - location of the source files
@@ -13,7 +13,7 @@ Properties:
   doc     - location where to put the doc files
   input   - input path for validating
 
-Example for running:   ant run -Dinput=test.xml
+Example for running:   ant run -Dinput=test.mpd
 	</description>
   <!-- set global properties for this build -->
   <property name="src" location="src"/>

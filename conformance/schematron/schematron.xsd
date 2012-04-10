@@ -1,16 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema 
-	xmlns="http://purl.oclc.org/dsdl/schematron"
-	xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:xlink="http://www.w3.org/1999/xlink"
-	queryBinding='xslt'
-	schemaVersion='ISO19757-3'>
+<schema xmlns="http://purl.oclc.org/dsdl/schematron" xmlns:dash="urn:mpeg:DASH:schema:MPD:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" queryBinding='xslt' schemaVersion='ISO19757-3'>
 	<ns prefix="dash" uri="urn:mpeg:DASH:schema:MPD:2011"/>
 	<ns prefix="xlink" uri="http://www.w3.org/1999/xlink"/>
 	<ns prefix="xsi" uri="http://www.w3.org/2001/XMLSchema-instance"/>
-	<title>Schema for validating DASH descriptions</title>
-
+	<title>Schema for validating MPDs</title>
 	<pattern name="MPD element">
 		<!-- R1.*: Check the conformance of MPD -->
 		<rule context="dash:MPD">
@@ -26,23 +19,29 @@
 			<assert test="if (not(@mediaPresentationDuration) and not(@minimumUpdatePeriod)) then false() else true()">If mediaPresentationDuration ist not defined for the MPD minimumUpdatePeriod shall be defined or vice versa.</assert>
 			<!-- R1.5 -->
 			<assert test="if (@type = 'static' and @minimumUpdatePeriod) then false() else true()">If MPD is of type "static" minimumUpdatePeriod shall not be defined.</assert>
+			<!-- R1.6 -->
+			<assert test="if (not(@profiles and @profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(@profiles))) then false() else true()">The On-Demand profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-on-demand:2011".The live profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-live:2011".The main profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-main:2011".The full profile shall be identified by the URN "urn:mpeg:dash:profile:full:2011".The mp2t-main profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-main:2011".The mp2t-simple profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-simple:2011".</assert>
+			<!-- R1.7 -->
+			<assert test="if (not(@type and @type = 'static' and @profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(@profiles))) then false() else true()">For On-Demand profile, the MPD @type shall be "static".</assert>
+			<!-- R1.8 -->
+			<assert test="if (not(@type and (@type = 'static' or @type = 'dynamic') and @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(@profiles))) then false() else true()">For live profile, the MPD @type shall be "dynamic" or 'static' to distribute non-live content.</assert>
 		</rule>
 	</pattern>
-	
 	<pattern name="Period element">
 		<!-- R2.*: Check the conformance of Period -->
 		<rule context="dash:Period">
 			<!-- R2.0 -->
-			<assert test="if (not(@start) and not(preceding-sibling::dash:Period[1]/@duration)) then false() else true()">If the start attribute is not defined for a Period the previous Period element shall contain the duration attribute.</assert>
-			<!-- R2.1 -->
 			<assert test="if (string(@bitstreamSwitching) = 'true' and string(child::dash:AdaptationSet/@bitstreamSwitching) = 'false') then false() else true()">If bitstreamSwitching is set to true all bitstreamSwitching declarations for AdaptationSet within this Period shall not be set to false.</assert>
-			<!-- R2.2 -->
+			<!-- R2.1 -->
 			<assert test="if (@id = preceding::dash:Period/@id) then false() else true()">The id of each Period shall be unique.</assert>
-			<!-- R2.3 -->
+			<!-- R2.2 -->
 			<assert test="if ((years-from-duration(@start) + months-from-duration(@start) + days-from-duration(@start) + hours-from-duration(@start) + minutes-from-duration(@start) +  seconds-from-duration(@start)) > (years-from-duration(following-sibling::dash:Period/@start) + months-from-duration(following-sibling::dash:Period/@start) + days-from-duration(following-sibling::dash:Period/@start) + hours-from-duration(following-sibling::dash:Period/@start) + minutes-from-duration(following-sibling::dash:Period/@start) +  seconds-from-duration(following-sibling::dash:Period/@start))) then false() else true()">Periods shall be physically ordered in the MPD file in increasing order of their start time.</assert>
+			<!-- R2.3 -->
+			<assert test="if (not(not(child::dash:SegmentList or child::dash:SegmentTemplate) and parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(parent::dash:MPD/@profiles))) then false() else true()">For On-Demand profile, Neither the Period.SegmentList element nor the Period.SegmentTemplate element shall be present.</assert>
+			<!-- R2.4 -->
+			<assert test="if (not(not(@xlink) or (@xlink and @start and preceding-sibling::dash:Period and not(preceding-sibling::dash:Period/@xlink) and not(following-sibling::dash:Period/@xlink)) and parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(parent::dash:MPD/@profiles))) then false() else true()">For mp2t-main profile, any initial Period elements using @xlink:href may be ignored, and the first non-excluded Period must have an explicit @start attribute. After the first non-excluded Period, there shall be no Period using @xlink:href.</assert>
 		</rule>
 	</pattern>
-
 	<pattern name="AdaptationSet element">
 		<!-- R3.*: Check the conformance of AdaptationSet -->
 		<rule context="dash:AdaptationSet">
@@ -64,9 +63,12 @@
 			<assert test="if (descendant::dash:Representation/@height &lt; @minHeight or descendant::dash:Representation/@height > @maxHeight) then false() else true()">The value of the height attribute shall be in the range defined by the AdaptationSet.</assert>
 			<!-- R3.8 -->
 			<assert test="if (count(child::dash:Representation)=0) then false() else true()">An AdaptationSet shall have at least one Representation element.</assert>
+			<!-- R3.9 -->
+			<assert test="if (not((@mimeType and @mimeType = 'video/mp4' or @mimeType = 'audio/mp4' or @mimeType = 'application/mp4' or @mimeType = 'application/ttml+xml') or (child::dash:Representation/@mimeType and child::dash:Representation/@mimeType = 'video/mp4' or child::dash:Representation/@mimeType = 'audio/mp4' or child::dash:Representation/@mimeType = 'application/mp4' or child::dash:Representation/@mimeType = 'application/ttml+xml') and (ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011') or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(ancestor::dash:MPD/@profiles))) then false() else true()">For On-Demand, main and live profile, the @mimeType shall equal video/mp4,audio/mp4 or application/mp4.</assert>
+			<!-- R3.10 -->
+			<assert test="if (not(child::dash:SegmentTemplate or child::dash:Representation/SegmentTemplate or parent::dash:Period/SegmentTemplate and ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(ancestor::dash:MPD/@profiles))) then false() else true()">For live profile, the SegmentTemplate element shall be present on at least one of the three levels, the Period level containing the Representation, the Adaptation Set containing the Representation, or on Representation level itself.</assert>
 		</rule>
 	</pattern>
-	
 	<pattern name="ContentComponent element">
 		<!-- R4.*: Check the conformance of ContentComponent -->
 		<rule context="dash:ContentComponent">
@@ -74,7 +76,6 @@
 			<assert test="if (@id = preceding-sibling::dash:ContentComponent/@id) then false() else true()">The id of each ContentComponent within an AdaptationSet shall be unique.</assert>
 		</rule>
 	</pattern>
-	
 	<pattern name="Representation element">
 		<!-- R5.*: Check the conformance of Representation -->
 		<rule context="dash:Representation">
@@ -82,17 +83,17 @@
 			<assert test="if (not(@mimeType) and not(parent::dash:AdaptationSet/@mimeType)) then false() else true()">Either the Representation or the containing AdaptationSet shall have the mimeType attribute.</assert>
 			<!-- R5.1 -->
 			<assert test="if (not(@codecs) and not(parent::dash:AdaptationSet/@codecs)) then false() else true()">Either the Representation or the containing AdaptationSet shall have the codecs attribute.</assert>
+			<!-- R5.2 -->
+			<assert test="if (not(@mimeType= 'video/mp2t' or parent::dash:AdaptationSet/@mimeType= 'video/mp2t' and (ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011') or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or not(ancestor::dash:MPD/@profiles))) then false() else true()">For mp2t-main and mp2t-simple profile, the @mimeType attribute of each Representation shall be "video/mp2t".</assert>
 		</rule>
 	</pattern>
-	
 	<pattern name="SubRepresentation element">
 		<!-- R6.*: Check the conformance of SubRepresentation -->
 		<rule context="dash:SubRepresentation">
 			<!-- R6.0 -->
 			<assert test="if (@level and not(@bandwidth)) then false() else true()">If the level attribute is defined for a SubRepresentation also the bandwidth attribute shall be defined.</assert>
 		</rule>
-	</pattern>	
-	
+	</pattern>
 	<pattern name="SegmentTemplate element">
 		<!-- R7.*: Check the conformance of SegmentTemplate -->
 		<rule context="dash:SegmentTemplate">
@@ -103,12 +104,11 @@
 			<!-- R7.2 -->
 			<assert test="if (not(@indexRange) and @indexRangeExact) then false() else true()">If indexRange is not present indexRangeExact shall not be present.</assert>
 			<!-- R7.3 -->
-			<assert test="if (@initialisation and (contains(@initialisation, '$Number$') or contains(@initialisation, '$Time$'))) then false() else true()">Neither $Number$ nor the $Time$ identifier shall be included in the initialisation attribute.</assert>
+			<assert test="if (@initialization and (contains(@initializiation, '$Number$') or contains(@initializiation, '$Time$'))) then false() else true()">Neither $Number$ nor the $Time$ identifier shall be included in the initialization attribute.</assert>
 			<!-- R7.4 -->
 			<assert test="if (@bitstreamSwitching and (contains(@bitstreamSwitching, '$Number$') or contains(@bitstreamSwitching, '$Time$'))) then false() else true()">Neither $Number$ nor the $Time$ identifier shall be included in the bitstreamSwitching attribute.</assert>
 		</rule>
 	</pattern>
-	
 	<pattern name="SegmentList element">
 		<!-- R8.*: Check the conformance of SegmentList -->
 		<rule context="dash:SegmentList">
@@ -120,7 +120,6 @@
 			<assert test="if (not(@indexRange) and @indexRangeExact) then false() else true()">If indexRange is not present indexRangeExact shall not be present.</assert>
 		</rule>
 	</pattern>
-	
 	<pattern name="SegmentBase element">
 		<!-- R9.*: Check the conformance of SegmentBase -->
 		<rule context="dash:SegmentBase">
@@ -128,22 +127,68 @@
 			<assert test="if (not(@indexRange) and @indexRangeExact) then false() else true()">If indexRange is not present indexRangeExact shall not be present.</assert>
 		</rule>
 	</pattern>
-	
 	<pattern name="SegmentTimeline element">
 		<!-- R10.*: Check the conformance of SegmentTimeline -->
 		<rule context="dash:SegmentTimeline">
 			<!-- R10.0 -->
-			<assert test="if (child::dash:S/@d > (years-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + months-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + days-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + hours-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + minutes-from-duration(ancestor::dash:MPD/@maxSegmentDuration) +  seconds-from-duration(ancestor::dash:MPD/@maxSegmentDuration))) then false() else true()">The d attribute of a SegmentTimeline shall not exceed the value give by the MPD maxSegmentDuration attribute.</assert>
+			<assert test="if ((if (ancestor::dash:*[1]/@timescale) then (child::dash:S/@d div ancestor::dash:*[1]/@timescale) else child::dash:S/@d) > (years-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + months-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + days-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + hours-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + minutes-from-duration(ancestor::dash:MPD/@maxSegmentDuration) +  seconds-from-duration(ancestor::dash:MPD/@maxSegmentDuration))) then false() else true()">The d attribute of a SegmentTimeline shall not exceed the value give bei the MPD maxSegmentDuration attribute.</assert>
 		</rule>
 	</pattern>
-	
 	<pattern name="ProgramInformation element">
 		<!-- R11.*: Check the conformance of ProgramInformation -->
 		<rule context="dash:ProgramInformation">
 			<!-- R11.0 -->
 			<assert test="if (count(parent::dash:MPD/dash:ProgramInformation) > 1 and not(@lang)) then false() else true()">If more than one ProgramInformation element is given each ProgramInformation element shall have a lang attribute.</assert>
-			<!-- R11.1 -->
-			<assert test="if (@lang = preceding-sibling::dash:ProgramInformation/@lang) then false() else true()">The lang attribute for each ProgramInformation element shall be unique.</assert>
+		</rule>
+	</pattern>
+	<pattern name="ContentProtection element">
+		<!-- R12.*: Check the conformance of ContentProtection -->
+		<rule context="dash:ContentProtection">
+			<!-- R12.0 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(contains(parent::dash:AdaptationSet/@mimeType, 'mp4')) and not(contains(parent::dash:Representation/@mimeType, 'mp4'))) then false() else true()">The URI urn:mpeg:dash:mp4protection:2011 is used for Adaptation Sets or Representations based on ISO/IEC14496-12.</assert>
+			<!-- R12.1 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:13818:1:CA_descriptor:2011') and not(contains(parent::dash:AdaptationSet/@mimeType, 'mp2t')) and not(contains(parent::dash:Representation/@mimeType, 'mp2t'))) then false() else true()">The URI urn:mpeg:dash:13818:1:CA_descriptor:2011 is used for Adaptation Sets or Representations based on ISO/IEC 13818-1.</assert>
+			<!-- R12.2 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(string-length(@value) = 4)) then false() else true()">The value of ContentProtection shall be the 4CC contained in the Scheme Type Box</assert>
+			<!-- R12.3 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:13818:1:CA_descriptor:2011') and not(string-length(@value) = 4)) then false() else true()">The value of ContentProtection shall be the 4-digit lower-case hexadecimal Representation.</assert>
+			<!-- R12.4 -->
+			<assert test="if (not(@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(@schemeIdUri = 'urn:mpeg:dash:13818:1:CA_descriptor:2011')) then false() else true()">schemeIdUri for ContentProtection descriptor shall be urn:mpeg:dash:mp4protection:2011 or urn:mpeg:dash:13818:1:CA_descriptor:2011.</assert>
+		</rule>
+	</pattern>
+	<pattern name="FramePacking element">
+		<!-- R13.*: Check the conformance of FramePacking -->
+		<rule context="dash:FramePacking">
+			<!-- R13.0 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:14496:10:frame_packing_arrangement_type:2011') and not(contains(parent::dash:AdaptationSet/@codecs, 'avc') or contains(parent::dash:AdaptationSet/@codecs, 'svc') or contains(parent::dash:AdaptationSet/@codecs, 'mvc')) and not(contains(parent::dash:Representation/@codecs, 'avc') or contains(parent::dash:Representation/@codecs, 'svc') or contains(parent::dash:Representation/@codecs, 'mvc'))) then false() else true()">The URI urn:mpeg:dash:14496:10:frame_packing_arrangement_type:2011 is used for Adaptation Sets or Representations that contain a video component that conforms to ISO/IEC 14496-10.</assert>
+			<!-- R13.1 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:13818:1:stereo_video_format_type:2011') and not(parent::dash:AdaptationSet/@mimeType = 'video/mp2t') and not(parent::dash:Representation/@mimeType = 'video/mp2t')) then false() else true()">The URI urn:mpeg:dash:13818:1:stereo_video_format_type:2011 is used for Adaptation Sets or Representations that contain a video component that conforms to ISO/IEC 13818-1.</assert>
+			<!-- R13.2 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:14496:10:frame_packing_arrangement_type:2011') and not(@value = '0' or @value = '1' or @value = '2' or @value = '3' or @value = '4' or @value = '5')) then false() else true()">The value of FramePacking shall be 0 (checkerboard interleaving), 1 (column interleaving), 2 (row interleaving), 3 (side-by-side), 4 (top-bottom) or 5 (temporal interleaving).</assert>
+			<!-- R13.3 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:13818:1:stereo_video_format_type:2011') and not(@value = '0000011' or @value = '0000100' or @value = '0001000')) then false() else true()">The value of FramePacking shall be 0000011 (stereo side by side), 0000100 (stereo top and bottom) or 0001000 (2D video).</assert>
+			<!-- R13.4 -->
+			<assert test="if (not(@schemeIdUri = 'urn:mpeg:dash:14496:10:frame_packing_arrangement_type:2011') and not(@schemeIdUri = 'urn:mpeg:dash:13818:1:stereo_video_format_type:2011')) then false() else true()">schemeIdUri for FramePacking descriptor shall be urn:mpeg:dash:14496:10:frame_packing_arrangement_type:2011 or urn:mpeg:dash:13818:1:stereo_video_format_type:2011.</assert>
+		</rule>
+	</pattern>
+	<pattern name="AudioChannelConfiguration element">
+		<!-- R14.*: Check the conformance of AudioChannelConfiguration -->
+		<rule context="dash:AudioChannelConfiguration">
+			<!-- R14.0 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:23003:3:audio_channel_configuration:2011') and not(@value = '0' or @value = '1' or @value = '2' or @value = '3' or @value = '4' or @value = '5' or @value = '6' or @value = '7' or @value = '8' or @value = '9' or @value = '10' or @value = '11' or @value = '12' or @value = '13')) then false() else true()">The value of AudioChannelConfiguration shall be 0, 1 (1/0.0),  2 (2/0.0), 3 (3/0.0), 4 (3/1.0), 5 (3/2.0), 6 (3/2.1), 7 (5/2.1), 8 (1+1), 9 (2/1.0), 10 (2/2.0), 11 (3/3.1), 12 (3/4.1) or 13 (11/11.2) [Front/Surr.LFE].</assert>
+			<!-- R14.1 -->
+			<assert test="if (not(@schemeIdUri = 'urn:mpeg:dash:23003:3:audio_channel_configuration:2011')) then false() else true()">schemeIdUri for AudioChannelConfiguration descriptor shall be urn:mpeg:dash:23003:3:audio_channel_configuration:2011.</assert>
+		</rule>
+	</pattern>
+	<pattern name="Role element">
+		<!-- R15.*: Check the conformance of Role -->
+		<rule context="dash:Role">
+			<!-- R15.0 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:role:2011') and not(@value = 'caption' or @value = 'subtitle' or @value = 'main' or @value = 'alternate' or @value = 'supplementary' or @value = 'commentary' or @value = 'dub')) then false else true()">The value of Role (role) shall be caption, subtitle, main, alternate, supplementary, commentary or dub.</assert>
+			<!-- R15.1 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:stereoid:2011') and not(starts-with(@value, 'l') or starts-with(@value, 'r'))) then false() else true()">The value of Role (stereoid) shall start with 'l' or 'r'.</assert>
+			<!-- R15.2 -->
+			<assert test="if (not(@schemeIdUri = 'urn:mpeg:dash:role:2011') and not(@schemeIdUri = 'urn:mpeg:dash:stereoid:2011')) then false() else true()">schemeIdUri for Role descriptor shall be urn:mpeg:dash:role:2011 or urn:mpeg:dash:stereoid:2011.</assert>
 		</rule>
 	</pattern>
 </schema>

@@ -7,7 +7,7 @@
                         xmlns:iso="http://purl.oclc.org/dsdl/schematron"
                         xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
-                        title="Schema for validating DASH descriptions"
+                        title="Schema for validating MPDs"
                         schemaVersion="ISO19757-3"><!--   
 		   
 		   
@@ -21,9 +21,9 @@
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
-   <svrl:failed-assert test="if (@id = preceding-sibling::dash:AdaptationSet/@id) then false() else true()"
+   <svrl:failed-assert test="if (@group = preceding-sibling::dash:AdaptationSet/@group) then false() else true()"
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011'][2]">
-      <svrl:text>The id of each AdaptationSet within a Period shall be unique.</svrl:text>
+      <svrl:text>The group of each AdaptationSet within a Period shall be unique.</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
@@ -34,6 +34,10 @@
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
