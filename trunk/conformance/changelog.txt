@@ -1,0 +1,22 @@
+2012-03-01
+----------
+Updated examples to reflect online location of MPD schema
+Validator now supports remote file evaluation
+
+2012-02-21
+----------
+Changed extension of examples to MPD
+Updated examples to conform to IS (missing profiles attribute and typos)
+Integrated m23634 and added additional examples
+Integrated m23848
+
+2012-01-10
+----------
+Updated schemas to reflect FDIS
+Updated rules and examples
+Removed R2.0 and Example 7 (wrong check) from W12331
+Removed R11.1 and Example 32 (@lang check) from W12331 due to uncertainty if this check is correct
+
+2011-10-xx (WD)
+---------------
+Initial version including conformance + reference software for MPEG-DASH (W12331)
