@@ -32,11 +32,11 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:FramePacking"/>
-   <svrl:failed-assert test="if (not(@schemeIdUri = 'urn:mpeg:dash:14496:10:frame_packing_arrangement_type:2011') and not(@schemeIdUri = 'urn:mpeg:dash:13818:1:stereo_video_format_type:2011')) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='FramePacking' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
-      <svrl:text>schemeIdUri for FramePacking descriptor shall be urn:mpeg:dash:14496:10:frame_packing_arrangement_type:2011 or urn:mpeg:dash:13818:1:stereo_video_format_type:2011.</svrl:text>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:Role"/>
+   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:role:2011') and not(@value = 'caption' or @value = 'subtitle' or @value = 'main' or @value = 'alternate' or @value = 'supplementary' or @value = 'commentary' or @value = 'dub')) then false else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Role' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+      <svrl:text>The value of Role (role) shall be caption, subtitle, main, alternate, supplementary, commentary or dub.</svrl:text>
    </svrl:failed-assert>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
 </svrl:schematron-output>

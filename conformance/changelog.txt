@@ -1,3 +1,10 @@
+2012-05-08
+----------
+Removed Rules 12.0, 12.1, 12.4 (rules on ContentProtection with restricting schemeIdURI)
+merged with m24974 (therefore, remove R1.8, R2.3, R3.10; add R5.3)
+remove uneccessary examples (due to rule removement)
+added new examples 
+
 2012-03-01
 ----------
 Updated examples to reflect online location of MPD schema

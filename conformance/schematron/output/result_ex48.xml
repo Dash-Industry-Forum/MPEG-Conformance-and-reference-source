@@ -23,19 +23,17 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Representation"/>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:SegmentList"/>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:ContentProtection"/>
-   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(string-length(@value) = 4)) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='ContentProtection' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
-      <svrl:text>The value of ContentProtection shall be the 4CC contained in the Scheme Type Box</svrl:text>
+   <svrl:failed-assert test="if (not(child::dash:SegmentTemplate or parent::dash:AdaptationSet/dash:SegmentTemplate or ancestor::dash:Period/dash:SegmentTemplate) and (@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or parent::dash:AdaptationSet/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011')) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+      <svrl:text>For live profile, the SegmentTemplate element shall be present on at least one of the three levels, the Period level containing the Representation, the Adaptation Set containing the Representation, or on Representation level itself.</svrl:text>
    </svrl:failed-assert>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

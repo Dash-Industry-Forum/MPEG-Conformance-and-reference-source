@@ -346,48 +346,32 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if (not(@profiles and @profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(@profiles))) then false() else true()"/>
+         <xsl:when test="if (not(@profiles) or not(substring(@profiles,1,13) = 'urn:mpeg:dash') or (@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011')) then true() else false()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
                                 xmlns:schold="http://www.ascc.net/xml/schematron"
                                 xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (not(@profiles and @profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(@profiles))) then false() else true()">
+                                test="if (not(@profiles) or not(substring(@profiles,1,13) = 'urn:mpeg:dash') or (@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011')) then true() else false()">
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
-               <svrl:text>The On-Demand profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-on-demand:2011".The live profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-live:2011".The main profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-main:2011".The full profile shall be identified by the URN "urn:mpeg:dash:profile:full:2011".The mp2t-main profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-main:2011".The mp2t-simple profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-simple:2011".</svrl:text>
+               <svrl:text>The On-Demand profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-on-demand:2011". The live profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-live:2011". The main profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-main:2011". The full profile shall be identified by the URN "urn:mpeg:dash:profile:full:2011". The mp2t-main profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-main:2011". The mp2t-simple profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-simple:2011".</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if (not(@type and @type = 'static' and @profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(@profiles))) then false() else true()"/>
+         <xsl:when test="if (not(@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011') or not(@type) or @type='static') then true() else false()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
                                 xmlns:schold="http://www.ascc.net/xml/schematron"
                                 xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (not(@type and @type = 'static' and @profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(@profiles))) then false() else true()">
+                                test="if (not(@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011') or not(@type) or @type='static') then true() else false()">
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
                <svrl:text>For On-Demand profile, the MPD @type shall be "static".</svrl:text>
-            </svrl:failed-assert>
-         </xsl:otherwise>
-      </xsl:choose>
-
-		    <!--ASSERT -->
-<xsl:choose>
-         <xsl:when test="if (not(@type and (@type = 'static' or @type = 'dynamic') and @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(@profiles))) then false() else true()"/>
-         <xsl:otherwise>
-            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
-                                xmlns:schold="http://www.ascc.net/xml/schematron"
-                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (not(@type and (@type = 'static' or @type = 'dynamic') and @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(@profiles))) then false() else true()">
-               <xsl:attribute name="location">
-                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
-               </xsl:attribute>
-               <svrl:text>For live profile, the MPD @type shall be "dynamic" or 'static' to distribute non-live content.</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
@@ -452,22 +436,6 @@
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
                <svrl:text>Periods shall be physically ordered in the MPD file in increasing order of their start time.</svrl:text>
-            </svrl:failed-assert>
-         </xsl:otherwise>
-      </xsl:choose>
-
-		    <!--ASSERT -->
-<xsl:choose>
-         <xsl:when test="if (not(not(child::dash:SegmentList or child::dash:SegmentTemplate) and parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(parent::dash:MPD/@profiles))) then false() else true()"/>
-         <xsl:otherwise>
-            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
-                                xmlns:schold="http://www.ascc.net/xml/schematron"
-                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (not(not(child::dash:SegmentList or child::dash:SegmentTemplate) and parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(parent::dash:MPD/@profiles))) then false() else true()">
-               <xsl:attribute name="location">
-                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
-               </xsl:attribute>
-               <svrl:text>For On-Demand profile, Neither the Period.SegmentList element nor the Period.SegmentTemplate element shall be present.</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
@@ -650,32 +618,16 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if (not((@mimeType and @mimeType = 'video/mp4' or @mimeType = 'audio/mp4' or @mimeType = 'application/mp4' or @mimeType = 'application/ttml+xml') or (child::dash:Representation/@mimeType and child::dash:Representation/@mimeType = 'video/mp4' or child::dash:Representation/@mimeType = 'audio/mp4' or child::dash:Representation/@mimeType = 'application/mp4' or child::dash:Representation/@mimeType = 'application/ttml+xml') and (ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011') or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(ancestor::dash:MPD/@profiles))) then false() else true()"/>
+         <xsl:when test="if ((@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles  = 'urn:mpeg:dash:profile:isoff-on-demand:2011' ) and (@mimeType and (@mimeType != 'video/mp4' and @mimeType != 'audio/mp4' and @mimeType != 'application/mp4'))) then false() else true()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
                                 xmlns:schold="http://www.ascc.net/xml/schematron"
                                 xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (not((@mimeType and @mimeType = 'video/mp4' or @mimeType = 'audio/mp4' or @mimeType = 'application/mp4' or @mimeType = 'application/ttml+xml') or (child::dash:Representation/@mimeType and child::dash:Representation/@mimeType = 'video/mp4' or child::dash:Representation/@mimeType = 'audio/mp4' or child::dash:Representation/@mimeType = 'application/mp4' or child::dash:Representation/@mimeType = 'application/ttml+xml') and (ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011') or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(ancestor::dash:MPD/@profiles))) then false() else true()">
+                                test="if ((@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' ) and (@mimeType and (@mimeType != 'video/mp4' and @mimeType != 'audio/mp4' and @mimeType != 'application/mp4'))) then false() else true()">
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
-               <svrl:text>For On-Demand, main and live profile, the @mimeType shall equal video/mp4,audio/mp4 or application/mp4.</svrl:text>
-            </svrl:failed-assert>
-         </xsl:otherwise>
-      </xsl:choose>
-
-		    <!--ASSERT -->
-<xsl:choose>
-         <xsl:when test="if (not(child::dash:SegmentTemplate or child::dash:Representation/SegmentTemplate or parent::dash:Period/SegmentTemplate and ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(ancestor::dash:MPD/@profiles))) then false() else true()"/>
-         <xsl:otherwise>
-            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
-                                xmlns:schold="http://www.ascc.net/xml/schematron"
-                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (not(child::dash:SegmentTemplate or child::dash:Representation/SegmentTemplate or parent::dash:Period/SegmentTemplate and ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(ancestor::dash:MPD/@profiles))) then false() else true()">
-               <xsl:attribute name="location">
-                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
-               </xsl:attribute>
-               <svrl:text>For live profile, the SegmentTemplate element shall be present on at least one of the three levels, the Period level containing the Representation, the Adaptation Set containing the Representation, or on Representation level itself.</svrl:text>
+               <svrl:text>For ISO BMFF On-Demand profile, the @mimeType shall equal video/mp4, audio/mp4 or application/mp4.</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
@@ -762,16 +714,32 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if (not(@mimeType= 'video/mp2t' or parent::dash:AdaptationSet/@mimeType= 'video/mp2t' and (ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011') or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or not(ancestor::dash:MPD/@profiles))) then false() else true()"/>
+         <xsl:when test="if ((@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles  = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or parent::dash:AdaptationSet/@profiles  = 'urn:mpeg:dash:profile:isoff-on-demand:2011') and (@mimeType and (@mimeType != 'video/mp4' and @mimeType != 'audio/mp4' and @mimeType != 'application/mp4'))) then false() else true()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
                                 xmlns:schold="http://www.ascc.net/xml/schematron"
                                 xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (not(@mimeType= 'video/mp2t' or parent::dash:AdaptationSet/@mimeType= 'video/mp2t' and (ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011') or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or not(ancestor::dash:MPD/@profiles))) then false() else true()">
+                                test="if ((@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or parent::dash:AdaptationSet/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011') and (@mimeType and (@mimeType != 'video/mp4' and @mimeType != 'audio/mp4' and @mimeType != 'application/mp4'))) then false() else true()">
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
-               <svrl:text>For mp2t-main and mp2t-simple profile, the @mimeType attribute of each Representation shall be "video/mp2t".</svrl:text>
+               <svrl:text>For ISO BMFF On-Demand profile, the @mimeType shall equal video/mp4, audio/mp4 or application/mp4.</svrl:text>
+            </svrl:failed-assert>
+         </xsl:otherwise>
+      </xsl:choose>
+
+		    <!--ASSERT -->
+<xsl:choose>
+         <xsl:when test="if (not(child::dash:SegmentTemplate or parent::dash:AdaptationSet/dash:SegmentTemplate or ancestor::dash:Period/dash:SegmentTemplate) and (@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles  = 'urn:mpeg:dash:profile:isoff-live:2011' or parent::dash:AdaptationSet/@profiles  = 'urn:mpeg:dash:profile:isoff-live:2011')) then false() else true()"/>
+         <xsl:otherwise>
+            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                                xmlns:schold="http://www.ascc.net/xml/schematron"
+                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                                test="if (not(child::dash:SegmentTemplate or parent::dash:AdaptationSet/dash:SegmentTemplate or ancestor::dash:Period/dash:SegmentTemplate) and (@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or parent::dash:AdaptationSet/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011')) then false() else true()">
+               <xsl:attribute name="location">
+                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
+               </xsl:attribute>
+               <svrl:text>For live profile, the SegmentTemplate element shall be present on at least one of the three levels, the Period level containing the Representation, the Adaptation Set containing the Representation, or on Representation level itself.</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
@@ -874,12 +842,12 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if (@initialization and (contains(@initializiation, '$Number$') or contains(@initializiation, '$Time$'))) then false() else true()"/>
+         <xsl:when test="if (@initialization and (contains(@initialization, '$Number$') or contains(@initialization, '$Time$'))) then false() else true()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
                                 xmlns:schold="http://www.ascc.net/xml/schematron"
                                 xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (@initialization and (contains(@initializiation, '$Number$') or contains(@initializiation, '$Time$'))) then false() else true()">
+                                test="if (@initialization and (contains(@initialization, '$Number$') or contains(@initialization, '$Time$'))) then false() else true()">
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
@@ -1082,38 +1050,6 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if ((@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(contains(parent::dash:AdaptationSet/@mimeType, 'mp4')) and not(contains(parent::dash:Representation/@mimeType, 'mp4'))) then false() else true()"/>
-         <xsl:otherwise>
-            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
-                                xmlns:schold="http://www.ascc.net/xml/schematron"
-                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if ((@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(contains(parent::dash:AdaptationSet/@mimeType, 'mp4')) and not(contains(parent::dash:Representation/@mimeType, 'mp4'))) then false() else true()">
-               <xsl:attribute name="location">
-                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
-               </xsl:attribute>
-               <svrl:text>The URI urn:mpeg:dash:mp4protection:2011 is used for Adaptation Sets or Representations based on ISO/IEC14496-12.</svrl:text>
-            </svrl:failed-assert>
-         </xsl:otherwise>
-      </xsl:choose>
-
-		    <!--ASSERT -->
-<xsl:choose>
-         <xsl:when test="if ((@schemeIdUri = 'urn:mpeg:dash:13818:1:CA_descriptor:2011') and not(contains(parent::dash:AdaptationSet/@mimeType, 'mp2t')) and not(contains(parent::dash:Representation/@mimeType, 'mp2t'))) then false() else true()"/>
-         <xsl:otherwise>
-            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
-                                xmlns:schold="http://www.ascc.net/xml/schematron"
-                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if ((@schemeIdUri = 'urn:mpeg:dash:13818:1:CA_descriptor:2011') and not(contains(parent::dash:AdaptationSet/@mimeType, 'mp2t')) and not(contains(parent::dash:Representation/@mimeType, 'mp2t'))) then false() else true()">
-               <xsl:attribute name="location">
-                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
-               </xsl:attribute>
-               <svrl:text>The URI urn:mpeg:dash:13818:1:CA_descriptor:2011 is used for Adaptation Sets or Representations based on ISO/IEC 13818-1.</svrl:text>
-            </svrl:failed-assert>
-         </xsl:otherwise>
-      </xsl:choose>
-
-		    <!--ASSERT -->
-<xsl:choose>
          <xsl:when test="if ((@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(string-length(@value) = 4)) then false() else true()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -1140,22 +1076,6 @@
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
                <svrl:text>The value of ContentProtection shall be the 4-digit lower-case hexadecimal Representation.</svrl:text>
-            </svrl:failed-assert>
-         </xsl:otherwise>
-      </xsl:choose>
-
-		    <!--ASSERT -->
-<xsl:choose>
-         <xsl:when test="if (not(@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(@schemeIdUri = 'urn:mpeg:dash:13818:1:CA_descriptor:2011')) then false() else true()"/>
-         <xsl:otherwise>
-            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
-                                xmlns:schold="http://www.ascc.net/xml/schematron"
-                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (not(@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(@schemeIdUri = 'urn:mpeg:dash:13818:1:CA_descriptor:2011')) then false() else true()">
-               <xsl:attribute name="location">
-                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
-               </xsl:attribute>
-               <svrl:text>schemeIdUri for ContentProtection descriptor shall be urn:mpeg:dash:mp4protection:2011 or urn:mpeg:dash:13818:1:CA_descriptor:2011.</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
