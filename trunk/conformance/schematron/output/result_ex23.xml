@@ -27,7 +27,15 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:SegmentTemplate"/>
+   <svrl:failed-assert test="if (@initialization and (contains(@initialization, '$Number$') or contains(@initialization, '$Time$'))) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011'][1]/*[local-name()='SegmentTemplate' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+      <svrl:text>Neither $Number$ nor the $Time$ identifier shall be included in the initialization attribute.</svrl:text>
+   </svrl:failed-assert>
    <svrl:fired-rule context="dash:SegmentTemplate"/>
+   <svrl:failed-assert test="if (@initialization and (contains(@initialization, '$Number$') or contains(@initialization, '$Time$'))) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011'][2]/*[local-name()='SegmentTemplate' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+      <svrl:text>Neither $Number$ nor the $Time$ identifier shall be included in the initialization attribute.</svrl:text>
+   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

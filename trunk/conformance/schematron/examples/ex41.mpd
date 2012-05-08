@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- R13.4 -->
+<!-- R15.0 -->
 <MPD 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns="urn:mpeg:DASH:schema:MPD:2011"
@@ -11,8 +11,8 @@
 	profiles="urn:mpeg:dash:profile:isoff-main:2011">
 	<Period start="PT0S">
 		<AdaptationSet group="1">
+			<Role schemeIdUri="urn:mpeg:dash:role:2011" value="sub"></Role>
 			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" width="320" height="240" frameRate="15" id="tag0" bandwidth="128000">
-				<FramePacking schemeIdUri="urn:mpeg:dash:myownformat:2011" value="0000011"></FramePacking>
 				<SegmentList duration="10">
 					<Initialization sourceURL="seg-s-init.mp4"/>
 					<SegmentURL media="seg-s1-128k-1.mp4"/>

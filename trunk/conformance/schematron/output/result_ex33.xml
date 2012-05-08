@@ -32,9 +32,9 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:ContentProtection"/>
-   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:13818:1:CA_descriptor:2011') and not(contains(parent::dash:AdaptationSet/@mimeType, 'mp2t')) and not(contains(parent::dash:Representation/@mimeType, 'mp2t'))) then false() else true()"
+   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:13818:1:CA_descriptor:2011') and not(string-length(@value) = 4)) then false() else true()"
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='ContentProtection' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
-      <svrl:text>The URI urn:mpeg:dash:13818:1:CA_descriptor:2011 is used for Adaptation Sets or Representations based on ISO/IEC 13818-1.</svrl:text>
+      <svrl:text>The value of ContentProtection shall be the 4-digit lower-case hexadecimal Representation.</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

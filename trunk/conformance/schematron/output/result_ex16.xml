@@ -24,10 +24,6 @@
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
       <svrl:text>An AdaptationSet shall have at least one Representation element.</svrl:text>
    </svrl:failed-assert>
-   <svrl:failed-assert test="if (not((@mimeType and @mimeType = 'video/mp4' or @mimeType = 'audio/mp4' or @mimeType = 'application/mp4' or @mimeType = 'application/ttml+xml') or (child::dash:Representation/@mimeType and child::dash:Representation/@mimeType = 'video/mp4' or child::dash:Representation/@mimeType = 'audio/mp4' or child::dash:Representation/@mimeType = 'application/mp4' or child::dash:Representation/@mimeType = 'application/ttml+xml') and (ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011') or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(ancestor::dash:MPD/@profiles))) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
-      <svrl:text>For On-Demand, main and live profile, the @mimeType shall equal video/mp4,audio/mp4 or application/mp4.</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

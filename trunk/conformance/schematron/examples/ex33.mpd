@@ -8,16 +8,16 @@
 	minBufferTime="PT10.00S"
 	 mediaPresentationDuration="PT3256S"
 	type="dynamic" availabilityStartTime="2001-12-17T09:40:57Z"
-	profiles="urn:mpeg:dash:profile:isoff-main:2011">
+	profiles="urn:mpeg:dash:profile:mp2t-main:2011">
 	<Period start="PT0S">
 		<AdaptationSet group="1">
-			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" width="320" height="240" frameRate="15" id="tag0" bandwidth="128000">
-				<ContentProtection schemeIdUri="urn:mpeg:dash:13818:1:CA_descriptor:2011" value="abcf"></ContentProtection>
+			<Representation mimeType="video/mp2t" codecs="mp2v.61 mp2a.67" width="320" height="240" frameRate="15" id="tag1" bandwidth="128000">
+				<ContentProtection schemeIdUri="urn:mpeg:dash:13818:1:CA_descriptor:2011" value="abcdef"></ContentProtection>
 				<SegmentList duration="10">
-					<Initialization sourceURL="seg-s-init.mp4"/>
-					<SegmentURL media="seg-s1-128k-1.mp4"/>
-					<SegmentURL media="seg-s1-128k-2.mp4"/>
-					<SegmentURL media="seg-s1-128k-3.mp4"/>
+					<Initialization sourceURL="seg-s-init.ts"/>
+					<SegmentURL media="seg-s1-128k-1.ts"/>
+					<SegmentURL media="seg-s1-128k-2.ts"/>
+					<SegmentURL media="seg-s1-128k-3.ts"/>
 				</SegmentList>
 			</Representation>
 		</AdaptationSet>

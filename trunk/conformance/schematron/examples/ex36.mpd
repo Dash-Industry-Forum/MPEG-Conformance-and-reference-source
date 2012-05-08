@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- R12.4 -->
+<!-- R13.2 -->
 <MPD 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns="urn:mpeg:DASH:schema:MPD:2011"
@@ -8,16 +8,16 @@
 	minBufferTime="PT10.00S"
 	 mediaPresentationDuration="PT3256S"
 	type="dynamic" availabilityStartTime="2001-12-17T09:40:57Z"
-	profiles="urn:mpeg:dash:profile:mp2t-main:2011">
+	profiles="urn:mpeg:dash:profile:isoff-main:2011">
 	<Period start="PT0S">
 		<AdaptationSet group="1">
-			<Representation mimeType="video/mp2t" codecs="mp2v.61 mp2a.67" width="320" height="240" frameRate="15" id="tag1" bandwidth="128000">
-				<ContentProtection schemeIdUri="urn:mpeg:dash:myprotect:2011" value="abcf"></ContentProtection>
+			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" width="320" height="240" frameRate="15" id="tag0" bandwidth="128000">
+				<FramePacking schemeIdUri="urn:mpeg:dash:14496:10:frame_packing_arrangement_type:2011" value="6"></FramePacking>
 				<SegmentList duration="10">
-					<Initialization sourceURL="seg-s-init.ts"/>
-					<SegmentURL media="seg-s1-128k-1.ts"/>
-					<SegmentURL media="seg-s1-128k-2.ts"/>
-					<SegmentURL media="seg-s1-128k-3.ts"/>
+					<Initialization sourceURL="seg-s-init.mp4"/>
+					<SegmentURL media="seg-s1-128k-1.mp4"/>
+					<SegmentURL media="seg-s1-128k-2.mp4"/>
+					<SegmentURL media="seg-s1-128k-3.mp4"/>
 				</SegmentList>
 			</Representation>
 		</AdaptationSet>
