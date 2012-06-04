@@ -216,7 +216,22 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 	atomerr = ValidateAtomOfType( 'meta', kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_meta_Atom, cnt, list, nil );
 	if (!err) err = atomerr;
-	
+    
+	// Count the total fragments (if present), and allocate the required per-track memory for that
+	vg.mir->numFragments = 0;
+    
+	if(vg.mir->fragmented)
+	{
+    	for (i = 0; i < cnt; i++)
+    		if (list[i].type == 'moof')
+                vg.mir->numFragments++;
+
+        vg.mir->moofInfo = (MoofInfoRec *)malloc(vg.mir->numFragments*sizeof(MoofInfoRec));
+        vg.mir->processedFragments = 0;
+	}
+    else
+        vg.mir->moofInfo = NULL;
+    			
 	//
 	for (i = 0; i < cnt; i++) {
 		entry = &list[i];
@@ -234,6 +249,16 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 						Validate_uuid_Atom, cnt, list, nil );
 					if (!err) err = atomerr;
 					break;
+                    
+            case 'moof':
+                    if(!vg.mir->fragmented)
+                        errprint("'moof' boxes are not to be expected without an 'mvex' in 'moov'\n");
+                    
+                    atomerr = ValidateAtomOfType( 'moof', 0, 
+                        Validate_moof_Atom, cnt, list, vg.mir);
+                    if (!err) err = atomerr;
+
+                    break;
 
 			default:
 				if (!(entry->aoeflags & kAtomValidated)) 
@@ -641,7 +666,7 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				errprint("Video track has zero trackWidth and/or trackHeight\n");
 				err = badAtomSize;
 			}
-			if (vg.checklevel >= checklevel_samples) {
+			if (vg.checklevel >= checklevel_samples && !vg.brandDASH) {
 				UInt64 sampleOffset;
 				UInt32 sampleSize;
 				UInt32 sampleDescriptionIndex;
@@ -672,7 +697,7 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				errprint("Sound track has non-zero trackWidth and/or trackHeight\n");
 				err = badAtomSize;
 			}
-			if (vg.checklevel >= checklevel_samples) {
+			if (vg.checklevel >= checklevel_samples && !vg.brandDASH) {
 				UInt64 sampleOffset;
 				UInt32 sampleSize;
 				UInt32 sampleDescriptionIndex;
@@ -703,7 +728,7 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				errprint("ObjectDescriptor track has non-zero trackVolume, trackWidth, or trackHeight\n");
 				err = badAtomSize;
 			}
-			if (vg.checklevel >= checklevel_samples) {
+			if (vg.checklevel >= checklevel_samples && !vg.brandDASH) {
 				UInt64 sampleOffset;
 				UInt32 sampleSize;
 				UInt32 sampleDescriptionIndex;
@@ -734,7 +759,7 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				errprint("SceneDescriptor track has non-zero trackVolume, trackWidth, or trackHeight\n");
 				err = badAtomSize;
 			}
-			if (vg.checklevel >= checklevel_samples) {
+			if (vg.checklevel >= checklevel_samples && !vg.brandDASH) {
 				UInt64 sampleOffset;
 				UInt32 sampleSize;
 				UInt32 sampleDescriptionIndex;
@@ -892,23 +917,29 @@ OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon )
 		err = badAtomErr;
 	}
 	if (tir->sampleToChunk) {
-		UInt32 s;		// number of samples
-		UInt32 leftover;
 
-		if (tir->sampleToChunk[tir->sampleToChunkEntryCnt].firstChunk 
-			> tir->chunkOffsetEntryCnt) {
-			errprint("SampleToChunk table describes more chunks than"
-					 " the ChunkOffsetTable table\n");
-			err = badAtomErr;
-		} 
-		
-		s = tir->sampleSizeEntryCnt - tir->sampleToChunkSampleSubTotal;
-		leftover = s % (tir->sampleToChunk[tir->sampleToChunkEntryCnt].samplesPerChunk);
-		if (leftover) {
-			errprint("SampleToChunk table does not evenly describe"
-					 " the number of samples as defined by the SampleToSize table\n");
-			err = badAtomErr;
+		if(tir->sampleToChunkEntryCnt)
+		{
+			UInt32 s;		// number of samples
+			UInt32 leftover;
+
+			if (tir->sampleToChunk[tir->sampleToChunkEntryCnt].firstChunk 
+				> tir->chunkOffsetEntryCnt) {
+				errprint("SampleToChunk table describes more chunks than"
+						 " the ChunkOffsetTable table\n");
+				err = badAtomErr;
+			} 
+			
+			s = tir->sampleSizeEntryCnt - tir->sampleToChunkSampleSubTotal;
+			leftover = s % (tir->sampleToChunk[tir->sampleToChunkEntryCnt].samplesPerChunk);
+			if (leftover) {
+				errprint("SampleToChunk table does not evenly describe"
+						 " the number of samples as defined by the SampleToSize table\n");
+				err = badAtomErr;
+			}
 		}
+        else if(!vg.brandDASH)
+		    warnprint("WARNING: STSC empty; with an empty STSC atom, chunk mapping is not verifiable\n");
 	}
 
 	aoe->aoeflags |= kAtomValidated;
@@ -916,6 +947,73 @@ bail:
 	return err;
 }
 //==========================================================================================
+
+OSErr Validate_mvex_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+	OSErr err = noErr;
+	long cnt;
+	atomOffsetEntry *list;
+	long i;
+	OSErr atomerr = noErr;
+	atomOffsetEntry *entry;
+	UInt64 minOffset, maxOffset;
+	TrackInfoRec *tir = (TrackInfoRec *)refcon;
+	
+	atomprintnotab(">\n"); 
+	
+	minOffset = aoe->offset + aoe->atomStartSize;
+	maxOffset = aoe->offset + aoe->size - aoe->atomStartSize;
+	
+	BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
+
+    vg.mir->fragmented = true;
+    vg.mir->sequence_number = 0;
+
+    /*Section 8.8.3.1, Quantity:   Exactly one for each track in the Movie Box
+      Doesnt say they have to be in order, so we have to manually check it.
+      Since bit(4)	reserved=0, setting default_sample_flags is set to a test exception
+      Not the cleanest approach though*/
+      
+    for(i = 0 ; i < vg.mir->maxTIRs ; i++)
+	{
+    	tir[i].default_sample_size = 0xFFFFFFFF;
+	}
+
+    //todo: add optional 'mehd' and 'leva' boxes
+	// Process 'trex' atoms
+	for(i = 0 ; i < vg.mir->maxTIRs ; i++)
+	{
+    	atomerr = ValidateAtomOfType( 'trex', kTypeAtomFlagMustHaveOne, 
+    		Validate_trex_Atom, cnt, list, tir );
+    	if (!err) err = atomerr;
+	}
+
+    /*Now check if any track information is missing*/
+    for(i = 0 ; i < vg.mir->maxTIRs ; i++)
+	{
+    	if(tir[i].default_sample_size == 0xFFFFFFFF)
+            errprint("'mxvex' found but 'trex' box missing for track %d\n",i);
+	}
+
+	//
+	for (i = 0; i < cnt; i++) {
+		entry = &list[i];
+
+		if (entry->aoeflags & kAtomValidated) continue;
+
+		switch (entry->type) {
+			default:
+				warnprint("WARNING: unknown sample table atom '%s'\n",ostypetostr(entry->type));
+				break;
+		}
+		
+		if (!err) err = atomerr;
+	}
+
+	aoe->aoeflags |= kAtomValidated;
+bail:
+	return err;
+}
 
 
 //==========================================================================================
@@ -1032,6 +1130,10 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 		int ix;
 		OSType currentBrand;
 		Boolean majorBrandFoundAmongCompatibleBrands = false;
+        vg.brandDASH = false;
+        OSType dash;
+        
+        mapStringToUInt32("dash",&dash);
 		
 		for (ix=0; ix < numCompatibleBrands; ix++) {
 			BAILIFERR( GetFileDataN32( aoe, &currentBrand, offset, &offset ) );
@@ -1042,7 +1144,10 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 				majorBrandFoundAmongCompatibleBrands = true;
 			}
 			
-			
+			if (currentBrand == dash)
+            {
+				vg.brandDASH = true;
+			}
 			
 		}
 
@@ -1109,7 +1214,7 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFNIL( vg.mir = calloc(1, sizeof(MovieInfoRec) + i), allocFailedErr );
 	mir = vg.mir;
 	mir->maxTIRs = trakCnt;
-
+    mir->fragmented = false; //unless 'mvex' is found in 'moov'
 
 	atomerr = ValidateAtomOfType( 'mvhd', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_mvhd_Atom, cnt, list, NULL);
@@ -1170,6 +1275,11 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomerr = ValidateAtomOfType( 'trak', 0, Validate_trak_Atom, cnt, list, nil );
 	if (!err) err = atomerr;
 	
+	// Process 'mvex' atoms
+	atomerr = ValidateAtomOfType( 'mvex', kTypeAtomFlagCanHaveAtMostOne, 
+		Validate_mvex_Atom, cnt, list, mir->tirList );
+	if (!err) err = atomerr;
+
 	// Process 'iods' atoms
 	atomerr = ValidateAtomOfType( 'iods', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_iods_Atom, cnt, list, nil );
@@ -1238,6 +1348,7 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 	//  if that is beyond the highest chunk end we have seen, we append it;  otherwise (the rare case)
 	//   we insert it into the sorted list.  this gives us a rapid check and an output sorted list without
 	//   an n-squared overlap check and without a post-sort
+	if(!vg.brandDASH)
 	{
 		UInt32 totalChunks = 0;
 		TrackInfoRec *tir;
@@ -1398,10 +1509,191 @@ bail:
 	return err;
 }
 
+//==========================================================================================
+
+OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+	OSErr err = noErr;
+	long cnt;
+	atomOffsetEntry *list;
+	long i;
+	OSErr atomerr = noErr;
+	atomOffsetEntry *entry;
+	UInt64 minOffset, maxOffset;
+    MovieInfoRec *mir = (MovieInfoRec *)refcon;
+    
+    MoofInfoRec *moofInfo = &mir->moofInfo[mir->processedFragments];
+
+    mir->processedFragments++;
+	
+	atomprintnotab(">\n"); 
+	
+	minOffset = aoe->offset + aoe->atomStartSize;
+	maxOffset = aoe->offset + aoe->size - aoe->atomStartSize;
+	
+	BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
+
+    atomerr = ValidateAtomOfType( 'mfhd', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
+        Validate_mfhd_Atom, cnt, list, nil );
+    if (!err) err = atomerr;
+    
+    moofInfo->numTrackFragments = 0;
+    moofInfo->processedTrackFragments = 0;
+    
+	for (i = 0; i < cnt; i++)
+		if (list[i].type == 'traf')
+            moofInfo->numTrackFragments++;
+
+    if(moofInfo->numTrackFragments > 0)
+        moofInfo->trafInfo = (TrafInfoRec *)malloc(moofInfo->numTrackFragments*sizeof(TrafInfoRec));
+    else
+        moofInfo->trafInfo = NULL;
+        
+    atomerr = ValidateAtomOfType( 'traf', 0, 
+        Validate_traf_Atom, cnt, list, moofInfo );
+    if (!err) err = atomerr;
+    
+	//
+	for (i = 0; i < cnt; i++) {
+		entry = &list[i];
+
+		if (entry->aoeflags & kAtomValidated) continue;
+
+		switch (entry->type) {
+                
+			default:
+				warnprint("WARNING: unknown moof atom '%s'\n",ostypetostr(entry->type));
+				break;
+		}
+		
+		if (!err) err = atomerr;
+	}
+
+	aoe->aoeflags |= kAtomValidated;
+bail:
+	return err;
+}
+
+//==========================================================================================
+
+OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+	OSErr err = noErr;
+	long cnt;
+	atomOffsetEntry *list;
+	long i;
+	OSErr atomerr = noErr;
+	atomOffsetEntry *entry;
+	UInt64 minOffset, maxOffset;
+    MoofInfoRec *moofInfo = (MoofInfoRec *)refcon;
+    
+    TrafInfoRec *trafInfo = &moofInfo->trafInfo[moofInfo->processedTrackFragments];
+
+    moofInfo->processedTrackFragments++;
+	
+	atomprintnotab(">\n"); 
+	
+	minOffset = aoe->offset + aoe->atomStartSize;
+	maxOffset = aoe->offset + aoe->size - aoe->atomStartSize;
+	
+	BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
+
+    atomerr = ValidateAtomOfType( 'tfhd', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
+        Validate_tfhd_Atom, cnt, list, trafInfo );
+    if (!err) err = atomerr;
+    
+    trafInfo->numTrun = 0;
+    trafInfo->processedTrun = 0;
+    trafInfo->tfdtFound = false;
+    
+	for (i = 0; i < cnt; i++)
+		if (list[i].type == 'trun')
+            trafInfo->numTrun++;
+
+    if(trafInfo->duration_is_empty && trafInfo->numTrun > 0)
+        errprint("If the duration-is-empty flag is set in the tf_flags, there are no track runs.");
+
+    if(trafInfo->numTrun > 0)
+        trafInfo->trunInfo = (TrunInfoRec *)malloc(trafInfo->numTrun*sizeof(TrunInfoRec));
+    else
+        trafInfo->trunInfo = NULL;
+    
+    atomerr = ValidateAtomOfType( 'trun', 0, 
+        Validate_trun_Atom, cnt, list, trafInfo );
+    if (!err) err = atomerr;
+    
+    atomerr = ValidateAtomOfType( 'tfdt', kTypeAtomFlagCanHaveAtMostOne, 
+        Validate_tfdt_Atom, cnt, list, trafInfo );
+    if (!err) err = atomerr;
+    
+	//
+	for (i = 0; i < cnt; i++) {
+		entry = &list[i];
+
+		if (entry->aoeflags & kAtomValidated) continue;
+
+		switch (entry->type) {            
+			default:
+				warnprint("WARNING: unknown moof atom '%s'\n",ostypetostr(entry->type));
+				break;
+		}
+		
+		if (!err) err = atomerr;
+	}
+
+	aoe->aoeflags |= kAtomValidated;
+bail:
+	return err;
+}
+
 void dispose_mir( MovieInfoRec *mir )
 {
-	// for each track, get rid of the stuff in it
+    if(mir->moofInfo)
+    {
+        UInt32 i;
 
+        for(i = 0 ; i < mir->numFragments ; i++)
+        {
+            //printf("Fragment number %d / %d\n",i,mir->numFragments);
+            if(mir->moofInfo[i].trafInfo != NULL)
+            {
+                    UInt32 j;
+                    
+                    for(j = 0 ; j < mir->moofInfo[i].numTrackFragments ; j++)
+                    {
+                        //printf("Track Fragment number %d / %d, ptr %x\n",j,mir->moofInfo[i].numTrackFragments,&(mir->moofInfo[i].numTrackFragments));
+                        
+                        if(mir->moofInfo[i].trafInfo[j].trunInfo != NULL)
+                        {
+                            UInt32 k;
+
+                            for(k = 0 ; k < mir->moofInfo[i].trafInfo[j].numTrun ; k++)
+                            {
+                                if(mir->moofInfo[i].trafInfo[j].trunInfo[k].sample_duration != NULL)
+                                    free(mir->moofInfo[i].trafInfo[j].trunInfo[k].sample_duration);
+                                
+                                if(mir->moofInfo[i].trafInfo[j].trunInfo[k].sample_size != NULL)
+                                    free(mir->moofInfo[i].trafInfo[j].trunInfo[k].sample_size);
+                                
+                                if(mir->moofInfo[i].trafInfo[j].trunInfo[k].sample_flags != NULL)
+                                    free(mir->moofInfo[i].trafInfo[j].trunInfo[k].sample_flags);
+                                
+                                if(mir->moofInfo[i].trafInfo[j].trunInfo[k].sample_composition_time_offset != NULL)
+                                    free(mir->moofInfo[i].trafInfo[j].trunInfo[k].sample_composition_time_offset);
+                            }
+                            
+                            
+                            free(mir->moofInfo[i].trafInfo[j].trunInfo);
+                        }
+                    }
+                        
+                free(mir->moofInfo[i].trafInfo);
+            }
+        }
+            
+        free(mir->moofInfo);
+    }
+	// for each track, get rid of the stuff in it
 
 	free( mir );
 }

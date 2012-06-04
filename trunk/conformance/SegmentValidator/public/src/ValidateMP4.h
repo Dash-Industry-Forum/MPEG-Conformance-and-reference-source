@@ -143,6 +143,7 @@ typedef unsigned char UInt8;
 typedef char SInt8;
 typedef long SInt32;
 typedef unsigned long UInt32;
+typedef long Int32;
 typedef short SInt16;
 typedef unsigned short UInt16;
 typedef UInt32 UnsignedFixed;
@@ -340,6 +341,64 @@ typedef struct VideoSampleDescriptionInfo {
 } VideoSampleDescriptionInfo;
 
 
+// Section 8.8.8. of ISO/IEC 14496-12 4th edition
+
+typedef struct {
+    Boolean data_offset_present;
+    Boolean first_sample_flags_present;
+    Boolean sample_duration_present;
+    Boolean sample_size_present;
+    Boolean sample_flags_present;
+    Boolean sample_composition_time_offsets_present;
+
+    UInt32 version;
+    UInt32 sample_count;
+
+    UInt32 data_offset;
+    UInt32 first_sample_flags;
+    
+    UInt32 *sample_duration;
+    UInt32 *sample_size;
+    UInt32 *sample_flags;
+    UInt32 *sample_composition_time_offset; //Use it as a signed int when version is non-zero
+
+} TrunInfoRec;
+
+// Section 8.8.7. of ISO/IEC 14496-12 4th edition
+
+typedef struct {
+    UInt32    default_sample_duration;              
+    UInt32    default_sample_size;                
+    UInt32    default_sample_flags;               
+
+    Boolean base_data_offset_present;             
+    Boolean sample_description_index_present;     
+    Boolean default_sample_duration_present;      
+    Boolean default_sample_size_present;          
+    Boolean default_sample_flags_present;         
+    Boolean duration_is_empty;                    
+    Boolean default_base_is_moof;                 
+
+    UInt32  track_ID;                             
+    UInt64  base_data_offset;                     
+    UInt32  sample_description_index;             
+
+    UInt32 numTrun;
+    UInt32 processedTrun;
+    TrunInfoRec *trunInfo;
+
+    Boolean tfdtFound;
+    UInt64  baseMediaDecodeTime;
+    
+} TrafInfoRec;
+
+
+typedef struct {
+    UInt32 numTrackFragments;
+    UInt32 processedTrackFragments;
+    TrafInfoRec *trafInfo;
+} MoofInfoRec;
+
 //===========================
 
 typedef struct {
@@ -378,6 +437,11 @@ typedef struct {
 	UInt32 timeToSampleSampleCnt;			// number of samples described in the timeToSampleAtom
 	UInt64 timeToSampleDuration;			// duration described by timeToSampleAtom (this is Total duration of all samples, 
 											//   not a single sample's duration)
+    UInt32    default_sample_description_index;     // Section 8.3.3. of ISO/IEC 14496-12 4th edition
+    UInt32    default_sample_duration;              // Section 8.3.3. of ISO/IEC 14496-12 4th edition
+    UInt32    default_sample_size;                  // Section 8.3.3. of ISO/IEC 14496-12 4th edition
+    UInt32    default_sample_flags;                 // Section 8.3.3. of ISO/IEC 14496-12 4th edition
+
 } TrackInfoRec;
 
 int GetSampleOffsetSize( TrackInfoRec *tir, UInt32 sampleNum, UInt64 *offsetOut, UInt32 *sizeOut, UInt32 *sampleDescriptionIndexOut );
@@ -385,10 +449,16 @@ int GetChunkOffsetSize( TrackInfoRec *tir, UInt32 chunkNum, UInt64 *offsetOut, U
 
 // movie Globals
 typedef struct {
+    
+    Boolean	fragmented;
+    UInt32  numFragments;
+    UInt32  processedFragments;
+    UInt32  sequence_number;
 
 	long			numTIRs;
 	long			maxTIRs;
 	TrackInfoRec	tirList[1];
+    MoofInfoRec     *moofInfo;
 } MovieInfoRec;
 
 
@@ -449,6 +519,7 @@ typedef struct {
 	long	samplenumber;
 
 	long	majorBrand;
+	Boolean	brandDASH;
 
 	Boolean	print_atompath;
 	Boolean	print_atom;
@@ -742,10 +813,13 @@ OSErr Validate_mvhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_iods_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_dinf_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_minf_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mdia_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_mvex_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_cprt_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_loci_Atom( atomOffsetEntry *aoe, void *refcon );
 
@@ -777,6 +851,14 @@ OSErr Validate_stsz_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_stz2_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_stco_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_padb_Atom( atomOffsetEntry *aoe, void *refcon );
+
+OSErr Validate_trex_Atom( atomOffsetEntry *aoe, void *refcon );
+
+OSErr Validate_mfhd_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon );
+
+OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_tfdt_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_edts_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon );
