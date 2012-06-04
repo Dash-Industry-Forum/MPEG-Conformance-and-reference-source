@@ -433,6 +433,7 @@ OSErr Validate_Hint_Track( atomOffsetEntry *aoe, TrackInfoRec *tir )
 	}
 
 	H_ATOM_PRINT_INCR(("<hint_SAMPLE_DATA>\n"));
+    if(!vg.brandDASH)
 		for (i = startSampleNum; i <= endSampleNum; i++) {
 			if ((vg.samplenumber==0) || (vg.samplenumber==i)) {
 				err = GetSampleOffsetSize( tir, i, &sampleOffset, &sampleSize, &sampleDescriptionIndex );
@@ -740,12 +741,16 @@ static OSErr Validate_Data_Entry( HintInfoRec *hir, char *inEntry )
 					goto bail;
 				}
 
-				BAILIFERR( err = get_track_sample(thisTIR, sampleNum, &sampleData, &sampleDataLength, NULL) );
-				if (offset+length >sampleDataLength) {
-					errprint("[2] data entry - offset(%d) + length(%d) > samplelength (%d)\n", offset, length, sampleDataLength);
-					err = paramErr;
-					goto bail;	
-				}
+                if(!vg.brandDASH)
+                {
+                    BAILIFERR( err = get_track_sample(thisTIR, sampleNum, &sampleData, &sampleDataLength, NULL) );
+    				if (offset+length >sampleDataLength) {
+    					errprint("[2] data entry - offset(%d) + length(%d) > samplelength (%d)\n", offset, length, sampleDataLength);
+    					err = paramErr;
+    					goto bail;	
+    				}
+                }
+                
 				if (hir->constructPacket) {
 					if (hir->packetDataCurrent-hir->packetData + length > hir->packetDataMaxLength) {
 						errprint("data entry - packet data too big %ld\n", hir->packetDataCurrent-hir->packetData + length);

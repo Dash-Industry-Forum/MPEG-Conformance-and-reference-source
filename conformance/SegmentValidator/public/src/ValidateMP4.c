@@ -674,6 +674,27 @@ int my_stricmp(const char* p, const char* q)
 	return tolower(*p) - tolower(*q);
 }
 
+int mapStringToUInt32(char *src, UInt32 *target)
+{
+    if(src == NULL || target == NULL)
+    {
+        fprintf(stderr, "mapStringToUInt32: NULL pointer exception");
+        return -1;
+    }
+
+    char *tmp = (char *)target;
+
+    //Write in reverse (big-endian) format)
+
+    tmp[0] = src[3];
+    tmp[1] = src[2];
+    tmp[2] = src[1];
+    tmp[3] = src[0];
+
+    return 0;
+
+}
+
 char *ostypetostr(UInt32 num)
 {
 	static char str[sizeof(num)+1] = {0};
