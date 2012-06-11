@@ -2320,6 +2320,40 @@ bail:
 
 }
 
+
+//==========================================================================================
+
+
+OSErr Validate_mehd_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+	OSErr err = noErr;
+	UInt32 version;
+	UInt32 flags;
+	UInt64 offset;
+	UInt32 temp;
+	MovieInfoRec	*mir = (MovieInfoRec	*)refcon;
+    
+	// Get version/flags
+	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+    
+	// Get data 
+	if(version == 1)
+	    BAILIFERR( GetFileDataN64( aoe, &mir->fragment_duration, offset, &offset ) );
+    else
+    {
+        BAILIFERR( GetFileDataN32( aoe, &temp, offset, &offset ) );
+        mir->fragment_duration = temp;
+    }
+
+	// All done
+	aoe->aoeflags |= kAtomValidated;
+bail:
+	return err;
+
+
+}
+
+
 //==========================================================================================
 
 OSErr Validate_mfhd_Atom( atomOffsetEntry *aoe, void *refcon )
@@ -2365,8 +2399,10 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     
 	// Get data 
 	BAILIFERR( GetFileDataN32( aoe, &trafInfo->track_ID, offset, &offset ) );
+
+    TrackInfoRec *tir = check_track(trafInfo->track_ID);
     
-    if(check_track(trafInfo->track_ID) == 0)
+    if(tir == 0)
         return badAtomErr;
     
     trafInfo->base_data_offset_present =  (tf_flags & 0x000001 != 0);
@@ -2385,6 +2421,8 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     
     if(trafInfo->default_sample_duration_present)
         BAILIFERR( GetFileDataN32( aoe, &trafInfo->default_sample_duration, offset, &offset ) );
+    else
+        trafInfo->default_sample_duration = tir->default_sample_duration;   //"Effective" default in that case
     
     if(trafInfo->default_sample_size_present)
         BAILIFERR( GetFileDataN32( aoe, &trafInfo->default_sample_size, offset, &offset ) );
@@ -2407,11 +2445,12 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
 	UInt32 tr_flags;
 	UInt64 offset;
     UInt32 i;
+    UInt64 prevTrunCummulatedSampleDuration = 0;
     TrafInfoRec *trafInfo = (TrafInfoRec *) refcon;
     
     TrunInfoRec *trunInfo = &trafInfo->trunInfo[trafInfo->processedTrun];
 
-    trafInfo->processedTrun++;
+    trunInfo->cummulatedSampleDuration = 0;
     
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &trunInfo->version, &tr_flags, &offset ) );
@@ -2454,10 +2493,20 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
             trunInfo->sample_composition_time_offset = NULL;
     }
 
+    for(i = 0 ; i < trafInfo->processedTrun ; i++)
+        prevTrunCummulatedSampleDuration += trafInfo->trunInfo[i].cummulatedSampleDuration;
+
     for(i = 0 ;  i < trunInfo->sample_count ; i++)
     {
+         UInt64 savedCummulatedSampleDuration = trunInfo->cummulatedSampleDuration;
+        
         if(trunInfo->sample_duration_present)
+        {
             BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_duration[i], offset, &offset ) );
+            trunInfo->cummulatedSampleDuration += trunInfo->sample_duration[i];
+        }
+        else
+            trunInfo->cummulatedSampleDuration += trafInfo->default_sample_duration;
 
         if(trunInfo->sample_size_present)
             BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_size[i], offset, &offset ) );
@@ -2467,10 +2516,18 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
 
         //Use it as a signed int when version is non-zero
         if(trunInfo->sample_composition_time_offsets_present)
+        {
             BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_composition_time_offset[i], offset, &offset ) );
+
+            UInt64 compositionTimeInTrackFragment = savedCummulatedSampleDuration + prevTrunCummulatedSampleDuration + trunInfo->sample_composition_time_offset[i];
+            if(compositionTimeInTrackFragment < trafInfo->earliestCompositionTimeInTrackFragment)
+                trafInfo->earliestCompositionTimeInTrackFragment = compositionTimeInTrackFragment;
+        }
         
     }
   
+    trafInfo->processedTrun++;
+    
     // All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2498,9 +2555,10 @@ OSErr Validate_tfdt_Atom( atomOffsetEntry *aoe, void *refcon )
 	if(version == 1)
 	    BAILIFERR( GetFileDataN64( aoe, &trafInfo->baseMediaDecodeTime, offset, &offset ) );
     else
+    {
         BAILIFERR( GetFileDataN32( aoe, &temp, offset, &offset ) );
-
-    trafInfo->baseMediaDecodeTime = temp;
+        trafInfo->baseMediaDecodeTime = temp;
+    }
 
     trafInfo->tfdtFound = true;
     
