@@ -181,6 +181,50 @@ bail:
 	return err;
 }
 
+
+UInt32 getTrakIndexByID(UInt32 track_ID)
+{
+    UInt32 i = 0;
+    
+    for(i = 0 ; i < vg.mir->numTIRs ; i++)
+        if(vg.mir->tirList[i].trackID == track_ID)
+            return i;
+}
+
+OSErr ValidateFragmentInfo(MovieInfoRec *mir)
+{
+    UInt32 i;
+
+    for(i = 0 ; i < mir->numTIRs ; i++)
+    {
+     mir->tirList[i].cumulatedTackFragmentDecodeTime = 0;
+    }
+    
+    for(i = 0 ; i < mir->numFragments ; i++)
+    {
+        if(mir->moofInfo[i].numTrackFragments > 0)
+        {
+                UInt32 j;
+                    
+                for(j = 0 ; j < mir->moofInfo[i].numTrackFragments ; j++)
+                {
+                    UInt32 index = getTrakIndexByID(mir->moofInfo[i].trafInfo[j].track_ID);
+                    
+                    if(mir->moofInfo[i].trafInfo[j].tfdtFound)
+                    {
+                        if(mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime != mir->tirList[index].cumulatedTackFragmentDecodeTime)
+                            errprint("tfdt base media decode time %lld not equal to accumulated decode time %lld for track %d\n",mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime,mir->tirList[index].cumulatedTackFragmentDecodeTime,index);
+                    }
+
+                    mir->tirList[index].cumulatedTackFragmentDecodeTime += mir->moofInfo[i].trafInfo[j].cummulatedSampleDuration;
+                                                            
+                }
+                    
+        }
+    }
+
+}
+
 //==========================================================================================
 
 OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
@@ -228,6 +272,13 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 
         vg.mir->moofInfo = (MoofInfoRec *)malloc(vg.mir->numFragments*sizeof(MoofInfoRec));
         vg.mir->processedFragments = 0;
+
+    	for (i = 0; i < vg.mir->numFragments ; i++)
+    	{
+            vg.mir->moofInfo[i].earliestCompositionInfoMissingPerTrack = (Boolean*)malloc(vg.mir->numTIRs*sizeof(Boolean));
+            vg.mir->moofInfo[i].cummulatedSampleDurationPerTrack = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
+            vg.mir->moofInfo[i].earliestCompositionTimePerTrack = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
+    	}
 	}
     else
         vg.mir->moofInfo = NULL;
@@ -268,6 +319,9 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 		
 		if (!err) err = atomerr;
 	}
+
+	if(vg.mir->fragmented)
+        ValidateFragmentInfo(vg.mir);
 	
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -908,7 +962,7 @@ OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon )
 				 " number of samples described by TimeToSample table ('stts') \n");
 		err = badAtomErr;
 	}
-	if (tir->mediaDuration != tir->timeToSampleDuration) {
+	if (!vg.brandDASH && tir->mediaDuration != tir->timeToSampleDuration) {
 	
 		errprint("Media duration (%s) in MediaHeader does NOT match"
 				 " sum of durations described by TimeToSample table (%s) \n", 
@@ -974,24 +1028,26 @@ OSErr Validate_mvex_Atom( atomOffsetEntry *aoe, void *refcon )
       Since bit(4)	reserved=0, setting default_sample_flags is set to a test exception
       Not the cleanest approach though*/
       
-    for(i = 0 ; i < vg.mir->maxTIRs ; i++)
+    for(i = 0 ; i < vg.mir->numTIRs; i++)
 	{
-    	tir[i].default_sample_size = 0xFFFFFFFF;
+    	tir[i].default_sample_flags = 0xFFFFFFFF;
 	}
 
-    //todo: add optional 'mehd' and 'leva' boxes
+    //todo: add optional 'leva' boxes
+	// Process 'mehd' atoms
+	atomerr = ValidateAtomOfType( 'mehd', kTypeAtomFlagCanHaveAtMostOne, 
+		Validate_mehd_Atom, cnt, list, vg.mir );
+	if (!err) err = atomerr;
+    
 	// Process 'trex' atoms
-	for(i = 0 ; i < vg.mir->maxTIRs ; i++)
-	{
-    	atomerr = ValidateAtomOfType( 'trex', kTypeAtomFlagMustHaveOne, 
-    		Validate_trex_Atom, cnt, list, tir );
-    	if (!err) err = atomerr;
-	}
+	atomerr = ValidateAtomOfType( 'trex', kTypeAtomFlagMustHaveOne, 
+		Validate_trex_Atom, cnt, list, tir );
+	if (!err) err = atomerr;
 
     /*Now check if any track information is missing*/
-    for(i = 0 ; i < vg.mir->maxTIRs ; i++)
+    for(i = 0 ; i < vg.mir->numTIRs ; i++)
 	{
-    	if(tir[i].default_sample_size == 0xFFFFFFFF)
+    	if(tir[i].default_sample_flags == 0xFFFFFFFF)
             errprint("'mxvex' found but 'trex' box missing for track %d\n",i);
 	}
 
@@ -1213,7 +1269,6 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 
 	BAILIFNIL( vg.mir = calloc(1, sizeof(MovieInfoRec) + i), allocFailedErr );
 	mir = vg.mir;
-	mir->maxTIRs = trakCnt;
     mir->fragmented = false; //unless 'mvex' is found in 'moov'
 
 	atomerr = ValidateAtomOfType( 'mvhd', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
@@ -1539,6 +1594,13 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
     
     moofInfo->numTrackFragments = 0;
     moofInfo->processedTrackFragments = 0;
+
+    for(i = 0 ;  i < mir->numTIRs ; i++)
+    {
+        moofInfo->cummulatedSampleDurationPerTrack[i] = 0;
+        moofInfo->earliestCompositionTimePerTrack[i] = 0xFFFFFFFFFFFFFFFF;
+        moofInfo->earliestCompositionInfoMissingPerTrack[i] = false;
+    }
     
 	for (i = 0; i < cnt; i++)
 		if (list[i].type == 'traf')
@@ -1569,6 +1631,8 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
 		if (!err) err = atomerr;
 	}
 
+    
+
 	aoe->aoeflags |= kAtomValidated;
 bail:
 	return err;
@@ -1590,6 +1654,8 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
     TrafInfoRec *trafInfo = &moofInfo->trafInfo[moofInfo->processedTrackFragments];
 
     moofInfo->processedTrackFragments++;
+    trafInfo->cummulatedSampleDuration = 0;
+    trafInfo->earliestCompositionInfoMissing = false;
 	
 	atomprintnotab(">\n"); 
 	
@@ -1605,6 +1671,7 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
     trafInfo->numTrun = 0;
     trafInfo->processedTrun = 0;
     trafInfo->tfdtFound = false;
+    trafInfo->earliestCompositionTimeInTrackFragment = 0xFFFFFFFFFFFFFFFF;
     
 	for (i = 0; i < cnt; i++)
 		if (list[i].type == 'trun')
@@ -1634,12 +1701,29 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {            
 			default:
-				warnprint("WARNING: unknown moof atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: unknown traf atom '%s'\n",ostypetostr(entry->type));
 				break;
 		}
 		
 		if (!err) err = atomerr;
 	}
+
+
+    //Accumulate durations now for later checking
+	for (i = 0; i < trafInfo->numTrun; i++)
+	{
+        trafInfo->cummulatedSampleDuration+=trafInfo->trunInfo[i].cummulatedSampleDuration;
+
+        //Needed for DASH-specific processing of EPT
+        trafInfo->earliestCompositionInfoMissing = trafInfo->earliestCompositionInfoMissing || (trafInfo->trunInfo[i].sample_count > 0 && trafInfo->trunInfo[i].sample_composition_time_offsets_present != true);
+	}
+
+    UInt32 index = getTrakIndexByID(trafInfo->track_ID);
+
+    moofInfo->cummulatedSampleDurationPerTrack[index] += trafInfo->cummulatedSampleDuration;
+    moofInfo->earliestCompositionInfoMissingPerTrack[index] = moofInfo->earliestCompositionInfoMissingPerTrack[index] || trafInfo->earliestCompositionInfoMissing;
+    if(!trafInfo->earliestCompositionInfoMissing && (trafInfo->earliestCompositionTimeInTrackFragment < moofInfo->earliestCompositionTimePerTrack[index]))
+        moofInfo->earliestCompositionTimePerTrack[index] = trafInfo->earliestCompositionTimeInTrackFragment;
 
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -1688,9 +1772,12 @@ void dispose_mir( MovieInfoRec *mir )
                     }
                         
                 free(mir->moofInfo[i].trafInfo);
+                free(mir->moofInfo[i].earliestCompositionInfoMissingPerTrack);
+                free(mir->moofInfo[i].cummulatedSampleDurationPerTrack);
+                free(mir->moofInfo[i].earliestCompositionTimePerTrack);
             }
         }
-            
+        
         free(mir->moofInfo);
     }
 	// for each track, get rid of the stuff in it

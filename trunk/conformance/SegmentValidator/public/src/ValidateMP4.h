@@ -362,6 +362,8 @@ typedef struct {
     UInt32 *sample_flags;
     UInt32 *sample_composition_time_offset; //Use it as a signed int when version is non-zero
 
+    UInt64  cummulatedSampleDuration;
+
 } TrunInfoRec;
 
 // Section 8.8.7. of ISO/IEC 14496-12 4th edition
@@ -389,6 +391,10 @@ typedef struct {
 
     Boolean tfdtFound;
     UInt64  baseMediaDecodeTime;
+
+    Boolean earliestCompositionInfoMissing;
+    UInt64  cummulatedSampleDuration;
+    UInt64  earliestCompositionTimeInTrackFragment;
     
 } TrafInfoRec;
 
@@ -396,6 +402,11 @@ typedef struct {
 typedef struct {
     UInt32 numTrackFragments;
     UInt32 processedTrackFragments;
+    
+    Boolean *earliestCompositionInfoMissingPerTrack;
+    UInt64  *cummulatedSampleDurationPerTrack;
+    UInt64  *earliestCompositionTimePerTrack;
+    
     TrafInfoRec *trafInfo;
 } MoofInfoRec;
 
@@ -442,6 +453,8 @@ typedef struct {
     UInt32    default_sample_size;                  // Section 8.3.3. of ISO/IEC 14496-12 4th edition
     UInt32    default_sample_flags;                 // Section 8.3.3. of ISO/IEC 14496-12 4th edition
 
+    UInt64 cumulatedTackFragmentDecodeTime;
+
 } TrackInfoRec;
 
 int GetSampleOffsetSize( TrackInfoRec *tir, UInt32 sampleNum, UInt64 *offsetOut, UInt32 *sizeOut, UInt32 *sampleDescriptionIndexOut );
@@ -454,9 +467,9 @@ typedef struct {
     UInt32  numFragments;
     UInt32  processedFragments;
     UInt32  sequence_number;
+    UInt64  fragment_duration;
 
 	long			numTIRs;
-	long			maxTIRs;
 	TrackInfoRec	tirList[1];
     MoofInfoRec     *moofInfo;
 } MovieInfoRec;
@@ -853,6 +866,7 @@ OSErr Validate_stco_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_padb_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_trex_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_mehd_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_mfhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon );
