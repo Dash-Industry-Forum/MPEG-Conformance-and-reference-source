@@ -99,6 +99,11 @@ and conditions in their respective submissions.
 #if STAND_ALONE_APP
 	#include "console.h"
 #endif
+#include <curlpp/cURLpp.hpp>
+#include <curlpp/Easy.hpp>
+#include <curlpp/Options.hpp>
+#include <curlpp/Infos.hpp>
+#include <curlpp/Exception.hpp>
 
 #if 1
 #define myTAB "  "
@@ -459,7 +464,7 @@ void atomprintnotab(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	if (vg.printatom) {
-		vfprintf( _stdout, formatStr, (void *)ap );
+		vfprintf( _stdout, formatStr, (char *)ap );
 	}
 	
 	va_end(ap);
@@ -475,7 +480,7 @@ void atomprint(const char *formatStr, ...)
 		while (tabcnt--) {
 			fprintf(_stdout,myTAB);
 		}
-		vfprintf( _stdout, formatStr, (void *)ap );
+		vfprintf( _stdout, formatStr, (char *)ap );
 	}
 	
 	va_end(ap);
@@ -519,7 +524,7 @@ void atomprintdetailed(const char *formatStr, ...)
 		while (tabcnt--) {
 			fprintf(_stdout,myTAB);
 		}
-		vfprintf( _stdout, formatStr, (void *)ap );
+		vfprintf( _stdout, formatStr, (char *)ap );
 	}
 	
 	va_end(ap);
@@ -535,7 +540,7 @@ void sampleprint(const char *formatStr, ...)
 		while (tabcnt--) {
 			fprintf(_stdout,myTAB);
 		}
-		vfprintf( _stdout, formatStr, (void *)ap );
+		vfprintf( _stdout, formatStr, (char *)ap );
 	}
 	
 	va_end(ap);
@@ -547,7 +552,7 @@ void sampleprintnotab(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	if (vg.printsample) {
-		vfprintf( _stdout, formatStr, (void *)ap );
+		vfprintf( _stdout, formatStr, (char *)ap );
 	}
 	
 	va_end(ap);
@@ -646,7 +651,7 @@ void warnprint(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	if (vg.warnings)
-		vfprintf( _stderr, formatStr, (void *)ap );
+		vfprintf( _stderr, formatStr, (char *)ap );
 	
 	va_end(ap);
 }
@@ -658,7 +663,7 @@ void errprint(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	fprintf( _stderr, "### error: %s \n###        ",vg.curatompath);
-	vfprintf( _stderr, formatStr, (void *)ap );
+	vfprintf( _stderr, formatStr, (char *)ap );
 	
 	va_end(ap);
 }
@@ -996,10 +1001,10 @@ OSErr ValidateElementaryVideoStream( atomOffsetEntry *aoe, void *refcon )
 			}
 			
 			dataSize = offset3 - offset1;
-			BAILIFNIL( dataP = malloc(dataSize), allocFailedErr );
+			BAILIFNIL( dataP = (Ptr)malloc(dataSize), allocFailedErr );
 			err = GetFileData( vg.fileaoe, dataP, offset1, dataSize, nil );
 			
-			err = BitBuffer_Init(&bb, (void *)dataP, dataSize);
+			err = BitBuffer_Init(&bb, (UInt8 *)dataP, dataSize);
 
 			if (sampleNum == 0) {
 				atomprint("<Video_Sample_Description offset=\"%s\" size=\"%d\"",

@@ -379,7 +379,7 @@ OSErr Validate_Hint_Track( atomOffsetEntry *aoe, TrackInfoRec *tir )
 	
 	if (hir.constructPacket) {
 		hir.packetDataMaxLength = 10*1024;
-		BAILIFNIL( hir.packetData = malloc(hir.packetDataMaxLength), allocFailedErr );
+		BAILIFNIL( hir.packetData = (Ptr)malloc(hir.packetDataMaxLength), allocFailedErr );
 		hir.packetDataCurrent = 0;
 	}
 
@@ -435,14 +435,14 @@ OSErr Validate_Hint_Track( atomOffsetEntry *aoe, TrackInfoRec *tir )
 	H_ATOM_PRINT_INCR(("<hint_SAMPLE_DATA>\n"));
     if(!vg.brandDASH)
 		for (i = startSampleNum; i <= endSampleNum; i++) {
-			if ((vg.samplenumber==0) || (vg.samplenumber==i)) {
+			if ((vg.samplenumber==0) || (vg.samplenumber==(long)i)) {
 				err = GetSampleOffsetSize( tir, i, &sampleOffset, &sampleSize, &sampleDescriptionIndex );
 				if (err != noErr) {
 					errprint("couldn't GetSampleOffsetSize for sample %ld (err %ld)\n", i, err);
 					continue;
 				}
 				H_ATOM_PRINT_INCR(( "<sample num=\"%d\" offset=\"%s\" size=\"%d\"\n",i,int64toxstr(sampleOffset),sampleSize));
-					BAILIFNIL( dataP = malloc(sampleSize), allocFailedErr );
+					BAILIFNIL( dataP = (Ptr)malloc(sampleSize), allocFailedErr );
 					err = GetFileData( vg.fileaoe, dataP, sampleOffset, sampleSize, nil );
 					if (err != noErr) {
 						errprint("couldn't GetFileData for sample %ld (err %ld)\n", i, err);
@@ -527,7 +527,6 @@ static OSErr Validate_Packet_Entry( HintInfoRec *hir, char *inPacketEntry, UInt3
 	Boolean		hasExtraInfoTLVs = false;
 	UInt16		entryCount;
 	UInt16		i;
-	OSErr		tempErr;
 	Boolean		doPrinting = hir->printSamples;
 
 	/*
@@ -608,7 +607,7 @@ static OSErr Validate_Packet_Entry( HintInfoRec *hir, char *inPacketEntry, UInt3
 	hir->packetDataCurrent = hir->packetData;
 	for (i=0; i<entryCount; ++i) {
 		H_ATOM_PRINT_INCR(("<dataEntry=\"%ld\">\n", i));
-			tempErr = Validate_Data_Entry(hir, current);
+			Validate_Data_Entry(hir, current);
 			current += kHintDataTableEntrySize;
 		H_ATOM_PRINT_DECR(("</dataEntry>\n"));
 	}
@@ -672,7 +671,7 @@ static OSErr Validate_Data_Entry( HintInfoRec *hir, char *inEntry )
 				goto bail;
 			}
 			if (hir->constructPacket) {
-				if (hir->packetDataCurrent-hir->packetData + inEntry[1] > hir->packetDataMaxLength) {
+				if (hir->packetDataCurrent-hir->packetData + (Ptr)(inEntry[1]) > (Ptr)hir->packetDataMaxLength) {
 					errprint("data entry - immed data length too big %ld", inEntry[1]);
 					err = paramErr;
 					goto bail;
@@ -714,7 +713,7 @@ static OSErr Validate_Data_Entry( HintInfoRec *hir, char *inEntry )
 				}
 
 				if (hir->constructPacket) {
-					if (hir->packetDataCurrent-hir->packetData + length > hir->packetDataMaxLength) {
+					if (hir->packetDataCurrent-hir->packetData + (Ptr)length > (Ptr)hir->packetDataMaxLength) {
 						errprint("data entry - packet data too big %ld\n", hir->packetDataCurrent-hir->packetData + length);
 						err = paramErr;
 						goto bail;
@@ -752,7 +751,7 @@ static OSErr Validate_Data_Entry( HintInfoRec *hir, char *inEntry )
                 }
                 
 				if (hir->constructPacket) {
-					if (hir->packetDataCurrent-hir->packetData + length > hir->packetDataMaxLength) {
+					if (hir->packetDataCurrent-hir->packetData + (Ptr)length > (Ptr)hir->packetDataMaxLength) {
 						errprint("data entry - packet data too big %ld\n", hir->packetDataCurrent-hir->packetData + length);
 						err = paramErr;
 						goto bail;
@@ -814,7 +813,7 @@ static OSErr Validate_rfc3016_Payload( char *inPayload, UInt32 inLength, void *i
 	Boolean			doPrinting = (hir->printSamples && hir->printPayloadContents);
 	BitBuffer		bb;
 
-	BitBuffer_Init(&bb, (void *)inPayload, inLength);
+	BitBuffer_Init(&bb, (UInt8*)inPayload, inLength);
 	if (BitBuffer_IsVideoStartCode(&bb)) {
 		BAILIFERR( err = BitBuffer_GetVideoStartCode(&bb, &startCodeTag) );
 		switch (startCodeTag) {
@@ -1090,7 +1089,6 @@ static OSErr Validate_H264_Payload( char *inPayload, UInt32 inLength, void *inRe
 
 //@@@ check sdp params
 	
-bail:
 	return err;
 }
 
@@ -1130,7 +1128,7 @@ OSErr Validate_Movie_SDP( char *inSDP )
 			if (lineEnd - current < kMaxShortSDPLineLength) {
 				sdpLine = shortSDPLine;
 			} else {
-				BAILIFNIL( longSDPLineP = malloc(lineEnd-current+1), allocFailedErr );
+				BAILIFNIL( longSDPLineP = (Ptr)malloc(lineEnd-current+1), allocFailedErr );
 				sdpLine = longSDPLineP;
 			}
 			memcpy(sdpLine, current, lineEnd-current);
@@ -1198,11 +1196,9 @@ static OSErr Validate_hinf_Atom( atomOffsetEntry *aoe, void *refcon )
 {
 #pragma unused(aoe)
 	OSErr			err = noErr;
-	HintInfoRec		*hir = (HintInfoRec*)refcon;
 	
 	atomprintnotab(">\n"); 
 
-bail:
 	return err;
 }
 
@@ -1224,7 +1220,7 @@ static OSErr Validate_hnti_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	atomprintnotab(">\n"); 
 
-	BAILIFNIL( hntiDataP = malloc((UInt32)aoe->size), allocFailedErr );
+	BAILIFNIL( hntiDataP = (Ptr)malloc((UInt32)aoe->size), allocFailedErr );
 
 	BAILIFERR( GetFileData(aoe, hntiDataP, aoe->offset + aoe->atomStartSize, aoe->size - aoe->atomStartSize, &temp64) );
 	
@@ -1247,7 +1243,7 @@ static OSErr Validate_hnti_Atom( atomOffsetEntry *aoe, void *refcon )
 		// we found the sdp data
 		// make a copy and null terminate it
 		atomLength -= 8; // subtract the atomlength/type fields from the length 
-		BAILIFNIL( sdpDataP = malloc(atomLength+1), allocFailedErr );
+		BAILIFNIL( sdpDataP = (Ptr)malloc(atomLength+1), allocFailedErr );
 		memcpy(sdpDataP, current, atomLength);
 		sdpDataP[atomLength] = '\0';
 		H_ATOM_PRINT_INCR(("<sdp>\n"));
@@ -1305,7 +1301,7 @@ static OSErr Validate_Track_SDP( HintInfoRec *hir, char *inSDP )
 			if (lineEnd - current < kMaxShortSDPLineLength) {
 				sdpLine = shortSDPLine;
 			} else {
-				BAILIFNIL( longSDPLineP = malloc(lineEnd-current+1), allocFailedErr );
+				BAILIFNIL( longSDPLineP = (Ptr)malloc(lineEnd-current+1), allocFailedErr );
 				sdpLine = longSDPLineP;
 			}
 			memcpy(sdpLine, current, lineEnd-current);
@@ -1584,7 +1580,7 @@ static OSErr Validate_fmtp_attribute( HintInfoRec *hir, char *inValue)
 				
 				base64Size = paramEnd - begin;
 			    nalSize = base64Size;	// more than enough, will be adjusted down
-			    BAILIFNIL( nalDataP = malloc(nalSize), allocFailedErr );
+			    BAILIFNIL( nalDataP = (char *)malloc(nalSize), allocFailedErr );
 			    err = Base64DecodeToBuffer(begin, &base64Size, nalDataP, &nalSize);
 			    if (err) {
 			        errprint("bad parameter set-bad base64 encoding");
@@ -1808,11 +1804,11 @@ static OSErr Validate_iod_attribute( HintInfoRec *hir, char *inValue)
         errprint("bad iod attribute-bad url\n");
 		BAILIFERRSET( err = paramErr );
     }
-    next += strlen(urlStart);
+    next = (char *)((UInt64)next + (UInt64)strlen(urlStart));
     
     base64Size = end - next - 1;
     iodSize = base64Size;	// more than enough, will be adjusted down
-    BAILIFNIL( iodDataP = malloc(iodSize), allocFailedErr );
+    BAILIFNIL( iodDataP = (Ptr)malloc(iodSize), allocFailedErr );
     err = Base64DecodeToBuffer(next, &base64Size, iodDataP, &iodSize);
     if (err) {
         errprint("bad iod attribute-bad base64 encoding");
@@ -1832,7 +1828,7 @@ static OSErr Validate_isma_attribute( HintInfoRec *hir, char *inValue)
 	SInt32	profile, i;
 	float	lowest, authored;
 	
-	i = sscanf(inValue,"%d,%f,%f",&profile,&lowest,&authored);
+	i = sscanf(inValue,"%d,%f,%f",(int)&profile,&lowest,&authored);
 	if (i<3) errprint("Bad ISMA compliance attribute %s\n",inValue);
 	else {
 		if ((profile<0) || (profile>4)) errprint("Bad ISMA compliance profile value %s\n",inValue);
@@ -1847,7 +1843,6 @@ static OSErr Validate_isma_attribute( HintInfoRec *hir, char *inValue)
 	//	BAILIFERRSET( err = paramErr );
     //}
     
-bail:
 	return err;
 }
 
@@ -2020,7 +2015,6 @@ static char *SDP_Find_Line_End( char *inCurrent )
 //==========================================================================================
 static char *SDP_Skip_Line_Ending_Chars( char *inLineEnd )
 {
-	char	*current = inLineEnd;
 	char	*nextLineStart = 0;
 	
 	// go past one CRLF, or just one CR or LF
@@ -2236,17 +2230,17 @@ static Boolean get_next_fmtp_param(char **inLine, char **outTagString, char **ou
 	}
 	
 	length = tagEnd - begin;
-	BAILIFNIL( tag = malloc(length + 1), allocFailedErr );
+	BAILIFNIL( tag = (Ptr)malloc(length + 1), allocFailedErr );
 	memcpy(tag, begin, length);
 	tag[length] = '\0';
 	
 	if (paramEnd != tagEnd) {
 		length = paramEnd - tagEnd - 1;	// subtract the =
-		BAILIFNIL( value = malloc(length + 1), allocFailedErr );
+		BAILIFNIL( value = (Ptr)malloc(length + 1), allocFailedErr );
 		memcpy(value, tagEnd+1, length);
 		value[length] = '\0';
 	} else {
-		BAILIFNIL( value = malloc(1), allocFailedErr );
+		BAILIFNIL( value = (Ptr)malloc(1), allocFailedErr );
 		value[0] = '\0';
 	}
 	found = true;
@@ -2314,7 +2308,7 @@ static OSErr get_track_sample(TrackInfoRec *tir, UInt32 inSampleNum, Ptr *dataOu
 
 	if (tir != NULL) {
 		BAILIFERR( err = GetSampleOffsetSize( tir, inSampleNum, &sampleOffset, sizeOut, sampleDescriptionIndexOut ) );
-		BAILIFNIL( *dataOut = malloc(*sizeOut), allocFailedErr );
+		BAILIFNIL( *dataOut = (Ptr)malloc(*sizeOut), allocFailedErr );
 		BAILIFERR( err = GetFileData( vg.fileaoe, *dataOut, sampleOffset, *sizeOut, nil ) );
 	}
 bail:

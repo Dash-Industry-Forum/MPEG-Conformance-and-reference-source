@@ -132,7 +132,8 @@ typedef short OSErr;
 #define nil 0L
 
 #ifndef fieldOffset
-	#define fieldOffset(type, field) ((short) &((type *) 0)->field)
+	//#define fieldOffset(type, field) ((short) &((type *) 0)->field)   //Why on earth we would cast it to short?? Agreed most of the times it will be "short", was an error in C++
+	#define fieldOffset(type, field) ( &((type *) 0)->field)
 #endif
 
 enum {
@@ -392,23 +393,49 @@ typedef struct {
     Boolean tfdtFound;
     UInt64  baseMediaDecodeTime;
 
-    Boolean earliestCompositionInfoMissing;
+    Boolean compositionInfoMissing;
     UInt64  cummulatedSampleDuration;
     UInt64  earliestCompositionTimeInTrackFragment;
+    UInt64  presentationEndTimeInTrackFragment;
     
 } TrafInfoRec;
 
 
 typedef struct {
+    UInt64 offset;
     UInt32 numTrackFragments;
     UInt32 processedTrackFragments;
     
-    Boolean *earliestCompositionInfoMissingPerTrack;
-    UInt64  *cummulatedSampleDurationPerTrack;
-    UInt64  *earliestCompositionTimePerTrack;
+    Boolean *compositionInfoMissingPerTrack;
+    UInt64  *cummulatedMoofSampleDurationPerTrack;
+    UInt64  *earliestMoofCompositionTimePerTrack;
+    UInt64  *tfdt;
     
     TrafInfoRec *trafInfo;
 } MoofInfoRec;
+
+typedef struct {
+    UInt8  reference_type;
+    UInt32 referenced_size;
+    UInt32 subsegment_duration;
+    UInt8  starts_with_SAP;
+    UInt8  SAP_type;
+    UInt32 SAP_delta_time;    
+} Reference;
+
+typedef struct {
+
+    UInt64 offset;
+    UInt64 size;
+    double cumulatedDuration;
+    
+    UInt32 reference_ID;
+    UInt32 timescale; 
+    UInt64 earliest_presentation_time;
+    UInt64 first_offset;
+    UInt16 reference_count;
+    Reference *references;
+} SidxInfoRec;
 
 //===========================
 
@@ -423,6 +450,8 @@ typedef struct {
 
 	UInt32	mediaTimeScale;
 	UInt64	mediaDuration;
+
+    UInt64  lastPresentationTime;
 
 	//==== enough sample table information to read through the data sequentially
 	UInt32 currentSampleDescriptionIndex;
@@ -472,6 +501,10 @@ typedef struct {
 	long			numTIRs;
 	TrackInfoRec	tirList[1];
     MoofInfoRec     *moofInfo;
+
+    UInt32  numSidx;
+    UInt32  processedSdixs;
+    SidxInfoRec     *sidxInfo;
 } MovieInfoRec;
 
 
@@ -873,6 +906,7 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_tfdt_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_edts_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon );
