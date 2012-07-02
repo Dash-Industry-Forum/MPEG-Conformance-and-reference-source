@@ -185,7 +185,7 @@ int GetFileCString( atomOffsetEntry *aoe, char **strP, UInt64 offset64, UInt64 m
 		*(++sp) = '\0'; scnt++;
 	}
 
-	BAILIFNIL( *strP = malloc(scnt), allocFailedErr );
+	BAILIFNIL( *strP = (char *)malloc(scnt), allocFailedErr );
 	memcpy(*strP, &str[0], scnt);
 	
 bail:
@@ -260,7 +260,7 @@ int GetFileBitStreamDataToEndOfAtom( atomOffsetEntry *aoe, Ptr *bsDataPout, UInt
 	Ptr bsDataP = nil;
 
 	bsSize = aoe->size - (offset64 - aoe->offset);
-	BAILIFNIL( bsDataP = calloc(bsSize + bitParsingSlop, 1), allocFailedErr );
+	BAILIFNIL( bsDataP = (Ptr)calloc(bsSize + bitParsingSlop, 1), allocFailedErr );
 	BAILIFERR( GetFileData( aoe, bsDataP, offset64, bsSize, newoffset64 ) );
 
 bail:

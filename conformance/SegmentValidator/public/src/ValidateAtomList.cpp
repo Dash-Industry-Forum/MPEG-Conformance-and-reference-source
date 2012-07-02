@@ -124,10 +124,9 @@ int FindAtomOffsets( atomOffsetEntry *aoe, UInt64 minOffset, UInt64 maxOffset,
 	UInt64 largeSize;
 	uuidType uuid;
 	UInt64 curOffset = minOffset;
-	atomOffsetEntry zeroAtom = {0};
 	long minAtomSize;
 	
-	BAILIFNULL( atomOffsets = calloc( max, sizeof(atomOffsetEntry)), allocFailedErr );
+	BAILIFNULL( atomOffsets = (atomOffsetEntry *)calloc( max, sizeof(atomOffsetEntry)), allocFailedErr );
 	
 	while (curOffset< maxOffset) {
 		memset(&atomOffsets[cnt], 0, sizeof(atomOffsetEntry));	// clear out entry
@@ -159,13 +158,13 @@ int FindAtomOffsets( atomOffsetEntry *aoe, UInt64 minOffset, UInt64 maxOffset,
 			break;
 		}
 		
-		BAILIF( (atomOffsets[cnt].size < minAtomSize), badAtomSize );
+		BAILIF( (atomOffsets[cnt].size < (UInt64)minAtomSize), badAtomSize );
 		
 		curOffset = atomOffsets[cnt].offset + atomOffsets[cnt].size;
 		cnt++;
 		if (cnt >= max) {
 			max += 20;
-			atomOffsets = realloc(atomOffsets, max * sizeof(atomOffsetEntry));
+			atomOffsets = (atomOffsetEntry *)realloc(atomOffsets, max * sizeof(atomOffsetEntry));
 		}
 	}
 
@@ -186,22 +185,31 @@ UInt32 getTrakIndexByID(UInt32 track_ID)
 {
     UInt32 i = 0;
     
-    for(i = 0 ; i < vg.mir->numTIRs ; i++)
+    for(i = 0 ; i < (UInt32)vg.mir->numTIRs ; i++)
         if(vg.mir->tirList[i].trackID == track_ID)
             return i;
+
+    errprint("getTrakIndexByID: Track ID %d is not a known track!\n",track_ID);
+
+    return 0;
 }
 
 OSErr ValidateFragmentInfo(MovieInfoRec *mir)
 {
     UInt32 i;
 
-    for(i = 0 ; i < mir->numTIRs ; i++)
+    for(i = 0 ; i < (UInt32)mir->numTIRs ; i++)
     {
      mir->tirList[i].cumulatedTackFragmentDecodeTime = 0;
     }
     
     for(i = 0 ; i < mir->numFragments ; i++)
     {
+        for(int k = 0 ; k < (UInt32)mir->numTIRs ; k++)
+        {
+            mir->moofInfo[i].tfdt[k] = mir->tirList[k].cumulatedTackFragmentDecodeTime;
+        }
+        
         if(mir->moofInfo[i].numTrackFragments > 0)
         {
                 UInt32 j;
@@ -216,14 +224,132 @@ OSErr ValidateFragmentInfo(MovieInfoRec *mir)
                             errprint("tfdt base media decode time %lld not equal to accumulated decode time %lld for track %d\n",mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime,mir->tirList[index].cumulatedTackFragmentDecodeTime,index);
                     }
 
+                        
+                    if((mir->moofInfo[i].trafInfo[j].presentationEndTimeInTrackFragment + mir->tirList[index].cumulatedTackFragmentDecodeTime) > mir->tirList[index].lastPresentationTime)
+                        mir->tirList[index].lastPresentationTime = mir->moofInfo[i].trafInfo[j].presentationEndTimeInTrackFragment + mir->tirList[index].cumulatedTackFragmentDecodeTime;
+                        
                     mir->tirList[index].cumulatedTackFragmentDecodeTime += mir->moofInfo[i].trafInfo[j].cummulatedSampleDuration;
-                                                            
+
                 }
                     
         }
     }
-
+	return noErr;
 }
+
+UInt32 getMoofIndexByOffset(MoofInfoRec *moofInfo, UInt32 numFragments, UInt64 offset)
+{
+    UInt32 i;
+
+    for(i = 0 ; i < numFragments ; i++)
+        if(moofInfo[i].offset == offset)
+            return i;
+
+    return numFragments;
+}
+
+
+SidxInfoRec *getSidxByOffset(SidxInfoRec *sidxInfo, UInt32 numSidx, UInt64 offset)
+{
+    UInt32 i;
+
+    for(i = 0 ; i < numSidx ; i++)
+        if(sidxInfo[i].offset == offset)
+            return &sidxInfo[i];
+
+    return (SidxInfoRec *)NULL;
+}
+
+void ValidateIndexingInfo(MovieInfoRec *mir)
+{
+    UInt32 i;
+    UInt64 absoluteOffset;
+    UInt64 referenceEPT;
+    
+    for(i = 0 ; i < mir->numSidx ; i++)
+    {
+        UInt32 j;
+
+        absoluteOffset = mir->sidxInfo[i].first_offset + mir->sidxInfo[i].offset + mir->sidxInfo[i].size;
+        referenceEPT = mir->sidxInfo[i].earliest_presentation_time;
+        
+        UInt32 trackIndex = getTrakIndexByID(mir->sidxInfo[i].reference_ID);
+        
+        for(j = 0 ; j < mir->sidxInfo[i].reference_count ; j++)
+        {
+            SidxInfoRec *sidx;
+            MoofInfoRec *moof;            
+            
+            if(mir->sidxInfo[i].references[j].reference_type == 1)
+            {
+                sidx = getSidxByOffset(mir->sidxInfo,mir->numSidx,absoluteOffset);
+                if(sidx == NULL)
+                    errprint("Referenced sidx not found for sidx number %d at reference count %d: Offset %lld\n",i,j,absoluteOffset);
+
+                if(mir->sidxInfo[i].reference_ID != sidx->reference_ID)
+                    errprint("Referenced sidx reference_ID %d does not match to reference_ID %d for sidx number %d at reference count %d (implicitly, they shall be equal, or durations wont add up)\n",sidx->reference_ID,mir->sidxInfo[i].reference_ID,i,j);
+
+                if((double)referenceEPT/(double)mir->sidxInfo[i].timescale != (double)sidx->earliest_presentation_time/(double)sidx->timescale)
+                    errprint("Referenced sidx earliest_presentation_time %lf does not match to reference EPT %lf for sidx number %d at reference count %d\n",(double)sidx->earliest_presentation_time/(double)sidx->timescale,(double)referenceEPT/(double)mir->sidxInfo[i].timescale,i,j);
+                
+                if((double)mir->sidxInfo[i].references[j].subsegment_duration != sidx->cumulatedDuration)
+                    errprint("Referenced sidx duration %lf does not match to subsegment_duration %lf for sidx number %d at reference count %d\n",sidx->cumulatedDuration,(double)mir->sidxInfo[i].references[j].subsegment_duration,i,j);
+            }
+            else
+            {
+                UInt32 moofIndex = getMoofIndexByOffset(mir->moofInfo,mir->numFragments,absoluteOffset);
+                
+                if(moofIndex >= mir->numFragments)
+                {
+                    errprint("Referenced moof not found for sidx number %d at reference count %d: Offset %lld\n",i,j,absoluteOffset);
+                    continue;
+                }
+                
+                moof = &mir->moofInfo[moofIndex];
+
+                UInt64 subsegment_duration;
+                TrackInfoRec *tir = &(mir->tirList[trackIndex]);
+
+                if(moof->compositionInfoMissingPerTrack[trackIndex])
+                {
+                    warnprint("Composition info of the referred moof %d for sidx %d is missing.\n",moofIndex,i);
+                    continue;
+                }
+                
+                if((double)referenceEPT/(double)mir->sidxInfo[i].timescale != (double)(moof->earliestMoofCompositionTimePerTrack[trackIndex] + moof->tfdt[trackIndex])/(double)tir->mediaTimeScale)
+                    errprint("Referenced moof earliest_presentation_time %lf does not match to reference EPT %lf for sidx number %d at reference count %d\n",(double)(moof->earliestMoofCompositionTimePerTrack[trackIndex] + moof->tfdt[trackIndex])/(double)tir->mediaTimeScale,(double)referenceEPT/(double)mir->sidxInfo[i].timescale,i,j);
+
+                if(moofIndex == (mir->numFragments - 1))    //If a sidx refers to a track in the last moof, it means there is a non zero number of samples of that track in the moof ==> the sample with lastPresentationTime is in the last moof
+                {
+                    subsegment_duration = tir->lastPresentationTime - (moof->earliestMoofCompositionTimePerTrack[trackIndex]  + moof->tfdt[trackIndex]) ;
+                }
+                else
+                {
+                    if(mir->moofInfo[moofIndex + 1].compositionInfoMissingPerTrack[trackIndex])
+                    {
+                        warnprint("Composition info of the referred moof %d for sidx %d is missing.\n",moofIndex+1,i);
+                        continue;
+                    }
+                    
+                    subsegment_duration = (mir->moofInfo[moofIndex + 1].earliestMoofCompositionTimePerTrack[trackIndex] + mir->moofInfo[moofIndex + 1].tfdt[trackIndex]) 
+                                            - (moof->earliestMoofCompositionTimePerTrack[trackIndex] + moof->tfdt[trackIndex]);
+                }
+                
+                if((double)(mir->sidxInfo[i].references[j].subsegment_duration)/(double)(mir->sidxInfo[i].timescale) != (double)subsegment_duration/(double)(tir->mediaTimeScale))
+                    errprint("Referenced track duration %lf of track %d does not match to subsegment_duration %lf for sidx number %d at reference count %d\n",(double)subsegment_duration/(double)(tir->mediaTimeScale),mir->sidxInfo[i].reference_ID,(double)(mir->sidxInfo[i].references[j].subsegment_duration)/(double)(mir->sidxInfo[i].timescale),i,j);
+            }
+            
+            absoluteOffset+=mir->sidxInfo[i].references[j].referenced_size;
+            referenceEPT+=mir->sidxInfo[i].references[j].subsegment_duration;
+                
+        }
+        
+    }
+
+    //if(totalSize)
+    
+}
+
 
 //==========================================================================================
 
@@ -235,7 +361,6 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 	atomOffsetEntry *list;
 	long i;
 	OSErr atomerr = noErr;
-	long moovCnt = 0;
 	atomOffsetEntry *entry;
 	UInt64 minOffset, maxOffset;
 	
@@ -261,27 +386,40 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 		Validate_meta_Atom, cnt, list, nil );
 	if (!err) err = atomerr;
     
-	// Count the total fragments (if present), and allocate the required per-track memory for that
+	// Count the total fragments and sidx's (if present), and allocate the required memory for that
 	vg.mir->numFragments = 0;
+	vg.mir->numSidx= 0;
     
 	if(vg.mir->fragmented)
 	{
     	for (i = 0; i < cnt; i++)
+    	{
     		if (list[i].type == 'moof')
                 vg.mir->numFragments++;
+            
+    		if (list[i].type == 'sidx')
+                vg.mir->numSidx++;
+    	}
 
         vg.mir->moofInfo = (MoofInfoRec *)malloc(vg.mir->numFragments*sizeof(MoofInfoRec));
         vg.mir->processedFragments = 0;
 
-    	for (i = 0; i < vg.mir->numFragments ; i++)
+    	for (i = 0; i < (long)vg.mir->numFragments ; i++)
     	{
-            vg.mir->moofInfo[i].earliestCompositionInfoMissingPerTrack = (Boolean*)malloc(vg.mir->numTIRs*sizeof(Boolean));
-            vg.mir->moofInfo[i].cummulatedSampleDurationPerTrack = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
-            vg.mir->moofInfo[i].earliestCompositionTimePerTrack = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
+            vg.mir->moofInfo[i].compositionInfoMissingPerTrack = (Boolean*)malloc(vg.mir->numTIRs*sizeof(Boolean));
+            vg.mir->moofInfo[i].cummulatedMoofSampleDurationPerTrack = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
+            vg.mir->moofInfo[i].earliestMoofCompositionTimePerTrack = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
+            vg.mir->moofInfo[i].tfdt = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
     	}
+
+        vg.mir->sidxInfo = (SidxInfoRec *)malloc(vg.mir->numSidx*sizeof(SidxInfoRec));
+        vg.mir->processedSdixs = 0;
 	}
     else
+    {
         vg.mir->moofInfo = NULL;
+        vg.mir->sidxInfo = NULL;
+    }
     			
 	//
 	for (i = 0; i < cnt; i++) {
@@ -311,6 +449,15 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 
                     break;
 
+            case 'sidx':
+                    if(!vg.mir->fragmented)
+                        errprint("'sidx' boxes are not to be expected in a non-fragmented movie\n");
+                    
+                    atomerr = ValidateAtomOfType( 'sidx', 0, 
+                        Validate_sidx_Atom, cnt, list, vg.mir);
+                    if (!err) err = atomerr;
+            break;
+            
 			default:
 				if (!(entry->aoeflags & kAtomValidated)) 
 					warnprint("WARNING: unknown file atom '%s'\n",ostypetostr(entry->type));
@@ -322,6 +469,9 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 
 	if(vg.mir->fragmented)
         ValidateFragmentInfo(vg.mir);
+
+    if(vg.mir->numSidx > 0)
+        ValidateIndexingInfo(vg.mir);
 	
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -342,9 +492,6 @@ OSErr Validate_dinf_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomOffsetEntry *list;
 	long i;
 	OSErr atomerr = noErr;
-	long mvhdCnt = 0;
-	long trakCnt = 0;
-	long iodsCnt = 0;
 	atomOffsetEntry *entry;
 	UInt64 minOffset, maxOffset;
 	
@@ -388,9 +535,6 @@ OSErr Validate_edts_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomOffsetEntry *list;
 	long i;
 	OSErr atomerr = noErr;
-	long mvhdCnt = 0;
-	long trakCnt = 0;
-	long iodsCnt = 0;
 	atomOffsetEntry *entry;
 	UInt64 minOffset, maxOffset;
 	
@@ -435,9 +579,6 @@ OSErr Validate_minf_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomOffsetEntry *list;
 	long i;
 	OSErr atomerr = noErr;
-	long mvhdCnt = 0;
-	long trakCnt = 0;
-	long iodsCnt = 0;
 	atomOffsetEntry *entry;
 	UInt64 minOffset, maxOffset;
 	TrackInfoRec *tir = (TrackInfoRec *)refcon;
@@ -538,9 +679,6 @@ OSErr Validate_mdia_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomOffsetEntry *list;
 	long i;
 	OSErr atomerr = noErr;
-	long mvhdCnt = 0;
-	long trakCnt = 0;
-	long iodsCnt = 0;
 	atomOffsetEntry *entry;
 	UInt64 minOffset, maxOffset;
 	TrackInfoRec *tir = (TrackInfoRec *)refcon;
@@ -600,7 +738,6 @@ OSErr Get_trak_Type( atomOffsetEntry *aoe, TrackInfoRec *tir )
 	long cnt;
 	atomOffsetEntry *list;
 	long i;
-	OSErr atomerr = noErr;
 	atomOffsetEntry *entry;
 	UInt64 minOffset, maxOffset;
 
@@ -644,9 +781,6 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomOffsetEntry *list;
 	long i;
 	OSErr atomerr = noErr;
-	long mvhdCnt = 0;
-	long trakCnt = 0;
-	long iodsCnt = 0;
 	atomOffsetEntry *entry;
 	UInt64 minOffset, maxOffset;
 	TrackInfoRec	*tir = (TrackInfoRec*)refcon;
@@ -728,14 +862,14 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				BitBuffer bb;
 				
 				sampleprint("<vide_SAMPLE_DATA>\n"); vg.tabcnt++;
-					for (i = 1; i <= tir->sampleSizeEntryCnt; i++) {
+					for (i = 1; i <= (long)tir->sampleSizeEntryCnt; i++) {
 						if ((vg.samplenumber==0) || (vg.samplenumber==i)) {
 							err = GetSampleOffsetSize( tir, i, &sampleOffset, &sampleSize, &sampleDescriptionIndex );
 							sampleprint("<sample num=\"%d\" offset=\"%s\" size=\"%d\" />\n",i,int64toxstr(sampleOffset),sampleSize); vg.tabcnt++;
-							BAILIFNIL( dataP = malloc(sampleSize), allocFailedErr );
+							BAILIFNIL( dataP = (Ptr)malloc(sampleSize), allocFailedErr );
 							err = GetFileData( vg.fileaoe, dataP, sampleOffset, sampleSize, nil );
 							
-							BitBuffer_Init(&bb, (void *)dataP, sampleSize);
+							BitBuffer_Init(&bb, (UInt8 *)((void *)dataP), sampleSize);
 
 							Validate_vide_sample_Bitstream( &bb, tir );
 							free( dataP );
@@ -759,14 +893,14 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				BitBuffer bb;
 				
 				sampleprint("<audi_SAMPLE_DATA>\n"); vg.tabcnt++;
-					for (i = 1; i <= tir->sampleSizeEntryCnt; i++) {
+					for (i = 1; i <= (long)tir->sampleSizeEntryCnt; i++) {
 						if ((vg.samplenumber==0) || (vg.samplenumber==i)) {
 							err = GetSampleOffsetSize( tir, i, &sampleOffset, &sampleSize, &sampleDescriptionIndex );
 							sampleprint("<sample num=\"%d\" offset=\"%s\" size=\"%d\" />\n",i,int64toxstr(sampleOffset),sampleSize); vg.tabcnt++;
-							BAILIFNIL( dataP = malloc(sampleSize), allocFailedErr );
+							BAILIFNIL( dataP = (Ptr)malloc(sampleSize), allocFailedErr );
 							err = GetFileData( vg.fileaoe, dataP, sampleOffset, sampleSize, nil );
 							
-							BitBuffer_Init(&bb, (void *)dataP, sampleSize);
+							BitBuffer_Init(&bb, (UInt8 *)dataP, sampleSize);
 
 							Validate_soun_sample_Bitstream( &bb, tir );
 							free( dataP );
@@ -790,14 +924,14 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				BitBuffer bb;
 				
 				sampleprint("<odsm_SAMPLE_DATA>\n"); vg.tabcnt++;
-				for (i = 1; i <= tir->sampleSizeEntryCnt; i++) {
+				for (i = 1; i <= (long)tir->sampleSizeEntryCnt; i++) {
 					if ((vg.samplenumber==0) || (vg.samplenumber==i)) {
 						err = GetSampleOffsetSize( tir, i, &sampleOffset, &sampleSize, &sampleDescriptionIndex );
 						sampleprint("<sample num=\"%d\" offset=\"%s\" size=\"%d\" />\n",1,int64toxstr(sampleOffset),sampleSize); vg.tabcnt++;
-							BAILIFNIL( dataP = malloc(sampleSize), allocFailedErr );
+							BAILIFNIL( dataP = (Ptr)malloc(sampleSize), allocFailedErr );
 							err = GetFileData( vg.fileaoe, dataP, sampleOffset, sampleSize, nil );
 							
-							BitBuffer_Init(&bb, (void *)dataP, sampleSize);
+							BitBuffer_Init(&bb, (UInt8 *)dataP, sampleSize);
 
 							Validate_odsm_sample_Bitstream( &bb, tir );
 							free( dataP );
@@ -820,14 +954,14 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				Ptr dataP = nil;
 				BitBuffer bb;
 				sampleprint("<sdsm_SAMPLE_DATA>\n"); vg.tabcnt++;
-				for (i = 1; i <= tir->sampleSizeEntryCnt; i++) {
+				for (i = 1; i <= (long)tir->sampleSizeEntryCnt; i++) {
 					if ((vg.samplenumber==0) || (vg.samplenumber==i)) {
 						err = GetSampleOffsetSize( tir, i, &sampleOffset, &sampleSize, &sampleDescriptionIndex );
 						sampleprint("<sample num=\"%d\" offset=\"%s\" size=\"%d\" />\n",1,int64toxstr(sampleOffset),sampleSize); vg.tabcnt++;
-							BAILIFNIL( dataP = malloc(sampleSize), allocFailedErr );
+							BAILIFNIL( dataP = (Ptr)malloc(sampleSize), allocFailedErr );
 							err = GetFileData( vg.fileaoe, dataP, sampleOffset, sampleSize, nil );
 							
-							BitBuffer_Init(&bb, (void *)dataP, sampleSize);
+							BitBuffer_Init(&bb, (UInt8 *)dataP, sampleSize);
 
 							Validate_sdsm_sample_Bitstream( &bb, tir);
 							free( dataP );
@@ -863,9 +997,6 @@ OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomOffsetEntry *list;
 	long i;
 	OSErr atomerr = noErr;
-	long mvhdCnt = 0;
-	long trakCnt = 0;
-	long iodsCnt = 0;
 	atomOffsetEntry *entry;
 	UInt64 minOffset, maxOffset;
 	TrackInfoRec *tir = (TrackInfoRec *)refcon;
@@ -1139,13 +1270,13 @@ OSErr ValidateAtomOfType( OSType theType, long flags, ValidateAtomTypeProcPtr va
 		errprint("Multiple '%s' atoms not allowed\n",cstr);
 	}
 
-bail:
 	return err;
 }
 
 
 //==========================================================================================
 
+int mapStringToUInt32(char *src, UInt32 *target);
 
 
 OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
@@ -1189,9 +1320,9 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
         vg.brandDASH = false;
         OSType dash;
         
-        mapStringToUInt32("dash",&dash);
+        mapStringToUInt32((char *)"dash",&dash);
 		
-		for (ix=0; ix < numCompatibleBrands; ix++) {
+		for (ix=0; ix < (int)numCompatibleBrands; ix++) {
 			BAILIFERR( GetFileDataN32( aoe, &currentBrand, offset, &offset ) );
 			if (ix<(numCompatibleBrands-1)) atomprint("\"%s\",\n", ostypetostr_r(currentBrand, tempstr1));
 			      else atomprint("\"%s\"\n",  ostypetostr_r(currentBrand, tempstr1));
@@ -1237,10 +1368,8 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomOffsetEntry *list;
 	long i;
 	OSErr atomerr = noErr;
-	long mvhdCnt = 0;
 	long trakCnt = 0;
 	long thisTrakIndex = 0;
-	long iodsCnt = 0;
 	atomOffsetEntry *entry;
 	UInt64 minOffset, maxOffset;
 	MovieInfoRec		*mir = NULL;
@@ -1267,7 +1396,7 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 		i = 0;
 	}
 
-	BAILIFNIL( vg.mir = calloc(1, sizeof(MovieInfoRec) + i), allocFailedErr );
+	BAILIFNIL( vg.mir = (MovieInfoRec	*)calloc(1, sizeof(MovieInfoRec) + i), allocFailedErr );
 	mir = vg.mir;
     mir->fragmented = false; //unless 'mvex' is found in 'moov'
 
@@ -1417,9 +1546,9 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 		
 		trk_cnt = mir->numTIRs;
 		
-		BAILIFNULL( trk = calloc(trk_cnt,sizeof(track_track)), allocFailedErr );
+		BAILIFNULL( trk = (track_track *)calloc(trk_cnt,sizeof(track_track)), allocFailedErr );
 
-		for (i=0; i<trk_cnt; ++i) {
+		for (i=0; i<(long)trk_cnt; ++i) {
 			// find the chunk counts for each track and setup structures
 			tir = &(mir->tirList[i]);
 			totalChunks += tir->chunkOffsetEntryCnt;
@@ -1428,32 +1557,32 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 			trk[i].chunk_num = 1;	// the next chunk to work on for each track
 			
 		}
-		BAILIFNULL( corp = calloc(totalChunks,sizeof(chunkOverlapRec)), allocFailedErr );
+		BAILIFNULL( corp = (chunkOverlapRec *)calloc(totalChunks,sizeof(chunkOverlapRec)), allocFailedErr );
 		
 		highwatermark = 0;		// the highest chunk end seen
 
 		do { // until we have processed all chunks of all tracks
 			UInt32 lowest;
-			UInt64 low_offset;
+			UInt64 low_offset = 0;
 			UInt64 chunkOffset, chunkStop;
 			UInt32 chunkSize;
 			UInt32 slot;
 	
 			// find the next lowest chunk start
 			lowest = -1;		// next chunk not identified
-			for (i=0; i<trk_cnt; i++) {
+			for (i=0; i<(long)trk_cnt; i++) {
 				UInt64 offset;
 				tir = &(mir->tirList[i]);
 				if (trk[i].chunk_num <= trk[i].chunk_cnt) {		// track has chunks to process
 					offset = tir->chunkOffset[ trk[i].chunk_num ].chunkOffset;
-					if ((lowest == -1)  || ((lowest != -1) && (offset<low_offset)))
+					if ((lowest == (UInt32)-1)  || ((lowest != (UInt32)-1) && (offset<low_offset)))
 					{
 						low_offset = offset;
 						lowest = i;
 					}
 				}
 			}
-			if (lowest == -1) 
+			if (lowest == (UInt32)-1) 
 				errprint("aargh: program error!!!\n");
 						
 			tir = &(mir->tirList[lowest]);
@@ -1467,10 +1596,10 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 			
 			if (chunkOffset != low_offset) errprint("Aargh! program error\n");
 			
-			if (chunkOffset >= vg.inMaxOffset) 
+			if (chunkOffset >= (UInt64)vg.inMaxOffset) 
 			{
 				errprint("Chunk offset %s is at or beyond file size  0x%lx\n", int64toxstr(chunkOffset), vg.inMaxOffset);
-			} else if (chunkStop > vg.inMaxOffset) 
+			} else if (chunkStop > (UInt64)vg.inMaxOffset) 
 			{
 				errprint("Chunk end %s is beyond file size  0x%lx\n", int64toxstr(chunkStop), vg.inMaxOffset);
 			}
@@ -1549,7 +1678,7 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 			
 			// see whether we have eaten all chunks for all tracks			
 			done = 1;
-			for (i=0; i<trk_cnt; i++) {
+			for (i=0; i<(long)trk_cnt; i++) {
 				if (trk[i].chunk_num <= trk[i].chunk_cnt) { done = 0; break; }
 			}
 		} while (done != 1);
@@ -1585,6 +1714,8 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	minOffset = aoe->offset + aoe->atomStartSize;
 	maxOffset = aoe->offset + aoe->size - aoe->atomStartSize;
+
+    moofInfo->offset = aoe->offset;
 	
 	BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
 
@@ -1597,9 +1728,9 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
 
     for(i = 0 ;  i < mir->numTIRs ; i++)
     {
-        moofInfo->cummulatedSampleDurationPerTrack[i] = 0;
-        moofInfo->earliestCompositionTimePerTrack[i] = 0xFFFFFFFFFFFFFFFF;
-        moofInfo->earliestCompositionInfoMissingPerTrack[i] = false;
+        moofInfo->cummulatedMoofSampleDurationPerTrack[i] = 0;
+        moofInfo->earliestMoofCompositionTimePerTrack[i] = 0xFFFFFFFFFFFFFFFF;
+        moofInfo->compositionInfoMissingPerTrack[i] = false;
     }
     
 	for (i = 0; i < cnt; i++)
@@ -1631,8 +1762,6 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
 		if (!err) err = atomerr;
 	}
 
-    
-
 	aoe->aoeflags |= kAtomValidated;
 bail:
 	return err;
@@ -1655,7 +1784,7 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
 
     moofInfo->processedTrackFragments++;
     trafInfo->cummulatedSampleDuration = 0;
-    trafInfo->earliestCompositionInfoMissing = false;
+    trafInfo->compositionInfoMissing = false;
 	
 	atomprintnotab(">\n"); 
 	
@@ -1672,6 +1801,7 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
     trafInfo->processedTrun = 0;
     trafInfo->tfdtFound = false;
     trafInfo->earliestCompositionTimeInTrackFragment = 0xFFFFFFFFFFFFFFFF;
+    trafInfo->presentationEndTimeInTrackFragment = 0;
     
 	for (i = 0; i < cnt; i++)
 		if (list[i].type == 'trun')
@@ -1710,20 +1840,23 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
 
 
     //Accumulate durations now for later checking
-	for (i = 0; i < trafInfo->numTrun; i++)
+	for (i = 0; i < (long)trafInfo->numTrun; i++)
 	{
         trafInfo->cummulatedSampleDuration+=trafInfo->trunInfo[i].cummulatedSampleDuration;
 
         //Needed for DASH-specific processing of EPT
-        trafInfo->earliestCompositionInfoMissing = trafInfo->earliestCompositionInfoMissing || (trafInfo->trunInfo[i].sample_count > 0 && trafInfo->trunInfo[i].sample_composition_time_offsets_present != true);
+        trafInfo->compositionInfoMissing = trafInfo->compositionInfoMissing || (trafInfo->trunInfo[i].sample_count > 0 && trafInfo->trunInfo[i].sample_composition_time_offsets_present != true);
 	}
 
-    UInt32 index = getTrakIndexByID(trafInfo->track_ID);
+    UInt32 index;
 
-    moofInfo->cummulatedSampleDurationPerTrack[index] += trafInfo->cummulatedSampleDuration;
-    moofInfo->earliestCompositionInfoMissingPerTrack[index] = moofInfo->earliestCompositionInfoMissingPerTrack[index] || trafInfo->earliestCompositionInfoMissing;
-    if(!trafInfo->earliestCompositionInfoMissing && (trafInfo->earliestCompositionTimeInTrackFragment < moofInfo->earliestCompositionTimePerTrack[index]))
-        moofInfo->earliestCompositionTimePerTrack[index] = trafInfo->earliestCompositionTimeInTrackFragment;
+	index = getTrakIndexByID(trafInfo->track_ID);
+
+    moofInfo->cummulatedMoofSampleDurationPerTrack[index] += trafInfo->cummulatedSampleDuration;
+    moofInfo->compositionInfoMissingPerTrack[index] = moofInfo->compositionInfoMissingPerTrack[index] || trafInfo->compositionInfoMissing;
+
+    if(!trafInfo->compositionInfoMissing && (trafInfo->earliestCompositionTimeInTrackFragment < moofInfo->earliestMoofCompositionTimePerTrack[index]))
+        moofInfo->earliestMoofCompositionTimePerTrack[index] = trafInfo->earliestCompositionTimeInTrackFragment;
 
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -1738,14 +1871,16 @@ void dispose_mir( MovieInfoRec *mir )
 
         for(i = 0 ; i < mir->numFragments ; i++)
         {
+
             //printf("Fragment number %d / %d\n",i,mir->numFragments);
+
             if(mir->moofInfo[i].trafInfo != NULL)
             {
                     UInt32 j;
                     
                     for(j = 0 ; j < mir->moofInfo[i].numTrackFragments ; j++)
                     {
-                        //printf("Track Fragment number %d / %d, ptr %x\n",j,mir->moofInfo[i].numTrackFragments,&(mir->moofInfo[i].numTrackFragments));
+                        //printf("Track Fragment number %d / %d, ptr %x\n",j,mir->moofInfo[i].numTrackFragments,&(mir->moofInfo[i].trafInfo[j]));
                         
                         if(mir->moofInfo[i].trafInfo[j].trunInfo != NULL)
                         {
@@ -1766,22 +1901,35 @@ void dispose_mir( MovieInfoRec *mir )
                                     free(mir->moofInfo[i].trafInfo[j].trunInfo[k].sample_composition_time_offset);
                             }
                             
-                            
                             free(mir->moofInfo[i].trafInfo[j].trunInfo);
                         }
                     }
                         
                 free(mir->moofInfo[i].trafInfo);
-                free(mir->moofInfo[i].earliestCompositionInfoMissingPerTrack);
-                free(mir->moofInfo[i].cummulatedSampleDurationPerTrack);
-                free(mir->moofInfo[i].earliestCompositionTimePerTrack);
+                free(mir->moofInfo[i].compositionInfoMissingPerTrack);
+                free(mir->moofInfo[i].cummulatedMoofSampleDurationPerTrack);
+                free(mir->moofInfo[i].earliestMoofCompositionTimePerTrack);
+                free(mir->moofInfo[i].tfdt);
             }
         }
         
         free(mir->moofInfo);
     }
-	// for each track, get rid of the stuff in it
 
+    
+    if(mir->sidxInfo)
+    {
+        UInt32 i;
+
+        for(i = 0 ; i < mir->numSidx ; i++)
+        {
+            free(mir->sidxInfo[i].references);
+        }
+
+        free(mir->sidxInfo);
+    }
+
+	// for each track, get rid of the stuff in it
 	free( mir );
 }
 
@@ -1796,9 +1944,6 @@ OSErr Validate_tref_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomOffsetEntry *list;
 	long i;
 	OSErr atomerr = noErr;
-	long mvhdCnt = 0;
-	long trakCnt = 0;
-	long iodsCnt = 0;
 	atomOffsetEntry *entry;
 	UInt64 minOffset, maxOffset;
 	
@@ -1928,7 +2073,7 @@ static OSErr Validate_rtp_Atom( atomOffsetEntry *aoe, void *refcon )
     
     atomprintnotab(">\n"); 
 
-	BAILIFNIL( rtpDataP = malloc((UInt32)aoe->size), allocFailedErr );
+	BAILIFNIL( rtpDataP = (Ptr)malloc((UInt32)aoe->size), allocFailedErr );
 
     dataSize = aoe->size - aoe->atomStartSize;
 	BAILIFERR( GetFileData(aoe, rtpDataP, aoe->offset + aoe->atomStartSize, dataSize, &temp64) );
@@ -1941,7 +2086,7 @@ static OSErr Validate_rtp_Atom( atomOffsetEntry *aoe, void *refcon )
 		// we found the sdp data
 		// make a copy and null terminate it
 		dataSize -= 4; // subtract the subtype field from the length 
-		BAILIFNIL( sdpDataP = malloc(dataSize+1), allocFailedErr );
+		BAILIFNIL( sdpDataP = (Ptr)malloc(dataSize+1), allocFailedErr );
 		memcpy(sdpDataP, current, dataSize);
 		sdpDataP[dataSize] = '\0';
 		
