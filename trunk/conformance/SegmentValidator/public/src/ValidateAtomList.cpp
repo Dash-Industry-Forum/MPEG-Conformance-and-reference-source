@@ -294,6 +294,19 @@ void ValidateIndexingInfo(MovieInfoRec *mir)
                 
                 if((double)mir->sidxInfo[i].references[j].subsegment_duration != sidx->cumulatedDuration)
                     errprint("Referenced sidx duration %lf does not match to subsegment_duration %lf for sidx number %d at reference count %d\n",sidx->cumulatedDuration,(double)mir->sidxInfo[i].references[j].subsegment_duration,i,j);
+
+
+				if(mir->sidxInfo[i].references[j].starts_with_SAP > 0)
+					for(int k = 0 ; k < sidx->reference_count ; k++)
+						if(sidx->references[k].starts_with_SAP == 0)
+							errprint("Referenced sidx subsegment %d has a starts_with_SAP 0, while the starts_with_SAP of this reference (index %d of sidx %d) is set, violating Section 8.16.3.3 of ISO/IEC 14496-12 4th edition:\n",
+															k,j,i);
+
+				if(mir->sidxInfo[i].references[j].SAP_type > 0)
+					for(int k = 0 ; k < sidx->reference_count ; k++)
+						if((sidx->references[k].SAP_type == 0) || (sidx->references[k].SAP_type > mir->sidxInfo[i].references[j].SAP_type))
+							errprint("Referenced sidx subsegment %d has a SAP_type %d while the SAP_type of this reference (index %d of sidx %d) has a SAP_type %d, violating Section 8.16.3.3 of ISO/IEC 14496-12 4th edition:\n",
+															k,sidx->references[k].SAP_type,j,i,mir->sidxInfo[i].references[j].SAP_type);
             }
             else
             {
@@ -337,6 +350,67 @@ void ValidateIndexingInfo(MovieInfoRec *mir)
                 
                 if((double)(mir->sidxInfo[i].references[j].subsegment_duration)/(double)(mir->sidxInfo[i].timescale) != (double)subsegment_duration/(double)(tir->mediaTimeScale))
                     errprint("Referenced track duration %lf of track %d does not match to subsegment_duration %lf for sidx number %d at reference count %d\n",(double)subsegment_duration/(double)(tir->mediaTimeScale),mir->sidxInfo[i].reference_ID,(double)(mir->sidxInfo[i].references[j].subsegment_duration)/(double)(mir->sidxInfo[i].timescale),i,j);
+
+				if(mir->sidxInfo[i].references[j].SAP_type > 2)
+			    {
+					warnprint("Sidx %d, index %d: SAP_type > 2 checks not yet implemented!\n",i,j);
+					continue;
+			    }
+
+                if(mir->sidxInfo[i].references[j].SAP_type > 0 || mir->sidxInfo[i].references[j].starts_with_SAP > 0)
+                {
+                    
+                    double SAP_time = (double)(mir->sidxInfo[i].references[j].SAP_delta_time + referenceEPT)/(double)mir->sidxInfo[i].timescale;
+
+                    UInt64 cummulatedDuration = 0;
+                    double sampleCompositionTime;
+                    bool SAPFound = false;
+                    
+                    for(UInt32 k = 0; k < moof->numTrackFragments ; k++)
+                        if(moof->trafInfo[k].track_ID == mir->sidxInfo[i].reference_ID && moof->trafInfo[k].numTrun > 0)//Assuming 'trun' cannot be empty, 14496-12 version 4 does not indicate such a possiblity.
+                        {
+                            for(UInt32 l = 0 ; l < moof->trafInfo[k].numTrun ; l++)
+                            {
+                                for(UInt32 m = 0 ; m < moof->trafInfo[k].trunInfo[l].sample_count ; m++)
+                                {
+                                    sampleCompositionTime = (double)(moof->trafInfo[k].trunInfo[l].sample_composition_time_offset[m] + moof->tfdt[trackIndex] + cummulatedDuration)/tir->mediaTimeScale;
+
+                                    bool sample_is_non_sync_sample = (moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000 >> 16) != 0;
+                                    
+                                    if(sampleCompositionTime == SAP_time)
+                                    {
+                                        if(sample_is_non_sync_sample)
+                                        {
+                                            errprint("SAP_type %d specified but the corresponding sample is sample_is_non_sync_sample, for sidx number %d at reference count %d\n",i,j);
+                                        }
+                                        
+                                        SAPFound = true;
+                                    }
+                                    
+                                    if(sampleCompositionTime < SAP_time && !sample_is_non_sync_sample)
+                                        errprint("SAP found with composition time lesser than the declared delta time, for sidx number %d at reference count %d; first SAP shall be signaled as per Section 8.16.3.3 of ISO/IEC 14496-12 4th edition\n",i,j);
+                                    
+                                    cummulatedDuration += moof->trafInfo[k].trunInfo[l].sample_duration[m];
+                                    
+                                    if(SAPFound == true)
+                                        break;
+                                    
+                                    if(mir->sidxInfo[i].references[j].starts_with_SAP > 0)
+                                        errprint("starts_with_SAP declared but the first sample is not a SAP, for sidx number %d at reference count %d\n",i,j);
+                                }
+                                
+                                if(SAPFound == true)
+                                    break;
+                            }
+                                                        
+                            if(SAPFound == true)
+                                break;
+                        }
+
+                    if(SAPFound != true)
+                        errprint("SAP not found for sidx number %d at reference count %d\n",i,j);
+    				
+                }
             }
             
             absoluteOffset+=mir->sidxInfo[i].references[j].referenced_size;
@@ -345,8 +419,6 @@ void ValidateIndexingInfo(MovieInfoRec *mir)
         }
         
     }
-
-    //if(totalSize)
     
 }
 

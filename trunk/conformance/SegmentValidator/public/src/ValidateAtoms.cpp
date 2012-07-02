@@ -2429,6 +2429,8 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     
     if(trafInfo->default_sample_flags_present)
         BAILIFERR( GetFileDataN32( aoe, &trafInfo->default_sample_flags, offset, &offset ) );
+	else
+		trafInfo->default_sample_flags = tir->default_sample_flags;
     
     // All done
 	aoe->aoeflags |= kAtomValidated;
@@ -2472,20 +2474,20 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
 
     if(trunInfo->sample_count > 0)
     {
-        if(trunInfo->sample_duration_present)
+        //if(trunInfo->sample_duration_present)
             trunInfo->sample_duration = (UInt32 *)malloc(trunInfo->sample_count*sizeof(UInt32));
-        else
-            trunInfo->sample_duration = NULL;
+        //else
+        //    trunInfo->sample_duration = NULL;
 
         if(trunInfo->sample_size_present)
             trunInfo->sample_size = (UInt32 *)malloc(trunInfo->sample_count*sizeof(UInt32));
         else
             trunInfo->sample_size = NULL;
 
-        if(trunInfo->sample_flags_present)
+        //if(trunInfo->sample_flags_present)
             trunInfo->sample_flags = (UInt32 *)malloc(trunInfo->sample_count*sizeof(UInt32));
-        else
-            trunInfo->sample_flags = NULL;
+        //else
+        //    trunInfo->sample_flags = NULL;
 
         if(trunInfo->sample_composition_time_offsets_present)
         {
@@ -2510,6 +2512,7 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
         }
         else
         {
+            trunInfo->sample_duration[i] = trafInfo->default_sample_duration;
             currentSampleDecodeDelta = trafInfo->default_sample_duration;
         }
 
@@ -2520,6 +2523,8 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
 
         if(trunInfo->sample_flags_present)
             BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_flags[i], offset, &offset ) );
+		else
+			trunInfo->sample_flags[i] = trafInfo->default_sample_flags;
 
         //Use it as a signed int when version is non-zero
         if(trunInfo->sample_composition_time_offsets_present)
