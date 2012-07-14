@@ -1897,23 +1897,7 @@ bail:
 
 //==========================================================================================
 
-TrackInfoRec * check_track( UInt32 theID )
-{
-	MovieInfoRec	*mir = vg.mir;
-	UInt32 i;
-	
-	if (theID==0) {
-		errprint("Track ID %d in track reference atoms cannot be zero\n",theID);
-		return 0;
-	}
-	
-	for (i=0; i<(UInt32)mir->numTIRs; ++i) {
-			if ((mir->tirList[i].trackID) == theID) return &(mir->tirList[i]);
-	}		
-	errprint("Track ID %d in track reference atoms references a non-existent track\n",theID);
-    
-    return 0;
-}
+TrackInfoRec * check_track( UInt32 theID );
 
 
 OSErr Validate_tref_type_Atom( atomOffsetEntry *aoe, void *refcon, OSType trefType, UInt32 *firstRefTrackID )
@@ -2537,6 +2521,9 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
             
             if((compositionTimeInTrackFragment + currentSampleDecodeDelta) > trafInfo->presentationEndTimeInTrackFragment)
                 trafInfo->presentationEndTimeInTrackFragment = compositionTimeInTrackFragment + currentSampleDecodeDelta;
+            
+            if(compositionTimeInTrackFragment > trafInfo->latestPresentationTimeInTrackFragment)
+                trafInfo->latestPresentationTimeInTrackFragment = compositionTimeInTrackFragment;
         }
         
     }
@@ -2609,6 +2596,9 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
 
     tir = check_track(sidxInfo->reference_ID);
     
+    if(tir == 0)
+        return badAtomErr;
+    
     BAILIFERR( GetFileDataN32( aoe, &sidxInfo->timescale, offset, &offset ) );
 
     if(tir->mediaTimeScale != sidxInfo->timescale)
@@ -2640,6 +2630,10 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
     { 
         BAILIFERR( GetFileDataN32( aoe, &temp, offset, &offset ) );
         sidxInfo->references[i].reference_type = (UInt8)(temp >> 31);
+
+        if(sidxInfo->references[i].reference_type == 0)
+            tir->numLeafs++;
+            
         sidxInfo->references[i].referenced_size = temp & 0x7FFFFFFF;
         
         BAILIFERR( GetFileDataN32( aoe, &sidxInfo->references[i].subsegment_duration, offset, &offset ) );

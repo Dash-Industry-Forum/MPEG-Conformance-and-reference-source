@@ -184,8 +184,11 @@ int main(void)
 #endif
 	int argn;
 	int gotInputFile = false;
+    bool gotSegmentInfoFile = false;
+    bool gotleafInfoFile = false;
 	int err;
 	char gInputFileFullPath[1024];
+	char leafInfoFileName[1024];
 	int usedefaultfiletype = true;
 	
 	FILE *infile = nil;
@@ -201,6 +204,8 @@ int main(void)
 //	vg.print_sampleraw = true;
 //	vg.print_hintpayload = true;
     vg.visualProfileLevelIndication = 255;
+    vg.checkSegAlignment = false;
+    vg.checkSubSegAlignment = false;
     // this is simply the wrong place for this;  it's not a program parameter, it's the mpeg-4
     //   profile/level indication as found in the video stream.
     // But neither movie info nor track info are available at the right points.  Ugh [dws]
@@ -255,13 +260,21 @@ int main(void)
 			getNextArgStr( &vg.checklevelstr, "checklevel" );
 		} else if ( keymatch( arg, "printtype", 1 ) ) {
 			getNextArgStr( &vg.printtypestr, "printtype" );
+        } else if ( keymatch( arg, "infofile", 1 ) ) {
+                getNextArgStr( &vg.segmentOffsetInfo, "infofile" ); gotSegmentInfoFile = true;
+        } else if ( keymatch( arg, "segal", 5 ) ) {
+                vg.checkSegAlignment = true;
+        } else if ( keymatch( arg, "ssegal", 6 ) ) {
+            vg.checkSubSegAlignment = true;
+        } else if ( keymatch( arg, "leafinfo", 1 ) ) {
+                getNextArgStr( &leafInfoFileName, "leafinfo" ); gotleafInfoFile = true;
 		} else if ( keymatch( arg, "samplenumber", 1 ) ) {
 			getNextArgStr( &vg.samplenumberstr, "samplenumber" );
 
 
 
 		} else {
-			fprintf( stderr, "Unexpected option \"%s\"\n", arg );
+			fprintf( stderr, "Unexpected option \"%s\"\n", arg);
 			err = -1;
 			goto usageError;
 		}
@@ -342,7 +355,7 @@ int main(void)
 		fprintf( stderr, "Could not open input file \"%s\"\n", gInputFileFullPath );
 		goto usageError;
 	}
-	
+
 	fprintf(stdout,"\n\n\n<!-- Source file is '%s' -->\n", gInputFileFullPath);
 
 	vg.inFile = infile;
@@ -363,20 +376,89 @@ int main(void)
 	
 	vg.fileaoe = &aoe;		// used when you need to read file & size from the file
 	
+    if(gotSegmentInfoFile)
+    {
+        int numSegments = 0;
+        
+        for(int ii = 0 ; ii < 2 ; ii++)
+        {
+            FILE *segmentOffsetInfoFile = fopen(vg.segmentOffsetInfo, "rb");
+        	if (!segmentOffsetInfoFile) {
+        		err = -1;
+        		fprintf( stderr, "Could not open segment info file \"%s\"\n", vg.segmentOffsetInfo );
+        		goto usageError;
+        	}
+
+            if(ii == 1)
+            {
+                vg.segmentSizes = (UInt64 *)malloc(sizeof(UInt64)*numSegments);
+                vg.segmentInfoSize = numSegments;
+            }
+
+            numSegments = 0;
+
+            while(1)
+            {
+                int temp1;
+                UInt64 temp2;
+                int ret = fscanf(segmentOffsetInfoFile,"%d %lld\n",&temp1,&temp2);
+                if(ret < 2)
+                    break;
+                
+                if(ii == 1)
+                {
+                    vg.segmentSizes[numSegments] = temp2;
+                }
+                numSegments++;
+                if(numSegments == 1 && temp1 > 0)
+                    vg.initializationSegment=false;
+                else
+                    vg.initializationSegment=true;
+                
+            }
+
+            if(numSegments == 0)
+                {
+                    err = -1;
+                    fprintf( stderr, "Empty segment info file \"%s\"\n", vg.segmentOffsetInfo );
+                    goto usageError;
+                }
+
+            fclose(segmentOffsetInfoFile);
+        }
+    }
+    else
+    {
+        vg.segmentSizes = NULL;
+        vg.segmentInfoSize = 0;
+        vg.initializationSegment=false;
+    }
+
+    if(vg.checkSegAlignment || vg.checkSubSegAlignment)
+    {
+        if(gotleafInfoFile)
+            loadLeafInfo(leafInfoFileName);
+        else
+        {
+            printf("Segment/Subsegment alignment check request, leaf info file not found!\n");
+            vg.checkSegAlignment = vg.checkSubSegAlignment = false;
+        }
+    }
+		
 	if (vg.filetype == filetype_mp4v) {
 		err = ValidateElementaryVideoStream( &aoe, nil );
 	} else {
 		err = ValidateFileAtoms( &aoe, nil );
 		fprintf(stdout,"<!#- Finished testing file '%s' -->\n", gInputFileFullPath);
 	}
-	
+    
 	goto bail;
 	
 	//=====================
 
 usageError:
 	fprintf( stderr, "Usage: %s [-filetype <type>] "
-								"[-printtype <options>] [-checklevel <level>]\n", "ValidateMP4" );
+								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal]\n", "ValidateMP4" );
 	fprintf( stderr, "            [-samplenumber <number>] [-verbose <options> [-help] inputfile\n" );
 	fprintf( stderr, "    -a[tompath] <atompath> - limit certain operations to <atompath> (e.g. moov-1:trak-2)\n" );
 	fprintf( stderr, "                     this effects -checklevel and -printtype (default is everything) \n" );
@@ -392,6 +474,10 @@ usageError:
 	fprintf( stderr, "                     1: check the moov container (default -atompath is ignored) \n" );
 	fprintf( stderr, "                     2: check the samples \n" );
 	fprintf( stderr, "                     3: check the payload of hint track samples \n" );
+	fprintf( stderr, "    -i[nfofile] <Segment Info File> - Offset file generated by assembler \n" );
+	fprintf( stderr, "    -leafinfo <Leaf Info File> - Information file generated by this software (named leafinfo.txt) for another representation, provided to run for cross-checks of alignment\n" );
+	fprintf( stderr, "    -segal - Check Segment alignment based on <Leaf Info File>\n" );
+	fprintf( stderr, "    -ssegal - Check Subegment alignment based on <Leaf Info File>\n" );
 	fprintf( stderr, "    -s[amplenumber] <number> - limit sample checking or printing operations to sample <number> \n" );
 	fprintf( stderr, "                     most effective in combination with -atompath (default is all samples) \n" );
 
@@ -406,6 +492,34 @@ bail:
 	}
 	
 	return err;
+}
+
+void loadLeafInfo(char *leafInfoFileName)
+{
+    FILE *leafInfoFile = fopen(leafInfoFileName,"rt");
+    if(leafInfoFile == NULL)
+    {
+        printf("Leaf info file %s not found, alignment wont be checked!\n",leafInfoFileName);
+        vg.checkSegAlignment = vg.checkSubSegAlignment = false;
+    }
+    
+    fscanf(leafInfoFile,"%ld\n",&vg.numControlTracks);
+
+    vg.controlLeafInfo = (LeafInfo **)malloc(vg.numControlTracks*sizeof(LeafInfo *));
+    vg.numControlLeafs = (unsigned int *)malloc(vg.numControlTracks*sizeof(unsigned int));
+    
+    for(int i = 0 ; i < vg.numControlTracks ; i++)
+    {
+        fscanf(leafInfoFile,"%u\n",&(vg.numControlLeafs[i]));
+
+        vg.controlLeafInfo[i] = (LeafInfo *)malloc(vg.numControlLeafs[i]*sizeof(LeafInfo));
+        
+        for(UInt32 j = 0 ; j < vg.numControlLeafs[i] ; j++)
+            fscanf(leafInfoFile,"%d %Lf %Lf\n",(int *)&vg.controlLeafInfo[i][j].firstInSegment,&vg.controlLeafInfo[i][j].earliestPresentationTime,&vg.controlLeafInfo[i][j].lastPresentationTime);
+            
+    }
+
+    fclose(leafInfoFile);
 }
 
 

@@ -1,0 +1,14 @@
+./obj/ValidateBitStreams.o: ../src/ValidateBitStreams.cpp ../src/ValidateMP4.h \
+ ../src/EndianMP4.h
+./obj/ValidateHints.o: ../src/ValidateHints.cpp ../src/ValidateMP4.h \
+ ../src/EndianMP4.h
+./obj/ValidateAtomList.o: ../src/ValidateAtomList.cpp ../src/ValidateMP4.h \
+ ../src/EndianMP4.h
+./obj/ValidateMP4.o: ../src/ValidateMP4.cpp ../src/ValidateMP4.h \
+ ../src/EndianMP4.h
+./obj/ValidateBits.o: ../src/ValidateBits.cpp ../src/ValidateMP4.h \
+ ../src/EndianMP4.h
+./obj/ValidateAtoms.o: ../src/ValidateAtoms.cpp ../src/ValidateMP4.h \
+ ../src/EndianMP4.h
+./obj/ValidateFileIO.o: ../src/ValidateFileIO.cpp ../src/ValidateMP4.h \
+ ../src/EndianMP4.h

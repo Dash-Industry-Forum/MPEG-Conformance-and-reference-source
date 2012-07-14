@@ -274,7 +274,7 @@ enum {
 };
 
 typedef char atompathType[100];
-typedef char argstr[100];
+typedef char argstr[1000];
 
 void addAtomToPath( atompathType workingpath, OSType atomId, long atomIndex, atompathType curpath );
 void restoreAtomPath( atompathType workingpath, atompathType curpath );
@@ -397,6 +397,7 @@ typedef struct {
     UInt64  cummulatedSampleDuration;
     UInt64  earliestCompositionTimeInTrackFragment;
     UInt64  presentationEndTimeInTrackFragment;
+    UInt64  latestPresentationTimeInTrackFragment;
     
 } TrafInfoRec;
 
@@ -409,6 +410,8 @@ typedef struct {
     Boolean *compositionInfoMissingPerTrack;
     UInt64  *cummulatedMoofSampleDurationPerTrack;
     UInt64  *earliestMoofCompositionTimePerTrack;
+    UInt64  *latestMoofCompositionTimePerTrack;
+    UInt64  *moofPresentationEndTimePerTrack;
     UInt64  *tfdt;
     
     TrafInfoRec *trafInfo;
@@ -438,6 +441,13 @@ typedef struct {
 } SidxInfoRec;
 
 //===========================
+typedef struct {
+    bool firstInSegment;
+    long double earliestPresentationTime;
+    long double lastPresentationTime;
+    long double presentationEndTime;
+    long double sidxReportedDuration;
+} LeafInfo;
 
 typedef struct {
 	OSType mediaType;
@@ -484,6 +494,9 @@ typedef struct {
 
     UInt64 cumulatedTackFragmentDecodeTime;
 
+    UInt32  numLeafs;
+    LeafInfo *leafInfo;
+
 } TrackInfoRec;
 
 int GetSampleOffsetSize( TrackInfoRec *tir, UInt32 sampleNum, UInt64 *offsetOut, UInt32 *sizeOut, UInt32 *sampleDescriptionIndexOut );
@@ -505,6 +518,7 @@ typedef struct {
     UInt32  numSidx;
     UInt32  processedSdixs;
     SidxInfoRec     *sidxInfo;
+
 } MovieInfoRec;
 
 
@@ -552,6 +566,15 @@ typedef struct {
 	
 	MovieInfoRec	*mir;
 
+    UInt64 *segmentSizes;
+    long    segmentInfoSize;
+    bool    initializationSegment;
+    bool    checkSegAlignment;
+    bool    checkSubSegAlignment;
+    unsigned int  numControlTracks;
+    unsigned int  *numControlLeafs;
+    LeafInfo **controlLeafInfo;
+
 	// -----
 	atompathType atompath;
 
@@ -559,6 +582,7 @@ typedef struct {
 	argstr	checklevelstr;
 	argstr	samplenumberstr;
 	argstr	printtypestr;
+	argstr	segmentOffsetInfo;
 
 	long	filetype;
 	long	checklevel;
@@ -614,6 +638,7 @@ void sampleprintnotab(const char *formatStr, ...);
 void sampleprinthexdata(char *dataP, UInt32 size);
 void sampleprinthexandasciidata(char *dataP, UInt32 size);
 void toggleprintatom( Boolean onOff );
+void loadLeafInfo(char *leafInfoFileName);
 void toggleprintatomdetailed( Boolean onOff );
 void toggleprintsample( Boolean onOff );
 void copyCharsToStr( char *chars, char *str, UInt16 count );
@@ -1047,6 +1072,7 @@ OSErr Validate_btrt_Atom( atomOffsetEntry *aoe, void *refcon, char *esname );
 OSErr Validate_m4ds_Atom( atomOffsetEntry *aoe, void *refcon, char *esname );
 
 OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_sinf_Atom( atomOffsetEntry *aoe, void *refcon, UInt32 flags );
 OSErr Validate_frma_Atom( atomOffsetEntry *aoe, void *refcon );
