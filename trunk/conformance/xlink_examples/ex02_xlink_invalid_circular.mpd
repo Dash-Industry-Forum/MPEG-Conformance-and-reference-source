@@ -2,7 +2,7 @@
 <MPD 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns="urn:mpeg:DASH:schema:MPD:2011"
-	xsi:schemaLocation="urn:mpeg:DASH:schema:MPD:2011 dash.xsd"
+	xsi:schemaLocation="urn:mpeg:DASH:schema:MPD:2011 DASH-MPD.xsd"
 	xmlns:xlink="http://www.w3.org/1999/xlink"
 	minBufferTime="PT10.00S" mediaPresentationDuration="PT30.00S"
 	type="dynamic" availabilityStartTime="2001-12-17T09:40:57Z"

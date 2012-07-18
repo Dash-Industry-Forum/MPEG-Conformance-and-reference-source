@@ -23,6 +23,10 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Representation"/>
+   <svrl:failed-assert test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+      <svrl:text>At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in Representation.</svrl:text>
+   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

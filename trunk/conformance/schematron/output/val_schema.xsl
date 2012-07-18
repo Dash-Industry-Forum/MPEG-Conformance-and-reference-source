@@ -442,16 +442,32 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if (not(not(@xlink) or (@xlink and @start and preceding-sibling::dash:Period and not(preceding-sibling::dash:Period/@xlink) and not(following-sibling::dash:Period/@xlink)) and parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(parent::dash:MPD/@profiles))) then false() else true()"/>
+         <xsl:when test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
                                 xmlns:schold="http://www.ascc.net/xml/schematron"
                                 xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (not(not(@xlink) or (@xlink and @start and preceding-sibling::dash:Period and not(preceding-sibling::dash:Period/@xlink) and not(following-sibling::dash:Period/@xlink)) and parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:full:2011' or parent::dash:MPD/@profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011' or not(parent::dash:MPD/@profiles))) then false() else true()">
+                                test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()">
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
-               <svrl:text>For mp2t-main profile, any initial Period elements using @xlink:href may be ignored, and the first non-excluded Period must have an explicit @start attribute. After the first non-excluded Period, there shall be no Period using @xlink:href.</svrl:text>
+               <svrl:text>At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in Period.</svrl:text>
+            </svrl:failed-assert>
+         </xsl:otherwise>
+      </xsl:choose>
+
+		    <!--ASSERT -->
+<xsl:choose>
+         <xsl:when test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) &gt; 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) &gt; 1))) then false() else true()"/>
+         <xsl:otherwise>
+            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                                xmlns:schold="http://www.ascc.net/xml/schematron"
+                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                                test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) &gt; 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) &gt; 1))) then false() else true()">
+               <xsl:attribute name="location">
+                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
+               </xsl:attribute>
+               <svrl:text>If SegmentTemplate or SegmentList is defined within Period it shall not be redefined in AdaptationSet or Representation.</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
@@ -631,6 +647,38 @@
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
+
+		    <!--ASSERT -->
+<xsl:choose>
+         <xsl:when test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()"/>
+         <xsl:otherwise>
+            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                                xmlns:schold="http://www.ascc.net/xml/schematron"
+                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                                test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()">
+               <xsl:attribute name="location">
+                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
+               </xsl:attribute>
+               <svrl:text>At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in AdaptationSet.</svrl:text>
+            </svrl:failed-assert>
+         </xsl:otherwise>
+      </xsl:choose>
+
+		    <!--ASSERT -->
+<xsl:choose>
+         <xsl:when test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) &gt; 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) &gt; 1))) then false() else true()"/>
+         <xsl:otherwise>
+            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                                xmlns:schold="http://www.ascc.net/xml/schematron"
+                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                                test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) &gt; 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) &gt; 1))) then false() else true()">
+               <xsl:attribute name="location">
+                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
+               </xsl:attribute>
+               <svrl:text>If SegmentTemplate or SegmentList is defined within AdaptationSet it shall not be redefined in Representation.</svrl:text>
+            </svrl:failed-assert>
+         </xsl:otherwise>
+      </xsl:choose>
       <xsl:apply-templates select="*|comment()|processing-instruction()" mode="M6"/>
    </xsl:template>
    <xsl:template match="text()" priority="-1" mode="M6"/>
@@ -740,6 +788,22 @@
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
                <svrl:text>For live profile, the SegmentTemplate element shall be present on at least one of the three levels, the Period level containing the Representation, the Adaptation Set containing the Representation, or on Representation level itself.</svrl:text>
+            </svrl:failed-assert>
+         </xsl:otherwise>
+      </xsl:choose>
+
+		    <!--ASSERT -->
+<xsl:choose>
+         <xsl:when test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()"/>
+         <xsl:otherwise>
+            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                                xmlns:schold="http://www.ascc.net/xml/schematron"
+                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                                test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()">
+               <xsl:attribute name="location">
+                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
+               </xsl:attribute>
+               <svrl:text>At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in Representation.</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
