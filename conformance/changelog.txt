@@ -1,3 +1,11 @@
+2012-07-16
+----------
+Removed Rule 2.3 and Example 46
+
+2012-07-13
+----------
+Added new Rules 2.4, 2.5, 3.10, 3.11, and 5.4 (this takes checks from Section 5.3.9.1 §5 into account)
+
 2012-05-08
 ----------
 Removed Rules 12.0, 12.1, 12.4 (rules on ContentProtection with restricting schemeIdURI)
