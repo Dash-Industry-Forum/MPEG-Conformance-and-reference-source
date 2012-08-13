@@ -415,6 +415,8 @@ typedef struct {
     UInt64  *tfdt;
     
     TrafInfoRec *trafInfo;
+    
+    UInt32 sequence_number;
 } MoofInfoRec;
 
 typedef struct {
