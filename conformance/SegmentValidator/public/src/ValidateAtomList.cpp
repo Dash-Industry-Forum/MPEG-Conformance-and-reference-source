@@ -222,6 +222,7 @@ OSErr ValidateFragmentInfo(MovieInfoRec *mir)
     
     for(i = 0 ; i < mir->numFragments ; i++)
     {
+        
         for(int k = 0 ; k < (UInt32)mir->numTIRs ; k++)
         {
             mir->moofInfo[i].tfdt[k] = mir->tirList[k].cumulatedTackFragmentDecodeTime;
@@ -241,7 +242,16 @@ OSErr ValidateFragmentInfo(MovieInfoRec *mir)
                     if(mir->moofInfo[i].trafInfo[j].tfdtFound)
                     {
                         if(mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime != mir->tirList[index].cumulatedTackFragmentDecodeTime)
-                            errprint("tfdt base media decode time %lld not equal to accumulated decode time %lld for track %d\n",mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime,mir->tirList[index].cumulatedTackFragmentDecodeTime,index);
+                        {
+                            if(i == 0 && vg.brandDASH)
+                            {
+                                warnprint("tfdt base media decode time %Lf not equal to accumulated decode time %Lf for track %d for the first fragment of the movie. This software does not handle incomplete presentations. Applying correction.\n",(long double)mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime/(long double)mir->tirList[index].mediaTimeScale,(long double)mir->tirList[index].cumulatedTackFragmentDecodeTime/(long double)mir->tirList[index].mediaTimeScale,mir->moofInfo[i].trafInfo[j].track_ID);                                
+                                mir->tirList[index].cumulatedTackFragmentDecodeTime = mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime;
+                            }
+                            else
+                                errprint("tfdt base media decode time %Lf not equal to accumulated decode time %Lf for track %d for sequence_number %d (fragment absolute count %d)\n",(long double)mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime/(long double)mir->tirList[index].mediaTimeScale,(long double)mir->tirList[index].cumulatedTackFragmentDecodeTime/(long double)mir->tirList[index].mediaTimeScale,mir->moofInfo[i].trafInfo[j].track_ID,mir->moofInfo[i].sequence_number,i+1);
+                        }
+
                     }
 
                         
@@ -251,7 +261,7 @@ OSErr ValidateFragmentInfo(MovieInfoRec *mir)
                     mir->tirList[index].cumulatedTackFragmentDecodeTime += mir->moofInfo[i].trafInfo[j].cummulatedSampleDuration;
 
                 }
-                    
+                
         }
     }
 	return noErr;
@@ -304,7 +314,7 @@ void verifyLeafDurations(MovieInfoRec *mir)
 
         for(UInt32 j = 0 ; j < tir->numLeafs ; j++)
             if((double)(tir->leafInfo[j].presentationEndTime - tir->leafInfo[j].earliestPresentationTime) != (double)tir->leafInfo[j].sidxReportedDuration)
-                errprint("Referenced track duration %Lf of track %d does not match to subsegment_duration %Lf for leaf with EPT %Lf\n",(tir->leafInfo[j].presentationEndTime - tir->leafInfo[j].earliestPresentationTime),i,tir->leafInfo[j].sidxReportedDuration,tir->leafInfo[j].earliestPresentationTime);
+                errprint("Referenced track duration %Lf of track %d does not match to subsegment_duration %Lf for leaf with EPT %Lf\n",(tir->leafInfo[j].presentationEndTime - tir->leafInfo[j].earliestPresentationTime),tir->trackID,tir->leafInfo[j].sidxReportedDuration,tir->leafInfo[j].earliestPresentationTime);
     }
 }
 
@@ -325,7 +335,7 @@ void verifyAlignment(MovieInfoRec *mir)
         
         if(vg.numControlLeafs[i] != tir->numLeafs)
         {
-            errprint("Number of leafs %d in alignment control file for track index %d not equal to the number of leafs %d for this representation\n",vg.numControlLeafs[i],i,tir->numLeafs);
+            errprint("Number of leafs %d in alignment control file for track %d not equal to the number of leafs %d for this representation\n",vg.numControlLeafs[i],tir->trackID,tir->numLeafs);
             continue;
         }
             
@@ -502,7 +512,9 @@ OSErr ValidateIndexingInfo(MovieInfoRec *mir)
                             {
                                 for(UInt32 m = 0 ; m < moof->trafInfo[k].trunInfo[l].sample_count ; m++)
                                 {
-                                    sampleCompositionTime = (double)(moof->trafInfo[k].trunInfo[l].sample_composition_time_offset[m] + moof->tfdt[trackIndex] + cummulatedDuration)/tir->mediaTimeScale;
+                                    UInt64 sample_composition_time_offset = moof->trafInfo[k].trunInfo[l].version != 0 ? (Int32)moof->trafInfo[k].trunInfo[l].sample_composition_time_offset[m] : (UInt32)moof->trafInfo[k].trunInfo[l].sample_composition_time_offset[m];
+
+                                    sampleCompositionTime = (double)(sample_composition_time_offset + moof->tfdt[trackIndex] + cummulatedDuration)/tir->mediaTimeScale;
 
                                     bool sample_is_non_sync_sample = (moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000 >> 16) != 0;
                                     
@@ -526,7 +538,7 @@ OSErr ValidateIndexingInfo(MovieInfoRec *mir)
                                         break;
                                     
                                     if(mir->sidxInfo[i].references[j].starts_with_SAP > 0)
-                                        errprint("starts_with_SAP declared but the first sample is not a SAP, for sidx number %d at reference count %d\n",i,j);
+                                        errprint("starts_with_SAP declared but the first sample is not a SAP, for sidx number %d at reference count %d (checking sample %d of trun %d, traf %d, moof %d)\n",i,j,m+1,l+1,k+1,moofIndex+1);
                                 }
                                 
                                 if(SAPFound == true)
@@ -2032,7 +2044,7 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
 
     atomerr = ValidateAtomOfType( 'mfhd', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
-        Validate_mfhd_Atom, cnt, list, nil );
+        Validate_mfhd_Atom, cnt, list, moofInfo );
     if (!err) err = atomerr;
     
     moofInfo->numTrackFragments = 0;

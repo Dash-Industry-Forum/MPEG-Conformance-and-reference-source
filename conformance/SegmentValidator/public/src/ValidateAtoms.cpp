@@ -2345,18 +2345,18 @@ OSErr Validate_mfhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	UInt32 version;
 	UInt32 flags;
 	UInt64 offset;
-    UInt32 sequence_number;
+    MoofInfoRec *moofInfo = (MoofInfoRec *)refcon;
     
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
     
 	// Get data 
-	BAILIFERR( GetFileDataN32( aoe, &sequence_number, offset, &offset ) );
+	BAILIFERR( GetFileDataN32( aoe, &moofInfo->sequence_number, offset, &offset ) );
 
-    if(sequence_number <= vg.mir->sequence_number)
-        errprint( "sequence_number %d in violation of: the value in a given movie fragment be greater than in any preceding movie fragment\n",sequence_number );
+    if(moofInfo->sequence_number <= vg.mir->sequence_number)
+        errprint( "sequence_number %d in violation of: the value in a given movie fragment be greater than in any preceding movie fragment\n",moofInfo->sequence_number );
 
-    vg.mir->sequence_number = sequence_number;
+    vg.mir->sequence_number = moofInfo->sequence_number;
 
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -2515,7 +2515,7 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
         {
             BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_composition_time_offset[i], offset, &offset ) );
 
-            UInt64 compositionTimeInTrackFragment = savedCummulatedSampleDuration + prevTrunCummulatedSampleDuration + trunInfo->sample_composition_time_offset[i];
+            UInt64 compositionTimeInTrackFragment = savedCummulatedSampleDuration + prevTrunCummulatedSampleDuration + (trunInfo->version != 0 ? (Int32)trunInfo->sample_composition_time_offset[i] : (UInt32)trunInfo->sample_composition_time_offset[i]);
             if(compositionTimeInTrackFragment < trafInfo->earliestCompositionTimeInTrackFragment)
                 trafInfo->earliestCompositionTimeInTrackFragment = compositionTimeInTrackFragment;
             
