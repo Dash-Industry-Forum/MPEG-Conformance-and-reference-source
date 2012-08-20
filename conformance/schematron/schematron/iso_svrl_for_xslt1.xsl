@@ -29,7 +29,12 @@
   validate with schemas from either namespace.
   
 
-  History:  
+  History:
+    2010-04-14
+        * Add command line parameter 'terminate' which will terminate on first failed 
+        assert and (optionally) successful report.   
+    2009-03-18
+    	* Fix atrribute with space "see " which generates wrong name in some processors
     2008-08-11
    		* RJ Fix attribute/@select which saxon allows  in XSLT 1
    2008-08-07
@@ -88,7 +93,7 @@
 <!--
  Derived from Conformance1-5.xsl.
 
- Copyright (c) 2001, 2006 Rick Jelliffe and Academia Sinica Computing Center, Taiwan
+ Copyright (c) 2001-2010 Rick Jelliffe and Academia Sinica Computing Center, Taiwan
 
  This software is provided 'as-is', without any express or implied warranty. 
  In no event will the authors be held liable for any damages arising from 
@@ -113,13 +118,14 @@
 
 <!-- The command-line parameters are:
   			phase           NMTOKEN | "#ALL" (default) Select the phase for validation
-    		allow-foreign   "true" | "false" (default)   Pass non-Schematron elements to the generated stylesheet
+    		allow-foreign   "true" | "false" (default)   Pass non-Schematron elements  and rich markup  to the generated stylesheet
             diagnose= true | false|yes|no    Add the diagnostics to the assertion test in reports (yes|no are obsolete)
             generate-paths=true|false|yes|no   generate the @location attribute with XPaths (yes|no are obsolete)
             sch.exslt.imports semi-colon delimited string of filenames for some EXSLT implementations          
    		 optimize        "visit-no-attributes"     Use only when the schema has no attributes as the context nodes
 		 generate-fired-rule "true"(default) | "false"  Generate fired-rule elements
-            
+               terminate= yes | no | true | false | assert  Terminate on the first failed assertion or successful report
+                                         Note: whether any output at all is generated depends on the XSLT implementation.          
 -->
 
 <xsl:stylesheet
@@ -292,6 +298,14 @@
 				</xsl:call-template>
 			</xsl:if>
 	</svrl:failed-assert>
+	
+	
+		<xsl:if test=" $terminate = 'yes' or $terminate = 'true' ">
+		   <axsl:message terminate="yes">TERMINATING</axsl:message>
+		</xsl:if>
+	    <xsl:if test=" $terminate = 'assert' ">
+		   <axsl:message terminate="yes">TERMINATING</axsl:message>
+		</xsl:if>
 </xsl:template>
 
 <xsl:template name="process-report">
@@ -350,6 +364,11 @@
 				</xsl:call-template>
 			</xsl:if>
 	</svrl:successful-report>
+	
+	
+		<xsl:if test=" $terminate = 'yes' or $terminate = 'true' ">
+		   <axsl:message terminate="yes">TERMINATING</axsl:message>
+		</xsl:if>
 </xsl:template>
 
 
@@ -540,17 +559,17 @@
 	<xsl:if  test=" $allow-foreign = 'true'">
 	<xsl:if test="string($fpi)"> 
 		<axsl:attribute name="fpi">
-			<xsl:value-of select="$fpi "/>
+			<xsl:value-of select="$fpi"/>
 		</axsl:attribute>
 	</xsl:if>
 	<xsl:if test="string($icon)"> 
 		<axsl:attribute name="icon">
-			<xsl:value-of select="$icon "/>
+			<xsl:value-of select="$icon"/>
 		</axsl:attribute>
 	</xsl:if>
 	<xsl:if test="string($see)"> 
-		<axsl:attribute name="see ">
-			<xsl:value-of select="$see "/>
+		<axsl:attribute name="see">
+			<xsl:value-of select="$see"/>
 		</axsl:attribute>
 	</xsl:if>
 	</xsl:if>

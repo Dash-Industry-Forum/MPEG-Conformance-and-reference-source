@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema xmlns="http://purl.oclc.org/dsdl/schematron" xmlns:dash="urn:mpeg:DASH:schema:MPD:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" queryBinding='xslt' schemaVersion='ISO19757-3'>
-	<ns prefix="dash" uri="urn:mpeg:DASH:schema:MPD:2011"/>
+<schema xmlns="http://purl.oclc.org/dsdl/schematron" xmlns:dash="urn:mpeg:dash:schema:mpd:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" queryBinding='xslt' schemaVersion='ISO19757-3'>
+	<ns prefix="dash" uri="urn:mpeg:dash:schema:mpd:2011"/>
 	<ns prefix="xlink" uri="http://www.w3.org/1999/xlink"/>
 	<ns prefix="xsi" uri="http://www.w3.org/2001/XMLSchema-instance"/>
 	<title>Schema for validating MPDs</title>
@@ -38,6 +38,10 @@
 			<assert test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()">At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in Period.</assert>
 			<!-- R2.4 -->
 			<assert test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) > 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) > 1))) then false() else true()">If SegmentTemplate or SegmentList is defined within Period it shall not be redefined in AdaptationSet or Representation.</assert>
+			<!-- R2.5 -->
+			<assert test="if (not(@id) and ancestor::dash:MPD/@type = 'dynamic') then false() else true()">If the MPD is dynamic the Period element shall have an id.</assert>
+			<!-- R2.6 -->
+			<assert test="if (not(descendant-or-self::dash:SegmentBase) and not(descendant-or-self::dash:SegmentTemplate) and not(descendant-or-self::dash:SegmentList)) then false() else true()">At least one SegmentBase, SegmentTemplate or SegmentList shall be defined in Period, AdaptationSet or Representation.</assert>
 		</rule>
 	</pattern>
 	<pattern name="AdaptationSet element">
@@ -50,7 +54,7 @@
 			<!-- R3.2 -->
 			<assert test="if ((@lang = descendant::dash:ContentComponent/@lang) or (@contentType = descendant::dash:ContentComponent/@contentType) or (@par = descendant::dash:ContentComponent/@par)) then false() else true()">Attributes from the AdaptationSet shall not be repeated in the descendanding ContentComponent elements.</assert>
 			<!-- R3.3 -->
-			<assert test="if ((@profiles and descendant::dash:Representation/@profiles) or (@width and descendant::dash:Representation/@width) or (@height and descendant::dash:Representation/@height) or (@sar and descendant::dash:Representation/@sar) or (@frameRate and descendant::dash:Representation/@frameRate) or (@audioSamplingRate and descendant::dash:Representation/@audioSamplingRate) or (@mimeType and descendant::dash:Representation/@mimeType) or (@segmentProfiles and descendant::dash:Representation/@segmentProfiles) or (@codecs and descendant::dash:Representation/@codecs) or (@maximumSAPPeriod and descendant::dash:Representation/@maximumSAPPeriod) or (@startWithSAP and descendant::dash:Representation/@startWithSAP) or (@maxPlayoutRate and descendant::dash:Representation/@maxPlayoutRate) or (@codingDependency and descendant::dash:Representation/@codingDependency) or (@scanType and descendant::dash:Representation/@scanType)) then false() else true()">Common attributes for AdaptationSet and Representation shall either be in one of the elements but not in both.</assert>
+			<assert test="if ((@profiles and descendant::dash:Representation/@profiles) or (@width and descendant::dash:Representation/@width) or (@height and descendant::dash:Representation/@height) or (@sar and descendant::dash:Representation/@sar) or (@frameRate and descendant::dash:Representation/@frameRate) or (@audioSamplingRate and descendant::dash:Representation/@audioSamplingRate) or (@mimeType and descendant::dash:Representation/@mimeType) or (@segmentProfiles and descendant::dash:Representation/@segmentProfiles) or (@codecs and descendant::dash:Representation/@codecs and not(@mimeType = 'application/ttml+xml')) or (@maximumSAPPeriod and descendant::dash:Representation/@maximumSAPPeriod) or (@startWithSAP and descendant::dash:Representation/@startWithSAP) or (@maxPlayoutRate and descendant::dash:Representation/@maxPlayoutRate) or (@codingDependency and descendant::dash:Representation/@codingDependency) or (@scanType and descendant::dash:Representation/@scanType)) then false() else true()">Common attributes for AdaptationSet and Representation shall either be in one of the elements but not in both.</assert>
 			<!-- R3.4 -->
 			<assert test="if ((@minWidth > @maxWidth) or (@minHeight > @maxHeight) or (@minBandwidth > @maxBandwidth)) then false() else true()">Each minimum value (minWidth, minHeight, minBandwidth) shall be larger than the maximum value.</assert>
 			<!-- R3.5 -->
@@ -82,7 +86,7 @@
 			<!-- R5.0 -->
 			<assert test="if (not(@mimeType) and not(parent::dash:AdaptationSet/@mimeType)) then false() else true()">Either the Representation or the containing AdaptationSet shall have the mimeType attribute.</assert>
 			<!-- R5.1 -->
-			<assert test="if (not(@codecs) and not(parent::dash:AdaptationSet/@codecs)) then false() else true()">Either the Representation or the containing AdaptationSet shall have the codecs attribute.</assert>
+			<assert test="if (not(@codecs) and not(parent::dash:AdaptationSet/@codecs) and (not(@mimeType = 'application/ttml+xml') or not(parent::dash:AdaptationSet/@mimeType = 'application/ttml+xml'))) then false() else true()">Either the Representation or the containing AdaptationSet shall have the codecs attribute.</assert>
 			<!-- R5.2 -->
 			<assert test="if ((@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles  = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or parent::dash:AdaptationSet/@profiles  = 'urn:mpeg:dash:profile:isoff-on-demand:2011') and (@mimeType and (@mimeType != 'video/mp4' and @mimeType != 'audio/mp4' and @mimeType != 'application/mp4'))) then false() else true()">For ISO BMFF On-Demand profile, the @mimeType shall equal video/mp4, audio/mp4 or application/mp4.</assert>
 			<!-- R5.3 -->
@@ -111,6 +115,8 @@
 			<assert test="if (@initialization and (contains(@initialization, '$Number$') or contains(@initialization, '$Time$'))) then false() else true()">Neither $Number$ nor the $Time$ identifier shall be included in the initialization attribute.</assert>
 			<!-- R7.4 -->
 			<assert test="if (@bitstreamSwitching and (contains(@bitstreamSwitching, '$Number$') or contains(@bitstreamSwitching, '$Time$'))) then false() else true()">Neither $Number$ nor the $Time$ identifier shall be included in the bitstreamSwitching attribute.</assert>
+			<!-- R7.5-->
+			<assert test="if (matches(@media, '\$.*\$')) then every $y in (for $x in tokenize(@media, '\$(Bandwidth|Time|Number|RepresentationID)\$') return matches($x, '\$.*\$')) satisfies $y eq false() else true()">Only identifiers such as $Bandwidth$, $Time$, $RepresentationID$, or $Number$ shall be used.</assert>
 		</rule>
 	</pattern>
 	<pattern name="SegmentList element">

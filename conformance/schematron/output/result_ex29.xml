@@ -5,13 +5,13 @@
                         xmlns:schold="http://www.ascc.net/xml/schematron"
                         xmlns:sch="http://www.ascc.net/xml/schematron"
                         xmlns:iso="http://purl.oclc.org/dsdl/schematron"
-                        xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
+                        xmlns:dash="urn:mpeg:dash:schema:mpd:2011"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
                         title="Schema for validating MPDs"
                         schemaVersion="ISO19757-3"><!--   
 		   
 		   
-		 --><svrl:ns-prefix-in-attribute-values uri="urn:mpeg:DASH:schema:MPD:2011" prefix="dash"/>
+		 --><svrl:ns-prefix-in-attribute-values uri="urn:mpeg:dash:schema:mpd:2011" prefix="dash"/>
    <svrl:ns-prefix-in-attribute-values uri="http://www.w3.org/1999/xlink" prefix="xlink"/>
    <svrl:ns-prefix-in-attribute-values uri="http://www.w3.org/2001/XMLSchema-instance" prefix="xsi"/>
    <svrl:active-pattern/>
@@ -31,7 +31,7 @@
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:SegmentTimeline"/>
    <svrl:failed-assert test="if ((if (ancestor::dash:*[1]/@timescale) then (child::dash:S/@d div ancestor::dash:*[1]/@timescale) else child::dash:S/@d) &gt; (years-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + months-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + days-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + hours-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + minutes-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + seconds-from-duration(ancestor::dash:MPD/@maxSegmentDuration))) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='SegmentList' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='SegmentTimeline' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='SegmentList' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='SegmentTimeline' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
       <svrl:text>The d attribute of a SegmentTimeline shall not exceed the value give bei the MPD maxSegmentDuration attribute.</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>

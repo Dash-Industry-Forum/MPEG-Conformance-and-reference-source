@@ -18,23 +18,18 @@
    <svrl:fired-rule context="dash:MPD"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Period"/>
-   <svrl:fired-rule context="dash:Period"/>
-   <svrl:failed-assert test="if (@id = preceding::dash:Period/@id) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011'][2]">
-      <svrl:text>The id of each Period shall be unique.</svrl:text>
+   <svrl:failed-assert test="if (not(descendant-or-self::dash:SegmentBase) and not(descendant-or-self::dash:SegmentTemplate) and not(descendant-or-self::dash:SegmentList)) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
+      <svrl:text>At least one SegmentBase, SegmentTemplate or SegmentList shall be defined in Period, AdaptationSet or Representation.</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
-   <svrl:fired-rule context="dash:AdaptationSet"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Representation"/>
-   <svrl:fired-rule context="dash:Representation"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:SegmentList"/>
-   <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
