@@ -94,6 +94,9 @@ and conditions in their respective submissions.
 */
 
 #include "ValidateMP4.h"
+#include <cmath>
+
+#define ABS(a) (((a) < 0) ? -(a) : (a));
 
 extern ValidateGlobals vg;
 
@@ -313,8 +316,12 @@ void verifyLeafDurations(MovieInfoRec *mir)
         TrackInfoRec *tir = &(mir->tirList[i]);
 
         for(UInt32 j = 0 ; j < tir->numLeafs ; j++)
-            if((double)(tir->leafInfo[j].presentationEndTime - tir->leafInfo[j].earliestPresentationTime) != (double)tir->leafInfo[j].sidxReportedDuration)
+        {
+            long double diff = ABS((tir->leafInfo[j].presentationEndTime - tir->leafInfo[j].earliestPresentationTime) - tir->leafInfo[j].sidxReportedDuration);
+            
+            if(diff > (long double)1.0/(long double)tir->mediaTimeScale)
                 errprint("Referenced track duration %Lf of track %d does not match to subsegment_duration %Lf for leaf with EPT %Lf\n",(tir->leafInfo[j].presentationEndTime - tir->leafInfo[j].earliestPresentationTime),tir->trackID,tir->leafInfo[j].sidxReportedDuration,tir->leafInfo[j].earliestPresentationTime);
+        }
     }
 }
 
@@ -1245,6 +1252,14 @@ OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon )
 	maxOffset = aoe->offset + aoe->size - aoe->atomStartSize;
 	
 	BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
+
+    tir->identicalDecCompTimes = true;
+    
+	for (i = 0; i < cnt; i++) {
+		entry = &list[i];
+        if (entry->type == 'ctts')
+            tir->identicalDecCompTimes = false; //Section 8.6.1.1.
+	}
 	
 	// Process 'stsd' atoms
 	atomerr = ValidateAtomOfType( 'stsd', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
@@ -2174,7 +2189,17 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
         trafInfo->cummulatedSampleDuration+=trafInfo->trunInfo[i].cummulatedSampleDuration;
 
         //Needed for DASH-specific processing of EPT
-        trafInfo->compositionInfoMissing = trafInfo->compositionInfoMissing || (trafInfo->trunInfo[i].sample_count > 0 && trafInfo->trunInfo[i].sample_composition_time_offsets_present != true);
+        TrackInfoRec *tir = check_track(trafInfo->track_ID);
+
+        if(!tir->identicalDecCompTimes)
+            trafInfo->compositionInfoMissing = trafInfo->compositionInfoMissing || (trafInfo->trunInfo[i].sample_count > 0 && trafInfo->trunInfo[i].sample_composition_time_offsets_present != true);
+        else
+        {
+            trafInfo->compositionInfoMissing = false;
+            for(UInt32 j = 0 ;  j < trafInfo->trunInfo[i].sample_count ; j++)
+                if(trafInfo->trunInfo[i].sample_composition_time_offset[j] != 0)
+                    errprint("CTTS is missing, indicating composition time = decode times, as per Section 8.16.1.1 of ISO/IEC 14496-12 4th edition, while non-zero composition offsets found in track run.\n");
+        }
 	}
 
     if(check_track(trafInfo->track_ID) == NULL)

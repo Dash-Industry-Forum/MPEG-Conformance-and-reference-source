@@ -2473,12 +2473,12 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
         //else
         //    trunInfo->sample_flags = NULL;
 
-        if(trunInfo->sample_composition_time_offsets_present)
+        //if(trunInfo->sample_composition_time_offsets_present)
         {
             trunInfo->sample_composition_time_offset = (UInt32 *)malloc(trunInfo->sample_count*sizeof(UInt32));
         }
-        else
-            trunInfo->sample_composition_time_offset = NULL;
+        //else
+        //    trunInfo->sample_composition_time_offset = NULL;
     }
 
     for(i = 0 ; i < trafInfo->processedTrun ; i++)
@@ -2514,17 +2514,19 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
         if(trunInfo->sample_composition_time_offsets_present)
         {
             BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_composition_time_offset[i], offset, &offset ) );
-
-            UInt64 compositionTimeInTrackFragment = savedCummulatedSampleDuration + prevTrunCummulatedSampleDuration + (trunInfo->version != 0 ? (Int32)trunInfo->sample_composition_time_offset[i] : (UInt32)trunInfo->sample_composition_time_offset[i]);
-            if(compositionTimeInTrackFragment < trafInfo->earliestCompositionTimeInTrackFragment)
-                trafInfo->earliestCompositionTimeInTrackFragment = compositionTimeInTrackFragment;
-            
-            if((compositionTimeInTrackFragment + currentSampleDecodeDelta) > trafInfo->presentationEndTimeInTrackFragment)
-                trafInfo->presentationEndTimeInTrackFragment = compositionTimeInTrackFragment + currentSampleDecodeDelta;
-            
-            if(compositionTimeInTrackFragment > trafInfo->latestPresentationTimeInTrackFragment)
-                trafInfo->latestPresentationTimeInTrackFragment = compositionTimeInTrackFragment;
         }
+        else
+            trunInfo->sample_composition_time_offset[i] = 0;    // Will be checked later; it must be that CTTS is missing ==> composition time == decode times (Section 8.6.1.1.)
+
+        UInt64 compositionTimeInTrackFragment = savedCummulatedSampleDuration + prevTrunCummulatedSampleDuration + (trunInfo->version != 0 ? (Int32)trunInfo->sample_composition_time_offset[i] : (UInt32)trunInfo->sample_composition_time_offset[i]);
+        if(compositionTimeInTrackFragment < trafInfo->earliestCompositionTimeInTrackFragment)
+            trafInfo->earliestCompositionTimeInTrackFragment = compositionTimeInTrackFragment;
+        
+        if((compositionTimeInTrackFragment + currentSampleDecodeDelta) > trafInfo->presentationEndTimeInTrackFragment)
+            trafInfo->presentationEndTimeInTrackFragment = compositionTimeInTrackFragment + currentSampleDecodeDelta;
+        
+        if(compositionTimeInTrackFragment > trafInfo->latestPresentationTimeInTrackFragment)
+            trafInfo->latestPresentationTimeInTrackFragment = compositionTimeInTrackFragment;
         
     }
   
