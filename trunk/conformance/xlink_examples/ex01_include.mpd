@@ -1,4 +1,4 @@
-<Period start="PT07H" id="11" xmlns="urn:mpeg:DASH:schema:MPD:2011">
+<Period start="PT07H" id="11" xmlns="urn:mpeg:dash:schema:mpd:2011">
 	<AdaptationSet group="2">
 		<Representation id="QVGA-LQ" mimeType="video/mp4" codecs="avc1.42E00C, mp4a.40.2" bandwidth="192000" width="320" height="240">
 			<SegmentBase>

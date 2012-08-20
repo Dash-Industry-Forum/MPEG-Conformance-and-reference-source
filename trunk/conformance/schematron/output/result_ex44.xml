@@ -5,19 +5,19 @@
                         xmlns:schold="http://www.ascc.net/xml/schematron"
                         xmlns:sch="http://www.ascc.net/xml/schematron"
                         xmlns:iso="http://purl.oclc.org/dsdl/schematron"
-                        xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
+                        xmlns:dash="urn:mpeg:dash:schema:mpd:2011"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
                         title="Schema for validating MPDs"
                         schemaVersion="ISO19757-3"><!--   
 		   
 		   
-		 --><svrl:ns-prefix-in-attribute-values uri="urn:mpeg:DASH:schema:MPD:2011" prefix="dash"/>
+		 --><svrl:ns-prefix-in-attribute-values uri="urn:mpeg:dash:schema:mpd:2011" prefix="dash"/>
    <svrl:ns-prefix-in-attribute-values uri="http://www.w3.org/1999/xlink" prefix="xlink"/>
    <svrl:ns-prefix-in-attribute-values uri="http://www.w3.org/2001/XMLSchema-instance" prefix="xsi"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:MPD"/>
    <svrl:failed-assert test="if (not(@profiles) or not(substring(@profiles,1,13) = 'urn:mpeg:dash') or (@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-live:2011' or @profiles = 'urn:mpeg:dash:profile:isoff-main:2011' or @profiles = 'urn:mpeg:dash:profile:full:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-main:2011' or @profiles = 'urn:mpeg:dash:profile:mp2t-simple:2011')) then true() else false()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
       <svrl:text>The On-Demand profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-on-demand:2011". The live profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-live:2011". The main profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-main:2011". The full profile shall be identified by the URN "urn:mpeg:dash:profile:full:2011". The mp2t-main profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-main:2011". The mp2t-simple profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-simple:2011".</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>
@@ -31,15 +31,13 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:ContentProtection"/>
-   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(string-length(@value) = 4)) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='ContentProtection' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
-      <svrl:text>The value of ContentProtection shall be the 4CC contained in the Scheme Type Box</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

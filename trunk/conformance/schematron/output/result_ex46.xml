@@ -5,13 +5,13 @@
                         xmlns:schold="http://www.ascc.net/xml/schematron"
                         xmlns:sch="http://www.ascc.net/xml/schematron"
                         xmlns:iso="http://purl.oclc.org/dsdl/schematron"
-                        xmlns:dash="urn:mpeg:DASH:schema:MPD:2011"
+                        xmlns:dash="urn:mpeg:dash:schema:mpd:2011"
                         xmlns:xlink="http://www.w3.org/1999/xlink"
                         title="Schema for validating MPDs"
                         schemaVersion="ISO19757-3"><!--   
 		   
 		   
-		 --><svrl:ns-prefix-in-attribute-values uri="urn:mpeg:DASH:schema:MPD:2011" prefix="dash"/>
+		 --><svrl:ns-prefix-in-attribute-values uri="urn:mpeg:dash:schema:mpd:2011" prefix="dash"/>
    <svrl:ns-prefix-in-attribute-values uri="http://www.w3.org/1999/xlink" prefix="xlink"/>
    <svrl:ns-prefix-in-attribute-values uri="http://www.w3.org/2001/XMLSchema-instance" prefix="xsi"/>
    <svrl:active-pattern/>
@@ -21,7 +21,7 @@
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
    <svrl:failed-assert test="if ((@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' ) and (@mimeType and (@mimeType != 'video/mp4' and @mimeType != 'audio/mp4' and @mimeType != 'application/mp4'))) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
       <svrl:text>For ISO BMFF On-Demand profile, the @mimeType shall equal video/mp4, audio/mp4 or application/mp4.</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>
@@ -31,13 +31,15 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:ContentProtection"/>
    <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:mp4protection:2011') and not(string-length(@value) = 4)) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']/*[local-name()='ContentProtection' and namespace-uri()='urn:mpeg:DASH:schema:MPD:2011']">
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='ContentProtection' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
       <svrl:text>The value of ContentProtection shall be the 4CC contained in the Scheme Type Box</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>

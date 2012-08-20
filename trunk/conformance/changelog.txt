@@ -1,6 +1,19 @@
+2012-07-26
+----------
+Added Rule R2.6 for checking if at least one segment is present
+Added Rule R7.5 for checking hat the identfiers are correct for SegmentTemplate
+Updated examples due to new R2.5
+
+2012-07-25
+----------
+Updated Schematron and examples to reflect correct DASH-URN (urn:mpeg:dash:schema:mpd:2011)
+Updated Rules R3.3 and R5.1 for handling mimeTypes with application/ttml+xml
+Added Rule R2.5 for handling mandatory Period@id if MPD@type="dynamic"
+
 2012-07-16
 ----------
 Removed Rule 2.3 and Example 46
+Updated Conformance to allow relative paths for XLINK
 
 2012-07-13
 ----------
