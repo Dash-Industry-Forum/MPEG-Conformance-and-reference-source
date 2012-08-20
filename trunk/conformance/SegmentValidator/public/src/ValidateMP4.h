@@ -459,6 +459,7 @@ typedef struct {
 	Fixed sampleDescWidth, sampleDescHeight;
 	UInt32	trackID;
 	UInt32	hintRefTrackID;
+    Boolean identicalDecCompTimes;
 
 	UInt32	mediaTimeScale;
 	UInt64	mediaDuration;
