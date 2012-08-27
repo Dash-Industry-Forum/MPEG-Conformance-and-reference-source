@@ -94,9 +94,9 @@ and conditions in their respective submissions.
 */
 
 #include "ValidateMP4.h"
-#include <cmath>
+#include "HelperMethods.h"
+#include "PostprocessData.h"
 
-#define ABS(a) (((a) < 0) ? -(a) : (a));
 
 extern ValidateGlobals vg;
 
@@ -116,475 +116,6 @@ extern ValidateGlobals vg;
 
 //==========================================================================================
 
-int FindAtomOffsets( atomOffsetEntry *aoe, UInt64 minOffset, UInt64 maxOffset, 
-			long *atomCountOut, atomOffsetEntry **atomOffsetsOut )
-{
-	int err = noErr;
-	long cnt = 0;
-	atomOffsetEntry *atomOffsets = nil;
-	long max = 20;
-	startAtomType startAtom;
-	UInt64 largeSize;
-	uuidType uuid;
-	UInt64 curOffset = minOffset;
-	long minAtomSize;
-	
-	BAILIFNULL( atomOffsets = (atomOffsetEntry *)calloc( max, sizeof(atomOffsetEntry)), allocFailedErr );
-	
-	while (curOffset< maxOffset) {
-		memset(&atomOffsets[cnt], 0, sizeof(atomOffsetEntry));	// clear out entry
-		atomOffsets[cnt].offset = curOffset;
-		BAILIFERR( GetFileDataN32( aoe, &startAtom.size, curOffset, &curOffset ) );
-		BAILIFERR( GetFileDataN32( aoe, &startAtom.type, curOffset, &curOffset ) );
-		minAtomSize = sizeof(startAtom);
-		atomOffsets[cnt].size = startAtom.size;
-		atomOffsets[cnt].type = startAtom.type;
-		if (startAtom.size == 1) {
-			BAILIFERR( GetFileDataN64( aoe, &largeSize, curOffset, &curOffset ) );
-			atomOffsets[cnt].size = largeSize;
-			minAtomSize += sizeof(largeSize);
-			
-		}
-		if (startAtom.type == 'uuid') {
-			BAILIFERR( GetFileData( aoe, &uuid, curOffset, sizeof(uuid), &curOffset ) );
-			//atomOffsets[cnt].uuid = uuid;
-			memcpy(&atomOffsets[cnt].uuid, &uuid, sizeof(uuid));
-			minAtomSize += sizeof(uuid);
-		}
-		
-		atomOffsets[cnt].atomStartSize = minAtomSize;
-		atomOffsets[cnt].maxOffset = atomOffsets[cnt].offset + atomOffsets[cnt].size;
-		
-		if (atomOffsets[cnt].size == 0) {
-			// we go to the end
-			atomOffsets[cnt].size = maxOffset - atomOffsets[cnt].offset;
-			break;
-		}
-		
-		BAILIF( (atomOffsets[cnt].size < (UInt64)minAtomSize), badAtomSize );
-		
-		curOffset = atomOffsets[cnt].offset + atomOffsets[cnt].size;
-		cnt++;
-		if (cnt >= max) {
-			max += 20;
-			atomOffsets = (atomOffsetEntry *)realloc(atomOffsets, max * sizeof(atomOffsetEntry));
-		}
-	}
-
-bail:
-	if (err) {
-		cnt = 0;
-		if (atomOffsets) 
-			free(atomOffsets);
-		atomOffsets = nil;
-	}
-	*atomCountOut = cnt;
-	*atomOffsetsOut = atomOffsets;
-	return err;
-}
-
-TrackInfoRec * check_track( UInt32 theID )
-{
-	MovieInfoRec	*mir = vg.mir;
-	UInt32 i;
-	
-	if (theID==0) {
-		errprint("Track ID %d in track reference atoms cannot be zero\n",theID);
-		return 0;
-	}
-	
-	for (i=0; i<(UInt32)mir->numTIRs; ++i) {
-			if ((mir->tirList[i].trackID) == theID) return &(mir->tirList[i]);
-	}		
-	errprint("Track ID %d in track reference atoms references a non-existent track\n",theID);
-    
-    return 0;
-}
-
-UInt32 getTrakIndexByID(UInt32 track_ID)
-{
-    UInt32 i = 0;
-    
-    for(i = 0 ; i < (UInt32)vg.mir->numTIRs ; i++)
-        if(vg.mir->tirList[i].trackID == track_ID)
-            return i;
-
-    errprint("getTrakIndexByID: Track ID %d is not a known track!\n",track_ID);
-
-    return vg.mir->numTIRs;
-}
-
-OSErr ValidateFragmentInfo(MovieInfoRec *mir)
-{
-    UInt32 i;
-
-    for(i = 0 ; i < (UInt32)mir->numTIRs ; i++)
-    {
-     mir->tirList[i].cumulatedTackFragmentDecodeTime = 0;
-    }
-    
-    for(i = 0 ; i < mir->numFragments ; i++)
-    {
-        
-        for(int k = 0 ; k < (UInt32)mir->numTIRs ; k++)
-        {
-            mir->moofInfo[i].tfdt[k] = mir->tirList[k].cumulatedTackFragmentDecodeTime;
-        }
-        
-        if(mir->moofInfo[i].numTrackFragments > 0)
-        {
-                UInt32 j;
-                    
-                for(j = 0 ; j < mir->moofInfo[i].numTrackFragments ; j++)
-                {
-                    UInt32 index = getTrakIndexByID(mir->moofInfo[i].trafInfo[j].track_ID);
-
-                    if(index >= (UInt32)mir->numTIRs)
-                        return badAtomErr;
-                    
-                    if(mir->moofInfo[i].trafInfo[j].tfdtFound)
-                    {
-                        if(mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime != mir->tirList[index].cumulatedTackFragmentDecodeTime)
-                        {
-                            if(i == 0 && vg.brandDASH)
-                            {
-                                warnprint("tfdt base media decode time %Lf not equal to accumulated decode time %Lf for track %d for the first fragment of the movie. This software does not handle incomplete presentations. Applying correction.\n",(long double)mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime/(long double)mir->tirList[index].mediaTimeScale,(long double)mir->tirList[index].cumulatedTackFragmentDecodeTime/(long double)mir->tirList[index].mediaTimeScale,mir->moofInfo[i].trafInfo[j].track_ID);                                
-                                mir->tirList[index].cumulatedTackFragmentDecodeTime = mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime;
-                            }
-                            else
-                                errprint("tfdt base media decode time %Lf not equal to accumulated decode time %Lf for track %d for sequence_number %d (fragment absolute count %d)\n",(long double)mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime/(long double)mir->tirList[index].mediaTimeScale,(long double)mir->tirList[index].cumulatedTackFragmentDecodeTime/(long double)mir->tirList[index].mediaTimeScale,mir->moofInfo[i].trafInfo[j].track_ID,mir->moofInfo[i].sequence_number,i+1);
-                        }
-
-                    }
-
-                        
-                    if((mir->moofInfo[i].trafInfo[j].presentationEndTimeInTrackFragment + mir->tirList[index].cumulatedTackFragmentDecodeTime) > mir->tirList[index].lastPresentationTime)
-                        mir->tirList[index].lastPresentationTime = mir->moofInfo[i].trafInfo[j].presentationEndTimeInTrackFragment + mir->tirList[index].cumulatedTackFragmentDecodeTime;
-                        
-                    mir->tirList[index].cumulatedTackFragmentDecodeTime += mir->moofInfo[i].trafInfo[j].cummulatedSampleDuration;
-
-                }
-                
-        }
-    }
-	return noErr;
-}
-
-UInt32 getMoofIndexByOffset(MoofInfoRec *moofInfo, UInt32 numFragments, UInt64 offset)
-{
-    UInt32 i;
-
-    for(i = 0 ; i < numFragments ; i++)
-        if(moofInfo[i].offset == offset)
-            return i;
-
-    return numFragments;
-}
-
-
-SidxInfoRec *getSidxByOffset(SidxInfoRec *sidxInfo, UInt32 numSidx, UInt64 offset)
-{
-    UInt32 i;
-
-    for(i = 0 ; i < numSidx ; i++)
-        if(sidxInfo[i].offset == offset)
-            return &sidxInfo[i];
-
-    return (SidxInfoRec *)NULL;
-}
-
-bool checkSegmentBoundry(UInt64 offsetLow, UInt64 offsetHigh)
-{
-    UInt64 currentBoundry = 0;
-
-    for(int i = 0 ; i < vg.segmentInfoSize ; i++)
-    {
-        currentBoundry += vg.segmentSizes[i];
-        
-        if(offsetLow < currentBoundry && offsetHigh >= currentBoundry)
-            return true;
-    }
-
-    return false;
-        
-}
-
-void verifyLeafDurations(MovieInfoRec *mir)
-{
-    for(int i = 0 ; i < mir->numTIRs ; i++)
-    {
-        TrackInfoRec *tir = &(mir->tirList[i]);
-
-        for(UInt32 j = 0 ; j < tir->numLeafs ; j++)
-        {
-            long double diff = ABS((tir->leafInfo[j].presentationEndTime - tir->leafInfo[j].earliestPresentationTime) - tir->leafInfo[j].sidxReportedDuration);
-            
-            if(diff > (long double)1.0/(long double)tir->mediaTimeScale)
-                errprint("Referenced track duration %Lf of track %d does not match to subsegment_duration %Lf for leaf with EPT %Lf\n",(tir->leafInfo[j].presentationEndTime - tir->leafInfo[j].earliestPresentationTime),tir->trackID,tir->leafInfo[j].sidxReportedDuration,tir->leafInfo[j].earliestPresentationTime);
-        }
-    }
-}
-
-void verifyAlignment(MovieInfoRec *mir)
-{
-    if(vg.checkSegAlignment == false && vg.checkSubSegAlignment == false)
-        return;
-    
-    if(vg.numControlTracks != (unsigned int)mir->numTIRs)
-    {
-        errprint("Number of tracks logged %d in alignment control file not equal to the number of indexed tracks %d for this representation\n",vg.numControlTracks,mir->numTIRs);
-        return;
-    }
-    
-    for(int i = 0 ; i < mir->numTIRs ; i++)
-    {
-        TrackInfoRec *tir = &(mir->tirList[i]);
-        
-        if(vg.numControlLeafs[i] != tir->numLeafs)
-        {
-            errprint("Number of leafs %d in alignment control file for track %d not equal to the number of leafs %d for this representation\n",vg.numControlLeafs[i],tir->trackID,tir->numLeafs);
-            continue;
-        }
-            
-        for(UInt32 j = 0 ; j < (tir->numLeafs-1) ; j++)
-        {
-            if(vg.checkSubSegAlignment || (vg.checkSegAlignment && vg.controlLeafInfo[i][j+1].firstInSegment > 0))
-                if(vg.controlLeafInfo[i][j+1].earliestPresentationTime <= tir->leafInfo[j].lastPresentationTime)
-                {
-                    if(vg.controlLeafInfo[i][j+1].firstInSegment > 0)
-                        errprint("Overlapping segment: EPT of control leaf %Lf for leaf number %d is <= the latest presentation time %Lf corresponding leaf\n",vg.controlLeafInfo[i][j+1].earliestPresentationTime,j,tir->leafInfo[j].lastPresentationTime);
-                    else
-                        errprint("Overlapping subsegment: EPT of control leaf %Lf for leaf number %d is <= the latest presentation time %Lf corresponding leaf\n",vg.controlLeafInfo[i][j+1].earliestPresentationTime,j,tir->leafInfo[j].lastPresentationTime);
-                }
-        }
-        
-    }
-}
-
-void logLeafInfo(MovieInfoRec *mir)
-{
-    FILE *leafInfoFile = fopen("leafinfo.txt","wt");
-    if(leafInfoFile == NULL)
-    {
-        printf("Error opening leafinfo.txt, logging will not be done!\n");
-        return;
-    }
-
-    fprintf(leafInfoFile,"%ld\n",mir->numTIRs);
-    
-    for(int i = 0 ; i < mir->numTIRs ; i++)
-    {
-        TrackInfoRec *tir = &(mir->tirList[i]);
-
-        fprintf(leafInfoFile,"%u\n",(unsigned int)tir->numLeafs);
-        
-        for(UInt32 j = 0 ; j < tir->numLeafs ; j++)
-            fprintf(leafInfoFile,"%d %Lf %Lf\n",tir->leafInfo[j].firstInSegment,tir->leafInfo[j].earliestPresentationTime,tir->leafInfo[j].lastPresentationTime);
-            
-    }
-
-    fclose(leafInfoFile);
-}
-
-OSErr ValidateIndexingInfo(MovieInfoRec *mir)
-{
-    UInt32 i;
-    UInt64 absoluteOffset;
-    UInt64 referenceEPT;
-    UInt64 lastLeafEPT = 0;
-    int leafsProcessed = 0;
-
-    for(i = 0 ; i < (UInt32)mir->numTIRs ; i++)
-        mir->tirList[i].leafInfo = (LeafInfo *)malloc(mir->tirList[i].numLeafs * sizeof(LeafInfo));
-    
-    for(i = 0 ; i < mir->numSidx ; i++)
-    {
-        UInt32 j;
-
-        absoluteOffset = mir->sidxInfo[i].first_offset + mir->sidxInfo[i].offset + mir->sidxInfo[i].size;
-        referenceEPT = mir->sidxInfo[i].earliest_presentation_time;
-        
-        UInt32 trackIndex = getTrakIndexByID(mir->sidxInfo[i].reference_ID);
-        
-        if(trackIndex >= (UInt32)mir->numTIRs)
-            return badAtomErr;
-        
-        for(j = 0 ; j < mir->sidxInfo[i].reference_count ; j++)
-        {
-            SidxInfoRec *sidx;
-            MoofInfoRec *moof;            
-            
-            if(mir->sidxInfo[i].references[j].reference_type == 1)
-            {
-                sidx = getSidxByOffset(mir->sidxInfo,mir->numSidx,absoluteOffset);
-                if(sidx == NULL)
-                    errprint("Referenced sidx not found for sidx number %d at reference count %d: Offset %lld\n",i,j,absoluteOffset);
-
-                if(mir->sidxInfo[i].reference_ID != sidx->reference_ID)
-                    errprint("Referenced sidx reference_ID %d does not match to reference_ID %d for sidx number %d at reference count %d ; Section 8.16.3.3 of ISO/IEC 14496-12 4th edition: if this Segment Index box is referenced from a \"parent\" Segment Index box, the value of reference_ID shall be the same as the value of reference_ID of the \"parent\" Segment Index box\n",sidx->reference_ID,mir->sidxInfo[i].reference_ID,i,j);
-
-                if((double)referenceEPT/(double)mir->sidxInfo[i].timescale != (double)sidx->earliest_presentation_time/(double)sidx->timescale)
-                    errprint("Referenced sidx earliest_presentation_time %lf does not match to reference EPT %lf for sidx number %d at reference count %d\n",(double)sidx->earliest_presentation_time/(double)sidx->timescale,(double)referenceEPT/(double)mir->sidxInfo[i].timescale,i,j);
-                
-                if((double)mir->sidxInfo[i].references[j].subsegment_duration != sidx->cumulatedDuration)
-                    errprint("Referenced sidx duration %lf does not match to subsegment_duration %lf for sidx number %d at reference count %d\n",sidx->cumulatedDuration,(double)mir->sidxInfo[i].references[j].subsegment_duration,i,j);
-
-				if(mir->sidxInfo[i].references[j].starts_with_SAP > 0)
-					for(int k = 0 ; k < sidx->reference_count ; k++)
-						if(sidx->references[k].starts_with_SAP == 0)
-							errprint("Referenced sidx subsegment %d has a starts_with_SAP 0, while the starts_with_SAP of this reference (index %d of sidx %d) is set, violating Section 8.16.3.3 of ISO/IEC 14496-12 4th edition:\n",
-															k,j,i);
-
-				if(mir->sidxInfo[i].references[j].SAP_type > 0)
-					for(int k = 0 ; k < sidx->reference_count ; k++)
-						if((sidx->references[k].SAP_type == 0) || (sidx->references[k].SAP_type > mir->sidxInfo[i].references[j].SAP_type))
-							errprint("Referenced sidx subsegment %d has a SAP_type %d while the SAP_type of this reference (index %d of sidx %d) has a SAP_type %d, violating Section 8.16.3.3 of ISO/IEC 14496-12 4th edition:\n",
-															k,sidx->references[k].SAP_type,j,i,mir->sidxInfo[i].references[j].SAP_type);
-            }
-            else
-            {
-                UInt32 moofIndex = getMoofIndexByOffset(mir->moofInfo,mir->numFragments,absoluteOffset);
-                
-                if(moofIndex >= mir->numFragments)
-                {
-                    errprint("Referenced moof not found for sidx number %d at reference count %d: Offset %lld\n",i,j,absoluteOffset);
-                    continue;
-                }
-                
-                moof = &mir->moofInfo[moofIndex];
-
-                TrackInfoRec *tir = &(mir->tirList[trackIndex]);
-
-                if(moof->compositionInfoMissingPerTrack[trackIndex])
-                {
-                    warnprint("Composition info of the referred moof %d for sidx %d is missing.\n",moofIndex,i);
-                    continue;
-                }
-                
-                long double leafEPT = (long double)(moof->earliestMoofCompositionTimePerTrack[trackIndex] + moof->tfdt[trackIndex])/(long double)tir->mediaTimeScale;
-
-                if((leafsProcessed > 0) && (leafEPT <= lastLeafEPT))
-                {
-                    warnprint("A referenced leaf has an EPT %Lf less than a previous (in decode order) leaf EPT %Lf, this is not handled yet! The following operation may be unreliable\n",leafEPT,lastLeafEPT);
-                    //lastLeafEPT = leafEPT;
-                    //continue;
-                }
-
-                if(leafsProcessed > 0 && mir->moofInfo[moofIndex - 1].compositionInfoMissingPerTrack[trackIndex])
-                {
-                    warnprint("Composition info of the moof %d for sidx %d is missing. The following operation may be unreliable\n",moofIndex-1,i);
-                    //continue;
-                }
-                
-                tir->leafInfo[leafsProcessed].earliestPresentationTime = leafEPT;
-
-                if(leafsProcessed > 0)
-                {
-                    tir->leafInfo[leafsProcessed - 1].lastPresentationTime = (mir->moofInfo[moofIndex - 1].latestMoofCompositionTimePerTrack[trackIndex] + mir->moofInfo[moofIndex - 1].tfdt[trackIndex])/(long double)tir->mediaTimeScale;
-                    tir->leafInfo[leafsProcessed - 1].presentationEndTime = (mir->moofInfo[moofIndex - 1].moofPresentationEndTimePerTrack[trackIndex] + mir->moofInfo[moofIndex - 1].tfdt[trackIndex])/(long double)tir->mediaTimeScale;
-                }
-
-                if(leafsProcessed == (tir->numLeafs - 1))
-                {
-                    tir->leafInfo[leafsProcessed].lastPresentationTime = (mir->moofInfo[mir->numFragments - 1].latestMoofCompositionTimePerTrack[trackIndex] + mir->moofInfo[mir->numFragments - 1].tfdt[trackIndex])/(long double)tir->mediaTimeScale;
-                    tir->leafInfo[leafsProcessed].presentationEndTime= (mir->moofInfo[mir->numFragments - 1].moofPresentationEndTimePerTrack[trackIndex] + mir->moofInfo[mir->numFragments - 1].tfdt[trackIndex])/(long double)tir->mediaTimeScale;
-                }
-                
-                tir->leafInfo[leafsProcessed].firstInSegment = leafsProcessed > 0 ? checkSegmentBoundry(mir->moofInfo[moofIndex - 1].offset, absoluteOffset) : true;
-
-                tir->leafInfo[leafsProcessed].sidxReportedDuration = (long double)(mir->sidxInfo[i].references[j].subsegment_duration)/(long double)(mir->sidxInfo[i].timescale);
-                    
-                if((long double)referenceEPT/(long double)mir->sidxInfo[i].timescale != leafEPT)
-                    errprint("Referenced moof earliest_presentation_time %Lf does not match to reference EPT %Lf for sidx number %d at reference count %d\n",leafEPT,(long double)referenceEPT/(long double)mir->sidxInfo[i].timescale,i,j);
-
-				if(mir->sidxInfo[i].references[j].SAP_type > 2)
-			    {
-					warnprint("Sidx %d, index %d: SAP_type > 2 checks not yet implemented! The following operation may be unreliable\n",i,j);
-					//continue;
-			    }
-
-                if(mir->sidxInfo[i].references[j].SAP_type > 0 || mir->sidxInfo[i].references[j].starts_with_SAP > 0)
-                {
-                    
-                    double SAP_time = (double)(mir->sidxInfo[i].references[j].SAP_delta_time + referenceEPT)/(double)mir->sidxInfo[i].timescale;
-
-                    UInt64 cummulatedDuration = 0;
-                    double sampleCompositionTime;
-                    bool SAPFound = false;
-                    
-                    for(UInt32 k = 0; k < moof->numTrackFragments ; k++)
-                        if(moof->trafInfo[k].track_ID == mir->sidxInfo[i].reference_ID && moof->trafInfo[k].numTrun > 0)//Assuming 'trun' cannot be empty, 14496-12 version 4 does not indicate such a possiblity.
-                        {
-                            for(UInt32 l = 0 ; l < moof->trafInfo[k].numTrun ; l++)
-                            {
-                                for(UInt32 m = 0 ; m < moof->trafInfo[k].trunInfo[l].sample_count ; m++)
-                                {
-                                    UInt64 sample_composition_time_offset = moof->trafInfo[k].trunInfo[l].version != 0 ? (Int32)moof->trafInfo[k].trunInfo[l].sample_composition_time_offset[m] : (UInt32)moof->trafInfo[k].trunInfo[l].sample_composition_time_offset[m];
-
-                                    sampleCompositionTime = (double)(sample_composition_time_offset + moof->tfdt[trackIndex] + cummulatedDuration)/tir->mediaTimeScale;
-
-                                    bool sample_is_non_sync_sample = (moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000 >> 16) != 0;
-                                    
-                                    if(sampleCompositionTime == SAP_time)
-                                    {
-                                        if(sample_is_non_sync_sample)
-                                        {
-                                            errprint("SAP_type %d specified but the corresponding sample is sample_is_non_sync_sample, for sidx number %d at reference count %d\n",i,j);
-                                        }
-                                        
-                                        SAPFound = true;
-                                        //printf("SAP found with composition time %lf \n",sampleCompositionTime);
-                                    }
-                                    
-                                    if(sampleCompositionTime < SAP_time && !sample_is_non_sync_sample)
-                                        errprint("SAP found with composition time %lf lesser than the declared SAP time %lf (SAP_delta_time %lf), for sidx number %d at reference count %d; first SAP shall be signaled as per Section 8.16.3.3 of ISO/IEC 14496-12 4th edition\n",sampleCompositionTime,SAP_time,(double)(mir->sidxInfo[i].references[j].SAP_delta_time)/(double)mir->sidxInfo[i].timescale,i,j);
-                                    
-                                    cummulatedDuration += moof->trafInfo[k].trunInfo[l].sample_duration[m];
-                                    
-                                    if(SAPFound == true)
-                                        break;
-                                    
-                                    if(mir->sidxInfo[i].references[j].starts_with_SAP > 0)
-                                        errprint("starts_with_SAP declared but the first sample is not a SAP, for sidx number %d at reference count %d (checking sample %d of trun %d, traf %d, moof %d)\n",i,j,m+1,l+1,k+1,moofIndex+1);
-                                }
-                                
-                                if(SAPFound == true)
-                                    break;
-                            }
-                                                        
-                            if(SAPFound == true)
-                                break;
-                        }
-
-                    if(SAPFound != true)
-                        errprint("SAP not found for sidx number %d at reference count %d\n",i,j);
-    				
-                }
-
-                lastLeafEPT = leafEPT;
-
-                leafsProcessed ++;
-
-            }
-            
-            absoluteOffset+=mir->sidxInfo[i].references[j].referenced_size;
-            referenceEPT+=mir->sidxInfo[i].references[j].subsegment_duration;
-                
-        }
-        
-    }
-
-    verifyLeafDurations(mir);
-    verifyAlignment(mir);
-    logLeafInfo(mir);
-    
-	return noErr;
-    
-}
-
-
-//==========================================================================================
-
 OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 {
 #pragma unused(refcon)
@@ -600,7 +131,7 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 	maxOffset = aoe->offset + aoe->size - aoe->atomStartSize;
 	
 	BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
-	
+    	
 	// Process 'ftyp' atom
 
 	atomerr = ValidateAtomOfType( 'ftyp', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne | kTypeAtomFlagMustBeFirst, 
@@ -617,32 +148,36 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 	atomerr = ValidateAtomOfType( 'meta', kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_meta_Atom, cnt, list, nil );
 	if (!err) err = atomerr;
+
+    //Some Processing like: check ordering to some extend (first sidx in segment is checked later while verifying indexing since it comes with
+    //the checks for duration
+	if(vg.brandDASH)
+        checkDASHBoxOrder(cnt,list,vg.segmentInfoSize,vg.initializationSegment,vg.segmentSizes,vg.mir);
     
 	// Count the total fragments and sidx's (if present), and allocate the required memory for that
 	vg.mir->numFragments = 0;
-	vg.mir->numSidx= 0;
-    
+	vg.mir->numSidx = 0;
+
 	if(vg.mir->fragmented)
 	{
-    	for (i = 0; i < cnt; i++)
-    	{
-    		if (list[i].type == 'moof')
-                vg.mir->numFragments++;
-            
-    		if (list[i].type == 'sidx')
+        for (i = 0; i < cnt; i++)
+        {
+            if (list[i].type == 'sidx')
                 vg.mir->numSidx++;
-    	}
-
+            
+            if (list[i].type == 'moof')
+                vg.mir->numFragments++;
+        }
+        
         vg.mir->moofInfo = (MoofInfoRec *)malloc(vg.mir->numFragments*sizeof(MoofInfoRec));
         vg.mir->processedFragments = 0;
 
     	for (i = 0; i < (long)vg.mir->numFragments ; i++)
     	{
             vg.mir->moofInfo[i].compositionInfoMissingPerTrack = (Boolean*)malloc(vg.mir->numTIRs*sizeof(Boolean));
-            vg.mir->moofInfo[i].cummulatedMoofSampleDurationPerTrack = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
-            vg.mir->moofInfo[i].earliestMoofCompositionTimePerTrack = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
-            vg.mir->moofInfo[i].latestMoofCompositionTimePerTrack = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
-            vg.mir->moofInfo[i].moofPresentationEndTimePerTrack = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
+            vg.mir->moofInfo[i].moofEarliestPresentationTimePerTrack = (long double*)malloc(vg.mir->numTIRs*sizeof(long double));
+            vg.mir->moofInfo[i].moofPresentationEndTimePerTrack = (long double*)malloc(vg.mir->numTIRs*sizeof(long double));
+            vg.mir->moofInfo[i].moofLastPresentationTimePerTrack = (long double*)malloc(vg.mir->numTIRs*sizeof(long double));
             vg.mir->moofInfo[i].tfdt = (UInt64*)malloc(vg.mir->numTIRs*sizeof(UInt64));
     	}
 
@@ -655,17 +190,13 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
         vg.mir->sidxInfo = NULL;
     }
     			
-	//
 	for (i = 0; i < cnt; i++) {
 		entry = &list[i];
 
 		switch (entry->type) {
 			case 'mdat':
-
-                if(vg.initializationSegment && entry->offset <= vg.segmentSizes[0])
-                    warnprint("mdat found in initialization segment: Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): The Initialization Segment shall not contain any media data with an assigned presentation time.\n");
-
 			case 'skip':
+            case 'ssix':
 			case 'free':
 				break;
 
@@ -685,9 +216,6 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
                     if(!vg.mir->fragmented)
                         errprint("'moof' boxes are not to be expected without an 'mvex' in 'moov'\n");
 
-                    if(vg.initializationSegment && entry->offset <= vg.segmentSizes[0])
-                        errprint("moof found in initialization segment: Section 6.3.3. of ISO/IEC 23009-1:2012(E): It shall not contain any \"moof\" boxes.\n");
-                    
                     atomerr = ValidateAtomOfType( 'moof', 0, 
                         Validate_moof_Atom, cnt, list, vg.mir);
                     if (!err) err = atomerr;
@@ -697,6 +225,9 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
             case 'sidx':
                     if(!vg.mir->fragmented)
                         errprint("'sidx' boxes are not to be expected in a non-fragmented movie\n");
+
+                    if(!vg.initializationSegment && !vg.dashInFtyp)
+                        errprint("'sidx' found for self-initializing media, violating Section 6.3.5.2. of ISO/IEC 23009-1:2012(E): The Indexed Self-Initializing Media Segment ... shall carry 'dash' as a compatible brand. \n");
                     
                     atomerr = ValidateAtomOfType( 'sidx', 0, 
                         Validate_sidx_Atom, cnt, list, vg.mir);
@@ -712,11 +243,17 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 		if (!err) err = atomerr;
 	}
 
-	if(vg.mir->fragmented)
-        ValidateFragmentInfo(vg.mir);
+  if(vg.mir->fragmented)
+    postprocessFragmentInfo(vg.mir);
+  
+  estimatePresentationTimes(vg.mir);
 
-    if(vg.mir->numSidx > 0)
-        ValidateIndexingInfo(vg.mir);
+   if(vg.brandDASH)
+   {
+        processSAP34(vg.mir);
+        processIndexingInfo(vg.mir);
+        logLeafInfo(vg.mir);
+   }
 	
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -782,6 +319,7 @@ OSErr Validate_edts_Atom( atomOffsetEntry *aoe, void *refcon )
 	OSErr atomerr = noErr;
 	atomOffsetEntry *entry;
 	UInt64 minOffset, maxOffset;
+	TrackInfoRec	*tir = (TrackInfoRec*)refcon;
 	
 	atomprintnotab(">\n"); 
 	
@@ -792,7 +330,7 @@ OSErr Validate_edts_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	// Process 'elst' atoms
 	atomerr = ValidateAtomOfType( 'elst', kTypeAtomFlagCanHaveAtMostOne, 
-		Validate_elst_Atom, cnt, list, nil );
+		Validate_elst_Atom, cnt, list, tir );
 	if (!err) err = atomerr;
 
 	//
@@ -1418,6 +956,20 @@ OSErr Validate_mvex_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
 
     //todo: add optional 'leva' boxes
+    if(vg.subRepLevel && vg.initializationSegment)
+    {
+        bool levaFound = false;
+        
+    	for (i = 0; i < cnt; i++) {
+    		entry = &list[i];
+            if(entry->type == 'leva')
+                levaFound = true;
+    	}
+
+        if(!levaFound)
+            errprint("leva box not found in intialization segment, violating: Section 7.3.4. of ISO/IEC 23009-1:2012(E): The Initialization Segment shall contain the Level Assignment ('leva') box");
+        
+    }
 	// Process 'mehd' atoms
 	atomerr = ValidateAtomOfType( 'mehd', kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_mehd_Atom, cnt, list, vg.mir );
@@ -1570,11 +1122,10 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 		int ix;
 		OSType currentBrand;
 		Boolean majorBrandFoundAmongCompatibleBrands = false;
-        vg.brandDASH = false;
-        OSType dash;
-        
-        mapStringToUInt32((char *)"dash",&dash);
-		
+        vg.indexedFile = false;
+        vg.msixInFtyp = false;
+        vg.dashInFtyp = false;
+        		
 		for (ix=0; ix < (int)numCompatibleBrands; ix++) {
 			BAILIFERR( GetFileDataN32( aoe, &currentBrand, offset, &offset ) );
 			if (ix<(numCompatibleBrands-1)) atomprint("\"%s\",\n", ostypetostr_r(currentBrand, tempstr1));
@@ -1584,11 +1135,15 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 				majorBrandFoundAmongCompatibleBrands = true;
 			}
 			
-			if (currentBrand == dash)
+			if (currentBrand == 'dash')
             {
 				vg.brandDASH = true;
+                vg.dashInFtyp = true;   //Split from brandDASH since it is also set if the file is segmented
 			}
-			
+            else if (currentBrand == 'msix')
+            {
+				vg.msixInFtyp = true;
+			}
 		}
 
 		if (!majorBrandFoundAmongCompatibleBrands) {
@@ -1648,10 +1203,27 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 		OSType currentBrand;
 		Boolean majorBrandFoundAmongCompatibleBrands = false;
         bool msdhFound = false;
-        OSType msdh;
-        
-        mapStringToUInt32((char *)"msdh",&msdh);
-        		
+        bool msixFound = false;
+        vg.simsInStyp = false;
+
+        //Which segment is it?
+        int segmentNum;
+        bool segmentFound = false;
+        UInt64 offset = 0;
+        for(segmentNum = 0 ; segmentNum < vg.segmentInfoSize ; segmentNum++)
+        {
+            if(aoe->offset == offset)
+            {
+                segmentFound = true;
+                break;
+            }
+            
+            offset += vg.segmentOffsetInfo[segmentNum];
+        }
+
+        if(!segmentFound)
+            errprint("styp not at the begining of a segment (abs. file offset %lld), this is unexpected\n",aoe->offset);
+                		
 		for (ix=0; ix < (int)numCompatibleBrands; ix++) {
 			BAILIFERR( GetFileDataN32( aoe, &currentBrand, offset, &offset ) );
 			if (ix<(numCompatibleBrands-1)) atomprint("\"%s\",\n", ostypetostr_r(currentBrand, tempstr1));
@@ -1661,24 +1233,41 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 				majorBrandFoundAmongCompatibleBrands = true;
 			}
             
-			if (currentBrand == msdh) {
+			if (currentBrand == 'msdh') {
 				msdhFound = true;
+			}
+            else if(currentBrand == 'msix') {
+				msixFound = true;
+			}
+            else if(currentBrand == 'sims') {
+				vg.simsInStyp[segmentNum] = true;
+			}
+            else if(currentBrand == 'lmsg') {
+				if(segmentNum != vg.segmentInfoSize)
+                    errprint("Brand 'lmsg' found as a compatible brand for segment number %d (not the last segment %d); violates Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): In all cases for which a Representation contains more than one Media Segment ... If the Media Segment is not the last Media Segment in the Representation, the 'lmsg' compatibility brand shall not be present.\n",segmentNum,vg.segmentInfoSize);
 			}
 						
 		}
 
 		if (!majorBrandFoundAmongCompatibleBrands) {
-				
 				errprint("major brand ('%.4s') not also found in list of compatible brands\n", 
 						     ostypetostr_r(majorBrand,tempstr2));
 			}
         
 		if (!msdhFound) {
-				
-				errprint("Brand msdh not found as a compatible brand; violates Section 6.3.4.2. of ISO/IEC 23009-1:2012(E)\n", 
-						     ostypetostr_r(majorBrand,tempstr2));
+				errprint("Brand msdh not found as a compatible brand; violates Section 6.3.4.2. of ISO/IEC 23009-1:2012(E)\n");
+			}
+        
+		if (!msixFound && (vg.mir->numSidx > 0)) {
+				errprint("msix not found in styp of a segment, while indxing info found, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall carry 'msix' as a compatible brand \n");
 			}
 
+        if (vg.isomain && (vg.startWithSAP <= 0 || vg.startWithSAP > 3) && !msixFound)
+            errprint("msix not found in styp of a segment, with main profile and startWithSAP %d, violating: Section 8.5.3. of ISO/IEC 23009-1:2012(E): Each Media Segment of the Representations not having @startWithSAP present or having @startWithSAP value 0 or greater than 3 shall comply with the formats defined in 6.3.4.3, i.e. the brand 'msix'\n",vg.startWithSAP);
+        
+		if (vg.checklevel && !vg.simsInStyp[segmentNum]) {
+				errprint("sims not found in styp of a segment, while SubRepresentation@level checks invoked, violating: Section 7.3.4. of ISO/IEC 23009-1:2012(E): If a SubRepresentation element is present in a Representation in the MPD and the attribute SubRepresentation@level is present, then the Media Segments in this Representation shall conform to a Sub-Indexed Media Segment as defined in 6.3.4.4 \n");
+			}
 			
  	}
  	
@@ -1718,7 +1307,7 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
 
     if(vg.initializationSegment && ((aoe->offset + aoe->size) > vg.segmentSizes[0]))
-        errprint("Complete moov not found in initialization segment: Section 6.3.3. of ISO/IEC 23009-1:2012(E): 16) The Initialization Segment shall contain an \"ftyp\" box, and a \"moov\" box\n");	
+        errprint("Complete moov not found in initialization segment: Section 6.3.3. of ISO/IEC 23009-1:2012(E): The Initialization Segment shall contain an \"ftyp\" box, and a \"moov\" box\n");	
 
 	// find out how many tracks we have so we can allocate our struct
 	for (i = 0; i < cnt; i++) {
@@ -2061,16 +1650,15 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
     atomerr = ValidateAtomOfType( 'mfhd', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
         Validate_mfhd_Atom, cnt, list, moofInfo );
     if (!err) err = atomerr;
-    
+
+    moofInfo->index = mir->processedFragments;
     moofInfo->numTrackFragments = 0;
     moofInfo->processedTrackFragments = 0;
+    moofInfo->firstFragmentInSegment = false;
+    moofInfo->samplesToBePresented = true;
 
     for(i = 0 ;  i < mir->numTIRs ; i++)
     {
-        moofInfo->cummulatedMoofSampleDurationPerTrack[i] = 0;
-        moofInfo->earliestMoofCompositionTimePerTrack[i] = 0xFFFFFFFFFFFFFFFF;
-        moofInfo->latestMoofCompositionTimePerTrack[i] = 0;
-        moofInfo->moofPresentationEndTimePerTrack[i] = 0;
         moofInfo->compositionInfoMissingPerTrack[i] = false;
     }
     
@@ -2082,6 +1670,9 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
         moofInfo->trafInfo = (TrafInfoRec *)malloc(moofInfo->numTrackFragments*sizeof(TrafInfoRec));
     else
         moofInfo->trafInfo = NULL;
+
+    if(vg.brandDASH && moofInfo->numTrackFragments == 0)
+        errprint("Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): 16: Each 'moof' box shall contain at least one track fragment.\n");
         
     atomerr = ValidateAtomOfType( 'traf', 0, 
         Validate_traf_Atom, cnt, list, moofInfo );
@@ -2142,14 +1733,26 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
     
     trafInfo->numTrun = 0;
     trafInfo->processedTrun = 0;
+    trafInfo->numSgpd = 0;
+    trafInfo->processedSgpd = 0;
+    trafInfo->numSbgp = 0;
+    trafInfo->processedSbgp = 0;
     trafInfo->tfdtFound = false;
     trafInfo->earliestCompositionTimeInTrackFragment = 0xFFFFFFFFFFFFFFFF;
-    trafInfo->presentationEndTimeInTrackFragment = 0;
-    trafInfo->latestPresentationTimeInTrackFragment = 0;
+    trafInfo->compositionEndTimeInTrackFragment = 0;
+    trafInfo->latestCompositionTimeInTrackFragment = 0;
     
 	for (i = 0; i < cnt; i++)
+	{
 		if (list[i].type == 'trun')
             trafInfo->numTrun++;
+        
+		if (list[i].type == 'sgpd')
+            trafInfo->numSgpd++;
+        
+		if (list[i].type == 'sbgp')
+            trafInfo->numSbgp++;
+	}
 
     if(trafInfo->duration_is_empty && trafInfo->numTrun > 0)
         errprint("If the duration-is-empty flag is set in the tf_flags, there are no track runs.");
@@ -2159,11 +1762,36 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
     else
         trafInfo->trunInfo = NULL;
     
+    if(trafInfo->numSgpd > 0)
+        trafInfo->sgpdInfo = (SgpdInfoRec *)malloc(trafInfo->numSgpd*sizeof(SgpdInfoRec));
+    else
+        trafInfo->sgpdInfo = NULL;
+    
+    if(trafInfo->numSbgp > 0)
+        trafInfo->sbgpInfo = (SbgpInfoRec *)malloc(trafInfo->numSbgp*sizeof(SbgpInfoRec));
+    else
+        trafInfo->sbgpInfo = NULL;
+    
     atomerr = ValidateAtomOfType( 'trun', 0, 
         Validate_trun_Atom, cnt, list, trafInfo );
     if (!err) err = atomerr;
     
-    atomerr = ValidateAtomOfType( 'tfdt', kTypeAtomFlagCanHaveAtMostOne, 
+    atomerr = ValidateAtomOfType( 'sgpd', 0, 
+        Validate_sgpd_Atom, cnt, list, trafInfo );
+    if (!err) err = atomerr;
+
+    atomerr = ValidateAtomOfType( 'sgpd', 0, 
+        Validate_sbgp_Atom, cnt, list, trafInfo );
+    if (!err) err = atomerr;
+
+    long flags;
+
+    flags = kTypeAtomFlagCanHaveAtMostOne;
+
+    if(vg.brandDASH)
+        flags |= kTypeAtomFlagMustHaveOne;
+    
+    atomerr = ValidateAtomOfType( 'tfdt', flags, 
         Validate_tfdt_Atom, cnt, list, trafInfo );
     if (!err) err = atomerr;
     
@@ -2209,17 +1837,7 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
 
 	index = getTrakIndexByID(trafInfo->track_ID);
 
-    moofInfo->cummulatedMoofSampleDurationPerTrack[index] += trafInfo->cummulatedSampleDuration;
     moofInfo->compositionInfoMissingPerTrack[index] = moofInfo->compositionInfoMissingPerTrack[index] || trafInfo->compositionInfoMissing;
-
-    if(!trafInfo->compositionInfoMissing && (trafInfo->earliestCompositionTimeInTrackFragment < moofInfo->earliestMoofCompositionTimePerTrack[index]))
-        moofInfo->earliestMoofCompositionTimePerTrack[index] = trafInfo->earliestCompositionTimeInTrackFragment;
-
-    if(!trafInfo->compositionInfoMissing && (trafInfo->latestPresentationTimeInTrackFragment > moofInfo->latestMoofCompositionTimePerTrack[index]))
-        moofInfo->latestMoofCompositionTimePerTrack[index] = trafInfo->latestPresentationTimeInTrackFragment;
-
-    if(!trafInfo->compositionInfoMissing && (trafInfo->presentationEndTimeInTrackFragment > moofInfo->moofPresentationEndTimePerTrack[index]))
-        moofInfo->moofPresentationEndTimePerTrack[index] = trafInfo->presentationEndTimeInTrackFragment;
 
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2263,18 +1881,55 @@ void dispose_mir( MovieInfoRec *mir )
                                 
                                 if(mir->moofInfo[i].trafInfo[j].trunInfo[k].sample_composition_time_offset != NULL)
                                     free(mir->moofInfo[i].trafInfo[j].trunInfo[k].sample_composition_time_offset);
+
+                                if(mir->moofInfo[i].trafInfo[j].trunInfo[k].samplePresentationTime != NULL)
+                                    free(mir->moofInfo[i].trafInfo[j].trunInfo[k].samplePresentationTime);
+                                
+                                if(mir->moofInfo[i].trafInfo[j].trunInfo[k].sampleToBePresented != NULL)
+                                    free(mir->moofInfo[i].trafInfo[j].trunInfo[k].sampleToBePresented);
+                                
+                                if(mir->moofInfo[i].trafInfo[j].trunInfo[k].sap3 != NULL)
+                                    free(mir->moofInfo[i].trafInfo[j].trunInfo[k].sap3);
+                                
+                                if(mir->moofInfo[i].trafInfo[j].trunInfo[k].sap4 != NULL)
+                                    free(mir->moofInfo[i].trafInfo[j].trunInfo[k].sap4);
+                            }
+
+                            if(mir->moofInfo[i].trafInfo[j].trunInfo != NULL)
+                                free(mir->moofInfo[i].trafInfo[j].trunInfo);
+
+                            if(mir->moofInfo[i].trafInfo[j].sbgpInfo != NULL)
+                            {
+                                for(k = 0 ; k < mir->moofInfo[i].trafInfo[j].numSbgp ; k++)
+                                {                                    
+                                    free(mir->moofInfo[i].trafInfo[j].sbgpInfo[k].sample_count);
+                                    free(mir->moofInfo[i].trafInfo[j].sbgpInfo[k].group_description_index);
+                                }
+                                
+                                free(mir->moofInfo[i].trafInfo[j].sbgpInfo);
                             }
                             
-                            free(mir->moofInfo[i].trafInfo[j].trunInfo);
+                            if(mir->moofInfo[i].trafInfo[j].sgpdInfo != NULL)
+                            {
+                                for(k = 0 ; k < mir->moofInfo[i].trafInfo[j].numSgpd ; k++)
+                                {                                    
+                                    for(UInt32 l = 0 ; l < mir->moofInfo[i].trafInfo[j].sgpdInfo[k].entry_count ; l++)
+                                        free(mir->moofInfo[i].trafInfo[j].sgpdInfo[k].SampleGroupDescriptionEntry[l]);
+
+                                    free(mir->moofInfo[i].trafInfo[j].sgpdInfo[k].SampleGroupDescriptionEntry);
+                                    free(mir->moofInfo[i].trafInfo[j].sgpdInfo[k].description_length);
+                                }
+                                
+                                free(mir->moofInfo[i].trafInfo[j].sgpdInfo);
+                            }
                         }
                     }
                         
                 free(mir->moofInfo[i].trafInfo);
                 free(mir->moofInfo[i].compositionInfoMissingPerTrack);
-                free(mir->moofInfo[i].cummulatedMoofSampleDurationPerTrack);
-                free(mir->moofInfo[i].earliestMoofCompositionTimePerTrack);
-                free(mir->moofInfo[i].latestMoofCompositionTimePerTrack);
+                free(mir->moofInfo[i].moofEarliestPresentationTimePerTrack);
                 free(mir->moofInfo[i].moofPresentationEndTimePerTrack);
+                free(mir->moofInfo[i].moofLastPresentationTimePerTrack);
                 free(mir->moofInfo[i].tfdt);
             }
         }

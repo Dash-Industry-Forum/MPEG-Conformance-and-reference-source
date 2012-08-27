@@ -521,14 +521,6 @@ bail:
 
 //==========================================================================================
 
-typedef struct HandlerInfoRecord {
-    UInt32	componentType;
-    UInt32	componentSubType;
-    UInt32	componentManufacturer;
-    UInt32	componentFlags;
-    UInt32	componentFlagsMask;
-    char    Name[1];
-} HandlerInfoRecord;
 
 OSErr Get_mdia_hdlr_mediaType( atomOffsetEntry *aoe, TrackInfoRec *tir )
 {
@@ -552,7 +544,7 @@ OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 	UInt32 version;
 	UInt32 flags;
 	UInt64 offset;
-	HandlerInfoRecord	hdlrInfo;
+	HandlerInfoRecord	*hdlrInfo = (HandlerInfoRecord *)malloc(sizeof(HandlerInfoRecord));
 	char *nameP;
 
 	// Get version/flags
@@ -562,36 +554,36 @@ OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 	FieldMustBe( flags, 0, "flags must be %d not %d" );
 
 	// Get Handler Info (minus name) 
-	BAILIFERR( GetFileData( aoe, &hdlrInfo, offset, (UInt64)fieldOffset(HandlerInfoRecord, Name), &offset ) );
-	hdlrInfo.componentType = EndianU32_BtoN(hdlrInfo.componentType);
-	hdlrInfo.componentSubType = EndianU32_BtoN(hdlrInfo.componentSubType);
-	hdlrInfo.componentFlags = EndianU32_BtoN(hdlrInfo.componentFlags);
-	hdlrInfo.componentFlagsMask = EndianU32_BtoN(hdlrInfo.componentFlagsMask);
-	hdlrInfo.componentFlags = EndianU32_BtoN(hdlrInfo.componentFlags);
-	hdlrInfo.componentFlags = EndianU32_BtoN(hdlrInfo.componentFlags);
+	BAILIFERR( GetFileData( aoe, hdlrInfo, offset, (UInt64)fieldOffset(HandlerInfoRecord, Name), &offset ) );
+	hdlrInfo->componentType = EndianU32_BtoN(hdlrInfo->componentType);
+	hdlrInfo->componentSubType = EndianU32_BtoN(hdlrInfo->componentSubType);
+	hdlrInfo->componentFlags = EndianU32_BtoN(hdlrInfo->componentFlags);
+	hdlrInfo->componentFlagsMask = EndianU32_BtoN(hdlrInfo->componentFlagsMask);
+	hdlrInfo->componentFlags = EndianU32_BtoN(hdlrInfo->componentFlags);
+	hdlrInfo->componentFlags = EndianU32_BtoN(hdlrInfo->componentFlags);
 
 	// Remember info in the refcon
 	if (vg.print_atompath) {
-		fprintf(stdout,"\t\tHandler subtype = '%s'\n", ostypetostr(hdlrInfo.componentSubType));
+		fprintf(stdout,"\t\tHandler subtype = '%s'\n", ostypetostr(hdlrInfo->componentSubType));
 	}
-	tir->mediaType = hdlrInfo.componentSubType;
-	atomprint("handler_type=\"%s\"\n", ostypetostr(hdlrInfo.componentSubType));
+	tir->mediaType = hdlrInfo->componentSubType;
+	atomprint("handler_type=\"%s\"\n", ostypetostr(hdlrInfo->componentSubType));
 	
 	// Get Handler Info Name
 	BAILIFERR( GetFileCString( aoe, &nameP, offset, aoe->maxOffset - offset, &offset ) );
 	atomprint("name=\"%s\"\n", nameP);
 
 	// Check required field values
-	FieldMustBe( hdlrInfo.componentType, 0, "'hdlr' componentType (reserved in mp4) must be %d not 0x%lx" );
-	FieldMustBe( hdlrInfo.componentManufacturer, 0, "'hdlr' componentManufacturer (reserved in mp4) must be %d not 0x%lx" );
-	FieldMustBe( hdlrInfo.componentFlags, 0, "'hdlr' componentFlags (reserved in mp4) must be %d not 0x%lx" );
-	FieldMustBe( hdlrInfo.componentFlagsMask, 0, "'hdlr' componentFlagsMask (reserved in mp4) must be %d not 0x%lx" );
+	FieldMustBe( hdlrInfo->componentType, 0, "'hdlr' componentType (reserved in mp4) must be %d not 0x%lx" );
+	FieldMustBe( hdlrInfo->componentManufacturer, 0, "'hdlr' componentManufacturer (reserved in mp4) must be %d not 0x%lx" );
+	FieldMustBe( hdlrInfo->componentFlags, 0, "'hdlr' componentFlags (reserved in mp4) must be %d not 0x%lx" );
+	FieldMustBe( hdlrInfo->componentFlagsMask, 0, "'hdlr' componentFlagsMask (reserved in mp4) must be %d not 0x%lx" );
 
-		FieldMustBeOneOf10( hdlrInfo.componentSubType, OSType, 
+		FieldMustBeOneOf10( hdlrInfo->componentSubType, OSType, 
 			"'hdlr' handler type must be be one of ", 
 			('odsm', 'crsm', 'sdsm', 'vide', 'soun', 'm7sm', 'ocsm', 'ipsm', 'mjsm', 'hint') );
 
-	
+	tir->hdlrInfo = hdlrInfo;
 	// All done
 	atomprint("/>\n"); 
 	aoe->aoeflags |= kAtomValidated;
@@ -606,7 +598,7 @@ OSErr Validate_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 	UInt32 version;
 	UInt32 flags;
 	UInt64 offset;
-	HandlerInfoRecord	hdlrInfo;
+	HandlerInfoRecord	*hdlrInfo = (HandlerInfoRecord *)malloc(sizeof(HandlerInfoRecord));
 	char *nameP;
 
 	// Get version/flags
@@ -616,29 +608,29 @@ OSErr Validate_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 	FieldMustBe( flags, 0, "flags must be %d not %d" );
 
 	// Get Handler Info (minus name) 
-	BAILIFERR( GetFileData( aoe, &hdlrInfo, offset, (UInt64)fieldOffset(HandlerInfoRecord, Name), &offset ) );
-	hdlrInfo.componentType = EndianU32_BtoN(hdlrInfo.componentType);
-	hdlrInfo.componentSubType = EndianU32_BtoN(hdlrInfo.componentSubType);
-	hdlrInfo.componentFlags = EndianU32_BtoN(hdlrInfo.componentFlags);
-	hdlrInfo.componentFlagsMask = EndianU32_BtoN(hdlrInfo.componentFlagsMask);
-	hdlrInfo.componentFlags = EndianU32_BtoN(hdlrInfo.componentFlags);
-	hdlrInfo.componentFlags = EndianU32_BtoN(hdlrInfo.componentFlags);
+	BAILIFERR( GetFileData( aoe, hdlrInfo, offset, (UInt64)fieldOffset(HandlerInfoRecord, Name), &offset ) );
+	hdlrInfo->componentType = EndianU32_BtoN(hdlrInfo->componentType);
+	hdlrInfo->componentSubType = EndianU32_BtoN(hdlrInfo->componentSubType);
+	hdlrInfo->componentFlags = EndianU32_BtoN(hdlrInfo->componentFlags);
+	hdlrInfo->componentFlagsMask = EndianU32_BtoN(hdlrInfo->componentFlagsMask);
+	hdlrInfo->componentFlags = EndianU32_BtoN(hdlrInfo->componentFlags);
+	hdlrInfo->componentFlags = EndianU32_BtoN(hdlrInfo->componentFlags);
 
 	// Remember info in the refcon
 	if (vg.print_atompath) {
-		fprintf(stdout,"\t\tHandler subtype = '%s'\n", ostypetostr(hdlrInfo.componentSubType));
+		fprintf(stdout,"\t\tHandler subtype = '%s'\n", ostypetostr(hdlrInfo->componentSubType));
 	}
-	atomprint("handler_type=\"%s\"\n", ostypetostr(hdlrInfo.componentSubType));
+	atomprint("handler_type=\"%s\"\n", ostypetostr(hdlrInfo->componentSubType));
 	
 	// Get Handler Info Name
 	BAILIFERR( GetFileCString( aoe, &nameP, offset, aoe->maxOffset - offset, &offset ) );
 	atomprint("name=\"%s\"\n", nameP);
 
 	// Check required field values
-	FieldMustBe( hdlrInfo.componentType, 0, "'hdlr' componentType (reserved in mp4) must be %d not 0x%lx" );
-	FieldMustBe( hdlrInfo.componentManufacturer, 0, "'hdlr' componentManufacturer (reserved in mp4) must be %d not 0x%lx" );
-	FieldMustBe( hdlrInfo.componentFlags, 0, "'hdlr' componentFlags (reserved in mp4) must be %d not 0x%lx" );
-	FieldMustBe( hdlrInfo.componentFlagsMask, 0, "'hdlr' componentFlagsMask (reserved in mp4) must be %d not 0x%lx" );
+	FieldMustBe( hdlrInfo->componentType, 0, "'hdlr' componentType (reserved in mp4) must be %d not 0x%lx" );
+	FieldMustBe( hdlrInfo->componentManufacturer, 0, "'hdlr' componentManufacturer (reserved in mp4) must be %d not 0x%lx" );
+	FieldMustBe( hdlrInfo->componentFlags, 0, "'hdlr' componentFlags (reserved in mp4) must be %d not 0x%lx" );
+	FieldMustBe( hdlrInfo->componentFlagsMask, 0, "'hdlr' componentFlagsMask (reserved in mp4) must be %d not 0x%lx" );
 	
 	// All done
 	atomprint("/>\n"); 
@@ -867,7 +859,11 @@ OSErr Validate_url_Entry( atomOffsetEntry *aoe, void *refcon )
 	if (flags & 1) {
 		// no more data
 	} else {
-		BAILIFERR( GetFileCString( aoe, &locationP, offset, aoe->maxOffset - offset, &offset ) );
+	
+        if(vg.brandDASH)
+            errprint("url pointing to external data found in 'dref', violating Section 6.3.4.2. of ISO/IEC 23009-1:2012(E):  The 'moof' boxes shall use movie-fragment relative addressing for media data that does not use external data references.\n");
+
+        BAILIFERR( GetFileCString( aoe, &locationP, offset, aoe->maxOffset - offset, &offset ) );
 	}
 	
 		
@@ -903,6 +899,9 @@ OSErr Validate_urn_Entry( atomOffsetEntry *aoe, void *refcon )
 
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+
+    if ((flags & 1) == 0 && vg.brandDASH)
+            errprint("urn entry with pointing to external data found in 'dref', violating Section 6.3.4.2. of ISO/IEC 23009-1:2012(E):  The 'moof' boxes shall use movie-fragment relative addressing for media data that does not use external data references.\n");
 
 	// Get data 
 	// name is required
@@ -1325,7 +1324,7 @@ OSErr Validate_stsc_Atom( atomOffsetEntry *aoe, void *refcon )
     if(vg.brandDASH && entryCount != 0)
         errprint("stsc atom, entry_count %d, violating\nSection 6.3.3. of ISO/IEC 23009-1:2012(E): The tracks in the \"moov\" box shall contain no samples \n(i.e. the entry_count in the \"stts\", \"stsc\", and \"stco\" boxes shall be set to 0)\n",entryCount);
 
-    if (!vg.brandDASH && entryCount == 0) warnprint("WARNING: STSC atom has no entries so is un-needed\n");
+    if (!vg.brandDASH && entryCount == 0) warnprint("WARNING: STSC atom has no entries so is un-needed. If this is a DASH file, then 'dash' is missing as a compatible brand and this is a conformance issue, hence the following program execution is not reliable!!!\n");
 	
 	listSize = entryCount * sizeof(SampleToChunk);
 			// 1 based array
@@ -1791,17 +1790,6 @@ bail:
 
 //==========================================================================================
 
-typedef struct EditListEntryVers0Record {
-    UInt32	duration;
-    UInt32	mediaTime;
-    Fixed		mediaRate;
-} EditListEntryVers0Record;
-
-typedef struct EditListEntryVers1Record {
-    UInt64	duration;
-    SInt64	mediaTime;
-    Fixed		mediaRate;
-} EditListEntryVers1Record;
 
 OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
 {
@@ -1811,6 +1799,7 @@ OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
 	UInt32 flags;
 	UInt64 offset;
 	UInt32 entryCount;
+	TrackInfoRec	*tir = (TrackInfoRec*)refcon;
 	EditListEntryVers1Record *listP = NULL;
 	UInt32 listSize;
 	UInt32 i;
@@ -1844,6 +1833,11 @@ OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
 				listP[i].duration = EndianU32_BtoN(list0P[i].duration);
 				listP[i].mediaTime = EndianS32_BtoN(list0P[i].mediaTime);
 				listP[i].mediaRate = EndianU32_BtoN(list0P[i].mediaRate);
+                
+                listP[i].duration = list0P[i].duration;
+                listP[i].mediaTime = (SInt64)((Int32)list0P[i].mediaTime);
+                listP[i].mediaRate = list0P[i].mediaRate;
+                
 			}
 		} else if (version == 1) {
 			BAILIFERR( GetFileData( aoe, listP, offset, listSize, &offset ) );
@@ -1883,6 +1877,8 @@ OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
 	--vg.tabcnt;
 
+    tir->elstInfo = listP;
+    tir->numEdits = entryCount;
 
 	// Check required field values
 	
@@ -2396,6 +2392,9 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     trafInfo->default_sample_flags_present =  ((tf_flags & 0x000020) != 0);
     trafInfo->duration_is_empty =  ((tf_flags & 0x010000) != 0);
     trafInfo->default_base_is_moof =  ((tf_flags & 0x020000) != 0);
+
+    if(vg.brandDASH && !trafInfo->default_base_is_moof)
+        errprint("default-base-is-moof is not set, violating Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): ... the flag 'default-base-is-moof' shall also be set\n");
     
     if(trafInfo->base_data_offset_present)
         BAILIFERR( GetFileDataN64( aoe, &trafInfo->base_data_offset, offset, &offset ) );
@@ -2476,6 +2475,18 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
         //if(trunInfo->sample_composition_time_offsets_present)
         {
             trunInfo->sample_composition_time_offset = (UInt32 *)malloc(trunInfo->sample_count*sizeof(UInt32));
+            trunInfo->samplePresentationTime = (long double *)malloc(trunInfo->sample_count*sizeof(long double));   //For later use after applying edits
+            trunInfo->sampleToBePresented = (Boolean *)malloc(trunInfo->sample_count*sizeof(Boolean));   //For later use after applying edits
+            trunInfo->sap3 = (Boolean *)malloc(trunInfo->sample_count*sizeof(Boolean));
+            trunInfo->sap4 = (Boolean *)malloc(trunInfo->sample_count*sizeof(Boolean));
+            
+            for(i = 0 ; i < trunInfo->sample_count ; i++)
+            {
+                trunInfo->samplePresentationTime[i] = 0.0;
+                trunInfo->sampleToBePresented[i] = true;    //By default true, unless edit lists decide elsewise
+                trunInfo->sap3[i] = false;
+                trunInfo->sap4[i] = false;
+            }
         }
         //else
         //    trunInfo->sample_composition_time_offset = NULL;
@@ -2519,14 +2530,15 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
             trunInfo->sample_composition_time_offset[i] = 0;    // Will be checked later; it must be that CTTS is missing ==> composition time == decode times (Section 8.6.1.1.)
 
         UInt64 compositionTimeInTrackFragment = savedCummulatedSampleDuration + prevTrunCummulatedSampleDuration + (trunInfo->version != 0 ? (Int32)trunInfo->sample_composition_time_offset[i] : (UInt32)trunInfo->sample_composition_time_offset[i]);
+
         if(compositionTimeInTrackFragment < trafInfo->earliestCompositionTimeInTrackFragment)
             trafInfo->earliestCompositionTimeInTrackFragment = compositionTimeInTrackFragment;
         
-        if((compositionTimeInTrackFragment + currentSampleDecodeDelta) > trafInfo->presentationEndTimeInTrackFragment)
-            trafInfo->presentationEndTimeInTrackFragment = compositionTimeInTrackFragment + currentSampleDecodeDelta;
+        if((compositionTimeInTrackFragment + currentSampleDecodeDelta) > trafInfo->compositionEndTimeInTrackFragment)
+            trafInfo->compositionEndTimeInTrackFragment = compositionTimeInTrackFragment + currentSampleDecodeDelta;
         
-        if(compositionTimeInTrackFragment > trafInfo->latestPresentationTimeInTrackFragment)
-            trafInfo->latestPresentationTimeInTrackFragment = compositionTimeInTrackFragment;
+        if(compositionTimeInTrackFragment > trafInfo->latestCompositionTimeInTrackFragment)
+            trafInfo->latestCompositionTimeInTrackFragment = compositionTimeInTrackFragment;
         
     }
   
@@ -2540,6 +2552,95 @@ bail:
 
 }
 
+//==========================================================================================
+
+OSErr Validate_sbgp_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+	OSErr err = noErr;
+	UInt32 flags;
+	UInt64 offset;
+
+    TrafInfoRec *trafInfo = (TrafInfoRec *) refcon;
+    
+    SbgpInfoRec *sbgpInfo = &trafInfo->sbgpInfo[trafInfo->processedSbgp];
+    
+	// Get version/flags
+	BAILIFERR( GetFullAtomVersionFlags( aoe, &sbgpInfo->version, &flags, &offset ) );
+
+    BAILIFERR( GetFileDataN32( aoe, &sbgpInfo->grouping_type, offset, &offset ));
+
+    if(sbgpInfo->version == 1)
+        BAILIFERR( GetFileDataN32( aoe, &sbgpInfo->grouping_type_parameter, offset, &offset ) );
+    
+    BAILIFERR( GetFileDataN32( aoe, &sbgpInfo->entry_count, offset, &offset ));
+
+    sbgpInfo->sample_count = (UInt32 *)malloc(sbgpInfo->entry_count*sizeof(UInt32));
+    sbgpInfo->group_description_index = (UInt32 *)malloc(sbgpInfo->entry_count*sizeof(UInt32));
+
+    for(UInt32 i = 0 ;  i < sbgpInfo->entry_count ; i++)
+    {
+        BAILIFERR( GetFileDataN32( aoe, &sbgpInfo->sample_count[i], offset, &offset ));
+        BAILIFERR( GetFileDataN32( aoe, &sbgpInfo->group_description_index[i], offset, &offset ));
+    }
+
+    trafInfo->processedSbgp++;
+    
+    // All done
+	aoe->aoeflags |= kAtomValidated;
+bail:
+	return err;
+
+
+}
+
+
+//==========================================================================================
+
+OSErr Validate_sgpd_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+	OSErr err = noErr;
+	UInt32 flags;
+	UInt64 offset;
+
+    TrafInfoRec *trafInfo = (TrafInfoRec *) refcon;
+    
+    SgpdInfoRec *sgpdInfo = &trafInfo->sgpdInfo[trafInfo->processedSgpd];
+    
+	// Get version/flags
+	BAILIFERR( GetFullAtomVersionFlags( aoe, &sgpdInfo->version, &flags, &offset ) );
+
+    BAILIFERR( GetFileDataN32( aoe, &sgpdInfo->grouping_type, offset, &offset ));
+
+    if(sgpdInfo->version == 1)
+        BAILIFERR( GetFileDataN32( aoe, &sgpdInfo->default_length, offset, &offset ) );
+    
+    BAILIFERR( GetFileDataN32( aoe, &sgpdInfo->entry_count, offset, &offset ));
+
+    sgpdInfo->description_length = (UInt32 *)malloc(sgpdInfo->entry_count*sizeof(UInt32));
+    sgpdInfo->SampleGroupDescriptionEntry = (UInt32 **)malloc(sgpdInfo->entry_count*sizeof(UInt32 *));
+
+    for(UInt32 i = 0 ;  i < sgpdInfo->entry_count ; i++)
+    {
+        if(sgpdInfo->version == 1)
+        {
+            if(sgpdInfo->default_length == 0)
+                BAILIFERR( GetFileDataN32( aoe, &sgpdInfo->description_length[i], offset, &offset ));
+
+            sgpdInfo->SampleGroupDescriptionEntry[i] = (UInt32 *)malloc((sgpdInfo->default_length == 0 ? sgpdInfo->description_length[i] : sgpdInfo->default_length)*sizeof(UInt32));
+        }
+
+        BAILIFERR(GetFileData(aoe,sgpdInfo->SampleGroupDescriptionEntry[i],offset,sgpdInfo->description_length[i],&offset));
+    }
+
+    trafInfo->processedSgpd++;
+    
+    // All done
+	aoe->aoeflags |= kAtomValidated;
+bail:
+	return err;
+
+
+}
 
 //==========================================================================================
 
@@ -2640,7 +2741,7 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
         
         BAILIFERR( GetFileDataN32( aoe, &sidxInfo->references[i].subsegment_duration, offset, &offset ) );
 
-        sidxInfo->cumulatedDuration+=((double)sidxInfo->references[i].subsegment_duration/(double)sidxInfo->timescale);
+        sidxInfo->cumulatedDuration+=((long double)sidxInfo->references[i].subsegment_duration/(long double)sidxInfo->timescale);
 
         BAILIFERR( GetFileDataN32( aoe, &temp, offset, &offset ) );
         sidxInfo->references[i].starts_with_SAP = (UInt8)(temp >> 31);
