@@ -93,6 +93,8 @@ and conditions in their respective submissions.
      Test Tools it finds to be infringing or otherwise problematical.
 */
 
+#ifndef _SRC_VALIDATE_MP4_H_
+#define _SRC_VALIDATE_MP4_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -363,9 +365,37 @@ typedef struct {
     UInt32 *sample_flags;
     UInt32 *sample_composition_time_offset; //Use it as a signed int when version is non-zero
 
+    long double *samplePresentationTime;
+    Boolean *sampleToBePresented;  //After applying edits
+    Boolean *sap3;
+    Boolean *sap4;
+    
     UInt64  cummulatedSampleDuration;
 
 } TrunInfoRec;
+
+typedef struct {
+
+    UInt32 version;
+    UInt32 grouping_type; 
+    UInt32 grouping_type_parameter;
+    UInt32 entry_count;
+    UInt32 *sample_count; 
+    UInt32 *group_description_index;
+    
+} SbgpInfoRec;
+
+
+typedef struct {
+
+    UInt32 version;
+    UInt32 grouping_type;
+    UInt32 default_length;
+    UInt32 entry_count;
+    UInt32 *description_length;
+    UInt32 **SampleGroupDescriptionEntry;
+    
+} SgpdInfoRec;
 
 // Section 8.8.7. of ISO/IEC 14496-12 4th edition
 
@@ -389,6 +419,14 @@ typedef struct {
     UInt32 numTrun;
     UInt32 processedTrun;
     TrunInfoRec *trunInfo;
+    
+    UInt32 numSgpd;
+    UInt32 processedSgpd;
+    SgpdInfoRec *sgpdInfo;
+    
+    UInt32 numSbgp;
+    UInt32 processedSbgp;
+    SbgpInfoRec *sbgpInfo;
 
     Boolean tfdtFound;
     UInt64  baseMediaDecodeTime;
@@ -396,22 +434,26 @@ typedef struct {
     Boolean compositionInfoMissing;
     UInt64  cummulatedSampleDuration;
     UInt64  earliestCompositionTimeInTrackFragment;
-    UInt64  presentationEndTimeInTrackFragment;
-    UInt64  latestPresentationTimeInTrackFragment;
+    UInt64  compositionEndTimeInTrackFragment;
+    UInt64  latestCompositionTimeInTrackFragment;
     
 } TrafInfoRec;
 
 
 typedef struct {
     UInt64 offset;
+    UInt32 index;
     UInt32 numTrackFragments;
     UInt32 processedTrackFragments;
+    Boolean firstFragmentInSegment;
+    Boolean samplesToBePresented;    //Is there any sample to be presented?
     
     Boolean *compositionInfoMissingPerTrack;
-    UInt64  *cummulatedMoofSampleDurationPerTrack;
-    UInt64  *earliestMoofCompositionTimePerTrack;
-    UInt64  *latestMoofCompositionTimePerTrack;
-    UInt64  *moofPresentationEndTimePerTrack;
+    
+    long double  *moofEarliestPresentationTimePerTrack;
+    long double  *moofPresentationEndTimePerTrack;
+    long double  *moofLastPresentationTimePerTrack; //Differs from moofPresentationEndTimePerTrack by the sample delta
+    
     UInt64  *tfdt;
     
     TrafInfoRec *trafInfo;
@@ -432,7 +474,7 @@ typedef struct {
 
     UInt64 offset;
     UInt64 size;
-    double cumulatedDuration;
+    long double cumulatedDuration;
     
     UInt32 reference_ID;
     UInt32 timescale; 
@@ -444,12 +486,43 @@ typedef struct {
 
 //===========================
 typedef struct {
+    bool segmentIndexed;
+    bool hasFragments;
+    UInt64 firstMoofIndex;
+    UInt64 lastMoofIndex;
     bool firstInSegment;
     long double earliestPresentationTime;
     long double lastPresentationTime;
     long double presentationEndTime;
     long double sidxReportedDuration;
+    Boolean samplesToBePresented;
 } LeafInfo;
+
+typedef struct {
+    UInt32  track_ID;
+    UInt32	componentSubType;
+} TrackTypeInfo;
+
+typedef struct EditListEntryVers0Record {
+    UInt32	duration;
+    UInt32	mediaTime;
+    Fixed		mediaRate;
+} EditListEntryVers0Record;
+
+typedef struct EditListEntryVers1Record {
+    UInt64	duration;
+    SInt64	mediaTime;
+    Fixed		mediaRate;
+} EditListEntryVers1Record;
+
+typedef struct HandlerInfoRecord {
+    UInt32	componentType;
+    UInt32	componentSubType;
+    UInt32	componentManufacturer;
+    UInt32	componentFlags;
+    UInt32	componentFlagsMask;
+    char    Name[1];
+} HandlerInfoRecord;
 
 typedef struct {
 	OSType mediaType;
@@ -463,8 +536,6 @@ typedef struct {
 
 	UInt32	mediaTimeScale;
 	UInt64	mediaDuration;
-
-    UInt64  lastPresentationTime;
 
 	//==== enough sample table information to read through the data sequentially
 	UInt32 currentSampleDescriptionIndex;
@@ -499,6 +570,9 @@ typedef struct {
 
     UInt32  numLeafs;
     LeafInfo *leafInfo;
+    UInt32  numEdits;
+    EditListEntryVers1Record *elstInfo;
+    HandlerInfoRecord *hdlrInfo;
 
 } TrackInfoRec;
 
@@ -570,13 +644,23 @@ typedef struct {
 	MovieInfoRec	*mir;
 
     UInt64 *segmentSizes;
+    bool   *simsInStyp;
     long    segmentInfoSize;
+    long    processedStypes;
+    UInt32  accessUnitDurationNonIndexedTrack;
     bool    initializationSegment;
     bool    checkSegAlignment;
     bool    checkSubSegAlignment;
+    int  startWithSAP;
+    bool    isoLive;
+    bool    isoondemand;
+    bool    isomain;
+    bool    subRepLevel;
+    bool    bss;
     unsigned int  numControlTracks;
     unsigned int  *numControlLeafs;
     LeafInfo **controlLeafInfo;
+    TrackTypeInfo *trackTypeInfo;
 
 	// -----
 	atompathType atompath;
@@ -593,6 +677,9 @@ typedef struct {
 
 	long	majorBrand;
 	Boolean	brandDASH;
+    Boolean indexedFile;
+    Boolean dashInFtyp; //Split from brandDASH since the latter is also set if the file is segmented
+    Boolean msixInFtyp;
 
 	Boolean	print_atompath;
 	Boolean	print_atom;
@@ -933,6 +1020,9 @@ OSErr Validate_mfhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon );
+
+OSErr Validate_sbgp_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_sgpd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_tfdt_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon );
 
@@ -1104,4 +1194,6 @@ OSErr Get_mdia_hdlr_mediaType( atomOffsetEntry *aoe, TrackInfoRec *tir );
 
 
 void dispose_mir( MovieInfoRec *mir );
+
+#endif  //#ifndef _SRC_VALIDATE_MP4_H_
 
