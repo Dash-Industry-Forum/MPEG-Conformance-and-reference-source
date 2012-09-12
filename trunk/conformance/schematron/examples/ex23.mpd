@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- R7.3 -->
+<!-- R7.4 -->
 <MPD 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns="urn:mpeg:dash:schema:mpd:2011"
@@ -13,11 +13,11 @@
 		<AdaptationSet group="1">
 			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" width="320" height="240" 
 											frameRate="15" id="tag0" bandwidth="128000">
-				<SegmentTemplate media="$Bandwidth$/$Time$.mp4v" timescale="90000" duration="10" initialization="$Number$"/>
+				<SegmentTemplate media="$Bandwidth$/$Time$.mp4v" timescale="90000" duration="10" bitstreamSwitching="$Number$"/>
 			</Representation>
 			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" width="640" height="480" 
 											frameRate="15" id="tag1" bandwidth="128000">
-				<SegmentTemplate media="$Bandwidth$/$Time$.mp4v" timescale="90000" duration="10" initialization="$Time$"/>
+				<SegmentTemplate media="$Bandwidth$/$Time$.mp4v" timescale="90000" duration="10" bitstreamSwitching="$Time$"/>
 			</Representation>
 		</AdaptationSet>
 	</Period>

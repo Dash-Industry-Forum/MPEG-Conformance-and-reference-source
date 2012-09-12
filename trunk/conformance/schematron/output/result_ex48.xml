@@ -18,6 +18,10 @@
    <svrl:fired-rule context="dash:MPD"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Period"/>
+   <svrl:failed-assert test="if (not(descendant-or-self::dash:SegmentBase) and not(descendant-or-self::dash:SegmentTemplate) and not(descendant-or-self::dash:SegmentList)) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
+      <svrl:text>At least one SegmentBase, SegmentTemplate or SegmentList shall be defined in Period, AdaptationSet or Representation.</svrl:text>
+   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
    <svrl:active-pattern/>
@@ -25,11 +29,6 @@
    <svrl:fired-rule context="dash:Representation"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:SegmentTemplate"/>
-   <svrl:failed-assert test="if (matches(@media, '\$.*\$')) then every $y in (for $x in tokenize(@media, '\$(Bandwidth|Time|Number|RepresentationID)\$') return matches($x, '\$.*\$')) satisfies $y eq false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='SegmentTemplate' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>Only identifiers such as $Bandwidth$, $Time$, $RepresentationID$, or $Number$ shall be used.</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

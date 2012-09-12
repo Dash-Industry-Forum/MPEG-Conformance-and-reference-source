@@ -34,9 +34,9 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AudioChannelConfiguration"/>
-   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:23003:3:audio_channel_configuration:2011') and not(@value = '0' or @value = '1' or @value = '2' or @value = '3' or @value = '4' or @value = '5' or @value = '6' or @value = '7' or @value = '8' or @value = '9' or @value = '10' or @value = '11' or @value = '12' or @value = '13')) then false() else true()"
+   <svrl:failed-assert test="if (not(@schemeIdUri = 'urn:mpeg:dash:23003:3:audio_channel_configuration:2011')) then false() else true()"
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AudioChannelConfiguration' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>The value of AudioChannelConfiguration shall be 0, 1 (1/0.0),  2 (2/0.0), 3 (3/0.0), 4 (3/1.0), 5 (3/2.0), 6 (3/2.1), 7 (5/2.1), 8 (1+1), 9 (2/1.0), 10 (2/2.0), 11 (3/3.1), 12 (3/4.1) or 13 (11/11.2) [Front/Surr.LFE].</svrl:text>
+      <svrl:text>schemeIdUri for AudioChannelConfiguration descriptor shall be urn:mpeg:dash:23003:3:audio_channel_configuration:2011.</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>
 </svrl:schematron-output>

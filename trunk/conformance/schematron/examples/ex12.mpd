@@ -9,16 +9,18 @@
 	 mediaPresentationDuration="PT3256S"
 	type="dynamic" availabilityStartTime="2001-12-17T09:40:57Z"
 	profiles="urn:mpeg:dash:profile:isoff-main:2011">
-	<Period start="PT1S" id="id1">
-		<AdaptationSet group="1" lang="en" par="16:9" contentType="video">
-			<ContentComponent lang="en" par="16:9" contentType="video"/>
-			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" width="320" height="240" 
-											frameRate="15" id="id2"  bandwidth="128000">
+	<Period start="PT0S" id="1">
+	<AdaptationSet group="1" frameRate="25" height="720" width="1280" par="16:9" audioSamplingRate="44100 22050" mimeType="video/mp4; codecs=avc1.644028" lang="en">
+			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" sar="1:1" width="320" height="240" 
+					frameRate="15" id="tag0" bandwidth="128000" startWithSAP="0" audioSamplingRate="22050">
 				<SegmentList duration="10">
 					<Initialization sourceURL="seg-s-init.mp4"/>
-					<SegmentURL media="seg-s-init2.mp4"/>
-				</SegmentList>
+					<SegmentURL media="seg-s1-128k-1.mp4"/>
+					<SegmentURL media="seg-s1-128k-2.mp4"/>
+					<SegmentURL media="seg-s1-128k-3.mp4"/>
+				</SegmentList>			
 			</Representation>
+		
 		</AdaptationSet>
 	</Period>
 </MPD>

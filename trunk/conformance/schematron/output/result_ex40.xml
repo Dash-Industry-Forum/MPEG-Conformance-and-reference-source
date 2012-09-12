@@ -33,10 +33,10 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:AudioChannelConfiguration"/>
-   <svrl:failed-assert test="if (not(@schemeIdUri = 'urn:mpeg:dash:23003:3:audio_channel_configuration:2011')) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AudioChannelConfiguration' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>schemeIdUri for AudioChannelConfiguration descriptor shall be urn:mpeg:dash:23003:3:audio_channel_configuration:2011.</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:Role"/>
+   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:role:2011') and not(@value = 'caption' or @value = 'subtitle' or @value = 'main' or @value = 'alternate' or @value = 'supplementary' or @value = 'commentary' or @value = 'dub')) then false else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Role' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
+      <svrl:text>The value of Role (role) shall be caption, subtitle, main, alternate, supplementary, commentary or dub.</svrl:text>
+   </svrl:failed-assert>
 </svrl:schematron-output>

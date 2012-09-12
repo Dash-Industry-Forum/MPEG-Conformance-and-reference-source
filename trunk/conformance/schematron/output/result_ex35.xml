@@ -33,9 +33,9 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:FramePacking"/>
-   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:13818:1:stereo_video_format_type:2011') and not(parent::dash:AdaptationSet/@mimeType = 'video/mp2t') and not(parent::dash:Representation/@mimeType = 'video/mp2t')) then false() else true()"
+   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:14496:10:frame_packing_arrangement_type:2011') and not(@value = '0' or @value = '1' or @value = '2' or @value = '3' or @value = '4' or @value = '5')) then false() else true()"
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='FramePacking' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>The URI urn:mpeg:dash:13818:1:stereo_video_format_type:2011 is used for Adaptation Sets or Representations that contain a video component that conforms to ISO/IEC 13818-1.</svrl:text>
+      <svrl:text>The value of FramePacking shall be 0 (checkerboard interleaving), 1 (column interleaving), 2 (row interleaving), 3 (side-by-side), 4 (top-bottom) or 5 (temporal interleaving).</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
