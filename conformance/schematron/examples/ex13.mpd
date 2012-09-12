@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- R3.3 -->
+<!-- R3.3 + R3.4 -->
 <MPD 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns="urn:mpeg:dash:schema:mpd:2011"
@@ -10,9 +10,8 @@
 	type="dynamic" availabilityStartTime="2001-12-17T09:40:57Z"
 	profiles="urn:mpeg:dash:profile:isoff-main:2011">
 	<Period start="PT0S" id="1">
-	<AdaptationSet group="1" frameRate="25" height="720" width="1280" par="16:9" audioSamplingRate="44100 22050" mimeType="video/mp4; codecs=avc1.644028" lang="en">
-			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" sar="1:1" width="320" height="240" 
-					frameRate="15" id="tag0" bandwidth="128000" startWithSAP="0" audioSamplingRate="22050">
+	<AdaptationSet group="1" minBandwidth="100000" maxBandwidth="20000" minFrameRate="15" maxFrameRate="5" minHeight="1080" maxHeight="720" minWidth="640" maxWidth="320">
+			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" id="tag0" bandwidth="128000">
 				<SegmentList duration="10">
 					<Initialization sourceURL="seg-s-init.mp4"/>
 					<SegmentURL media="seg-s1-128k-1.mp4"/>
@@ -20,7 +19,6 @@
 					<SegmentURL media="seg-s1-128k-3.mp4"/>
 				</SegmentList>			
 			</Representation>
-		
 		</AdaptationSet>
 	</Period>
 </MPD>

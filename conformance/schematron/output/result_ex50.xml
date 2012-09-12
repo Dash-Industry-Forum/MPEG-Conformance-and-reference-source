@@ -20,23 +20,19 @@
    <svrl:fired-rule context="dash:Period"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
+   <svrl:failed-assert test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) &gt; 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) &gt; 1))) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
+      <svrl:text>If SegmentTemplate or SegmentList is defined within AdaptationSet it shall not be redefined in Representation.</svrl:text>
+   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Representation"/>
-   <svrl:failed-assert test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in Representation.</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:SegmentBase"/>
-   <svrl:failed-assert test="if (not(@indexRange) and @indexRangeExact) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='SegmentBase' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>If indexRange is not present indexRangeExact shall not be present.</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

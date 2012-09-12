@@ -18,20 +18,23 @@
    <svrl:fired-rule context="dash:MPD"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Period"/>
-   <svrl:failed-assert test="if (not(descendant-or-self::dash:SegmentBase) and not(descendant-or-self::dash:SegmentTemplate) and not(descendant-or-self::dash:SegmentList)) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>At least one SegmentBase, SegmentTemplate or SegmentList shall be defined in Period, AdaptationSet or Representation.</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
+   <svrl:failed-assert test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
+      <svrl:text>At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in AdaptationSet.</svrl:text>
+   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Representation"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:SegmentTemplate"/>
+   <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:SegmentTimeline"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

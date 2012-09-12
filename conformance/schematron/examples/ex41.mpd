@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- R15.0 -->
+<!-- R15.1 -->
 <MPD 
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns="urn:mpeg:dash:schema:mpd:2011"
@@ -11,7 +11,8 @@
 	profiles="urn:mpeg:dash:profile:isoff-main:2011">
 	<Period start="PT0S" id="1">
 		<AdaptationSet group="1">
-			<Role schemeIdUri="urn:mpeg:dash:role:2011" value="sub"></Role>
+			<Role schemeIdUri="urn:mpeg:dash:role:2011" value="dub"></Role>
+			<Role schemeIdUri="urn:mpeg:dash:stereoid:2011" value="c0"></Role>
 			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" width="320" height="240" frameRate="15" id="tag0" bandwidth="128000">
 				<SegmentList duration="10">
 					<Initialization sourceURL="seg-s-init.mp4"/>

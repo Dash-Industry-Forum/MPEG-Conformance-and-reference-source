@@ -50,26 +50,24 @@
 			<!-- R3.0 -->
 			<assert test="if (@id = preceding-sibling::dash:AdaptationSet/@id) then false() else true()">The id of each AdaptationSet within a Period shall be unique.</assert>
 			<!-- R3.1 -->
-			<assert test="if (@group = preceding-sibling::dash:AdaptationSet/@group) then false() else true()">The group of each AdaptationSet within a Period shall be unique.</assert>
-			<!-- R3.2 -->
 			<assert test="if ((@lang = descendant::dash:ContentComponent/@lang) or (@contentType = descendant::dash:ContentComponent/@contentType) or (@par = descendant::dash:ContentComponent/@par)) then false() else true()">Attributes from the AdaptationSet shall not be repeated in the descendanding ContentComponent elements.</assert>
-			<!-- R3.3 -->
+			<!-- R3.2 -->
 			<assert test="if ((@profiles and descendant::dash:Representation/@profiles) or (@width and descendant::dash:Representation/@width) or (@height and descendant::dash:Representation/@height) or (@sar and descendant::dash:Representation/@sar) or (@frameRate and descendant::dash:Representation/@frameRate) or (@audioSamplingRate and descendant::dash:Representation/@audioSamplingRate) or (@mimeType and descendant::dash:Representation/@mimeType) or (@segmentProfiles and descendant::dash:Representation/@segmentProfiles) or (@codecs and descendant::dash:Representation/@codecs and not(@mimeType = 'application/ttml+xml')) or (@maximumSAPPeriod and descendant::dash:Representation/@maximumSAPPeriod) or (@startWithSAP and descendant::dash:Representation/@startWithSAP) or (@maxPlayoutRate and descendant::dash:Representation/@maxPlayoutRate) or (@codingDependency and descendant::dash:Representation/@codingDependency) or (@scanType and descendant::dash:Representation/@scanType)) then false() else true()">Common attributes for AdaptationSet and Representation shall either be in one of the elements but not in both.</assert>
-			<!-- R3.4 -->
+			<!-- R3.3 -->
 			<assert test="if ((@minWidth > @maxWidth) or (@minHeight > @maxHeight) or (@minBandwidth > @maxBandwidth)) then false() else true()">Each minimum value (minWidth, minHeight, minBandwidth) shall be larger than the maximum value.</assert>
-			<!-- R3.5 -->
+			<!-- R3.4 -->
 			<assert test="if (descendant::dash:Representation/@bandwidth &lt; @minBandwidth or descendant::dash:Representation/@bandwidth > @maxBandwidth) then false() else true()">The value of the bandwidth attribute shall be in the range defined by the AdaptationSet.</assert>
-			<!-- R3.6 -->
+			<!-- R3.5 -->
 			<assert test="if (descendant::dash:Representation/@width &lt; @minWidth or descendant::dash:Representation/@width > @maxWidth) then false() else true()">The value of the width attribute shall be in the range defined by the AdaptationSet.</assert>
-			<!-- R3.7 -->
+			<!-- R3.6 -->
 			<assert test="if (descendant::dash:Representation/@height &lt; @minHeight or descendant::dash:Representation/@height > @maxHeight) then false() else true()">The value of the height attribute shall be in the range defined by the AdaptationSet.</assert>
-			<!-- R3.8 -->
+			<!-- R3.7 -->
 			<assert test="if (count(child::dash:Representation)=0) then false() else true()">An AdaptationSet shall have at least one Representation element.</assert>
-			<!-- R3.9 -->
+			<!-- R3.8 -->
 			<assert test="if ((@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles  = 'urn:mpeg:dash:profile:isoff-on-demand:2011' ) and (@mimeType and (@mimeType != 'video/mp4' and @mimeType != 'audio/mp4' and @mimeType != 'application/mp4'))) then false() else true()">For ISO BMFF On-Demand profile, the @mimeType shall equal video/mp4, audio/mp4 or application/mp4.</assert>
-			<!-- R3.10 -->
+			<!-- R3.9 -->
 			<assert test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()">At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in AdaptationSet.</assert>
-			<!-- R3.11 -->
+			<!-- R3.10 -->
 			<assert test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) > 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) > 1))) then false() else true()">If SegmentTemplate or SegmentList is defined within AdaptationSet it shall not be redefined in Representation.</assert>
 		</rule>
 	</pattern>

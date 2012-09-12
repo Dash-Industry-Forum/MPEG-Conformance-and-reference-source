@@ -20,19 +20,17 @@
    <svrl:fired-rule context="dash:Period"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
-   <svrl:fired-rule context="dash:AdaptationSet"/>
-   <svrl:failed-assert test="if (@group = preceding-sibling::dash:AdaptationSet/@group) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011'][2]">
-      <svrl:text>The group of each AdaptationSet within a Period shall be unique.</svrl:text>
+   <svrl:failed-assert test="if ((@lang = descendant::dash:ContentComponent/@lang) or (@contentType = descendant::dash:ContentComponent/@contentType) or (@par = descendant::dash:ContentComponent/@par)) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
+      <svrl:text>Attributes from the AdaptationSet shall not be repeated in the descendanding ContentComponent elements.</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:ContentComponent"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Representation"/>
-   <svrl:fired-rule context="dash:Representation"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

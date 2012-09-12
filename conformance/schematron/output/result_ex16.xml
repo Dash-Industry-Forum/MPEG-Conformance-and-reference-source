@@ -18,21 +18,26 @@
    <svrl:fired-rule context="dash:MPD"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Period"/>
-   <svrl:failed-assert test="if (not(descendant-or-self::dash:SegmentBase) and not(descendant-or-self::dash:SegmentTemplate) and not(descendant-or-self::dash:SegmentList)) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>At least one SegmentBase, SegmentTemplate or SegmentList shall be defined in Period, AdaptationSet or Representation.</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
-   <svrl:failed-assert test="if (count(child::dash:Representation)=0) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>An AdaptationSet shall have at least one Representation element.</svrl:text>
+   <svrl:fired-rule context="dash:AdaptationSet"/>
+   <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:ContentComponent"/>
+   <svrl:fired-rule context="dash:ContentComponent"/>
+   <svrl:failed-assert test="if (@id = preceding-sibling::dash:ContentComponent/@id) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011'][1]/*[local-name()='ContentComponent' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011'][2]">
+      <svrl:text>The id of each ContentComponent within an AdaptationSet shall be unique.</svrl:text>
    </svrl:failed-assert>
+   <svrl:fired-rule context="dash:ContentComponent"/>
+   <svrl:fired-rule context="dash:ContentComponent"/>
+   <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:Representation"/>
+   <svrl:fired-rule context="dash:Representation"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

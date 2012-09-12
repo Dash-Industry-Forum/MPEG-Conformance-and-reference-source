@@ -1,3 +1,8 @@
+2012-08-30
+----------
+Removed R3.1 and Example 11
+Added Example 49 (R3.9) and 50 (R.3.10)
+
 2012-07-26
 ----------
 Added Rule R2.6 for checking if at least one segment is present

@@ -23,20 +23,14 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Representation"/>
-   <svrl:fired-rule context="dash:Representation"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:SegmentTemplate"/>
-   <svrl:failed-assert test="if (@bitstreamSwitching and (contains(@bitstreamSwitching, '$Number$') or contains(@bitstreamSwitching, '$Time$'))) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011'][1]/*[local-name()='SegmentTemplate' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>Neither $Number$ nor the $Time$ identifier shall be included in the bitstreamSwitching attribute.</svrl:text>
+   <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:SegmentList"/>
+   <svrl:failed-assert test="if (not(@duration) and not(child::dash:SegmentTimeline)) then if (count(child::dash:SegmentURL) &gt; 1) then false() else true() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='SegmentList' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
+      <svrl:text>If more than one Media Segment is present the duration attribute or SegmentTimeline element shall be present.</svrl:text>
    </svrl:failed-assert>
-   <svrl:fired-rule context="dash:SegmentTemplate"/>
-   <svrl:failed-assert test="if (@bitstreamSwitching and (contains(@bitstreamSwitching, '$Number$') or contains(@bitstreamSwitching, '$Time$'))) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011'][2]/*[local-name()='SegmentTemplate' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>Neither $Number$ nor the $Time$ identifier shall be included in the bitstreamSwitching attribute.</svrl:text>
-   </svrl:failed-assert>
-   <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

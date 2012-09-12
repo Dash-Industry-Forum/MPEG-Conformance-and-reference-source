@@ -27,13 +27,12 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:SegmentList"/>
-   <svrl:failed-assert test="if (@duration and child::dash:SegmentTimeline) then false() else true()"
+   <svrl:failed-assert test="if (not(@indexRange) and @indexRangeExact) then false() else true()"
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='SegmentList' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>Either the duration attribute or SegmentTimeline element shall be present but not both.</svrl:text>
+      <svrl:text>If indexRange is not present indexRangeExact shall not be present.</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:SegmentTimeline"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

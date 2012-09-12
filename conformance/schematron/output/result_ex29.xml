@@ -29,12 +29,13 @@
    <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:SegmentTimeline"/>
-   <svrl:failed-assert test="if ((if (ancestor::dash:*[1]/@timescale) then (child::dash:S/@d div ancestor::dash:*[1]/@timescale) else child::dash:S/@d) &gt; (years-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + months-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + days-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + hours-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + minutes-from-duration(ancestor::dash:MPD/@maxSegmentDuration) + seconds-from-duration(ancestor::dash:MPD/@maxSegmentDuration))) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='SegmentList' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='SegmentTimeline' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>The d attribute of a SegmentTimeline shall not exceed the value give bei the MPD maxSegmentDuration attribute.</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:ProgramInformation"/>
+   <svrl:fired-rule context="dash:ProgramInformation"/>
+   <svrl:failed-assert test="if (count(parent::dash:MPD/dash:ProgramInformation) &gt; 1 and not(@lang)) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='ProgramInformation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011'][2]">
+      <svrl:text>If more than one ProgramInformation element is given each ProgramInformation element shall have a lang attribute.</svrl:text>
+   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
