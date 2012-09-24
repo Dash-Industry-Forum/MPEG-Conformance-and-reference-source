@@ -1,3 +1,9 @@
+2012-09-20
+----------
+Added R7.6 and updated Example 47 for checking that RepresentationID has no format tag
+Modified R7.3, R7.4, and R7.5 and, additionally, corresponding examples for allowing format tags
+Added Exmaple 51 for checking R7.5
+
 2012-08-30
 ----------
 Removed R3.1 and Example 11
