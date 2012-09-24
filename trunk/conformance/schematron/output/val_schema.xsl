@@ -323,7 +323,7 @@
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
-               <svrl:text>If mediaPresentationDuration ist not defined for the MPD minimumUpdatePeriod shall be defined or vice versa.</svrl:text>
+               <svrl:text>If mediaPresentationDuration is not defined for the MPD minimumUpdatePeriod shall be defined or vice versa.</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
@@ -922,12 +922,12 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if (@initialization and (contains(@initialization, '$Number$') or contains(@initialization, '$Time$'))) then false() else true()"/>
+         <xsl:when test="if (@initialization and (matches(@initialization, '\$Number(%.[^\$]*)?\$') or matches(@initialization, '\$Time(%.[^\$]*)?\$'))) then false() else true()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
                                 xmlns:schold="http://www.ascc.net/xml/schematron"
                                 xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (@initialization and (contains(@initialization, '$Number$') or contains(@initialization, '$Time$'))) then false() else true()">
+                                test="if (@initialization and (matches(@initialization, '\$Number(%.[^\$]*)?\$') or matches(@initialization, '\$Time(%.[^\$]*)?\$'))) then false() else true()">
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
@@ -938,12 +938,12 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if (@bitstreamSwitching and (contains(@bitstreamSwitching, '$Number$') or contains(@bitstreamSwitching, '$Time$'))) then false() else true()"/>
+         <xsl:when test="if (@bitstreamSwitching and (matches(@bitstreamSwitching, '\$Number(%.[^\$]*)?\$') or matches(@bitstreamSwitching, '\$Time(%.[^\$]*)?\$'))) then false() else true()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
                                 xmlns:schold="http://www.ascc.net/xml/schematron"
                                 xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (@bitstreamSwitching and (contains(@bitstreamSwitching, '$Number$') or contains(@bitstreamSwitching, '$Time$'))) then false() else true()">
+                                test="if (@bitstreamSwitching and (matches(@bitstreamSwitching, '\$Number(%.[^\$]*)?\$') or matches(@bitstreamSwitching, '\$Time(%.[^\$]*)?\$'))) then false() else true()">
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
@@ -954,16 +954,32 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if (matches(@media, '\$.*\$')) then every $y in (for $x in tokenize(@media, '\$(Bandwidth|Time|Number|RepresentationID)\$') return matches($x, '\$.*\$')) satisfies $y eq false() else true()"/>
+         <xsl:when test="if (matches(@media, '\$.[^\$]*\$')) then every $y in (for $x in tokenize(@media, '\$(Bandwidth|Time|Number|RepresentationID)(%.[^\$]*)?\$') return matches($x, '\$.[^\$]*\$')) satisfies $y eq false() else true()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
                                 xmlns:schold="http://www.ascc.net/xml/schematron"
                                 xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (matches(@media, '\$.*\$')) then every $y in (for $x in tokenize(@media, '\$(Bandwidth|Time|Number|RepresentationID)\$') return matches($x, '\$.*\$')) satisfies $y eq false() else true()">
+                                test="if (matches(@media, '\$.[^\$]*\$')) then every $y in (for $x in tokenize(@media, '\$(Bandwidth|Time|Number|RepresentationID)(%.[^\$]*)?\$') return matches($x, '\$.[^\$]*\$')) satisfies $y eq false() else true()">
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
                <svrl:text>Only identifiers such as $Bandwidth$, $Time$, $RepresentationID$, or $Number$ shall be used.</svrl:text>
+            </svrl:failed-assert>
+         </xsl:otherwise>
+      </xsl:choose>
+
+		    <!--ASSERT -->
+<xsl:choose>
+         <xsl:when test="if (matches(@media, '\$RepresentationID%.[^\$]*\$')) then false() else true()"/>
+         <xsl:otherwise>
+            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                                xmlns:schold="http://www.ascc.net/xml/schematron"
+                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                                test="if (matches(@media, '\$RepresentationID%.[^\$]*\$')) then false() else true()">
+               <xsl:attribute name="location">
+                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
+               </xsl:attribute>
+               <svrl:text>$RepresentationID$ shall not have a format tag.</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>

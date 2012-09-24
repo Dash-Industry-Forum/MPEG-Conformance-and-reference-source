@@ -48,3 +48,4 @@ java -jar ../saxon9.jar -versionmsg:off -s:examples/ex47.mpd -o:output/result_ex
 java -jar ../saxon9.jar -versionmsg:off -s:examples/ex48.mpd -o:output/result_ex48.xml -xsl:output/val_schema.xsl
 java -jar ../saxon9.jar -versionmsg:off -s:examples/ex49.mpd -o:output/result_ex49.xml -xsl:output/val_schema.xsl
 java -jar ../saxon9.jar -versionmsg:off -s:examples/ex50.mpd -o:output/result_ex50.xml -xsl:output/val_schema.xsl
+java -jar ../saxon9.jar -versionmsg:off -s:examples/ex51.mpd -o:output/result_ex51.xml -xsl:output/val_schema.xsl

@@ -16,7 +16,7 @@
 			<!-- R1.3 -->
 			<assert test="if (@type = 'static' and descendant::dash:Period[1]/@start and (years-from-duration(descendant::dash:Period[1]/@start) + months-from-duration(descendant::dash:Period[1]/@start) + days-from-duration(descendant::dash:Period[1]/@start) + hours-from-duration(descendant::dash:Period[1]/@start) + minutes-from-duration(descendant::dash:Period[1]/@start) +  seconds-from-duration(descendant::dash:Period[1]/@start)) > 0) then false() else true()">If MPD is of type "static" and the first period has a start attribute the start attribute shall be zero.</assert>
 			<!-- R1.4 -->
-			<assert test="if (not(@mediaPresentationDuration) and not(@minimumUpdatePeriod)) then false() else true()">If mediaPresentationDuration ist not defined for the MPD minimumUpdatePeriod shall be defined or vice versa.</assert>
+			<assert test="if (not(@mediaPresentationDuration) and not(@minimumUpdatePeriod)) then false() else true()">If mediaPresentationDuration is not defined for the MPD minimumUpdatePeriod shall be defined or vice versa.</assert>
 			<!-- R1.5 -->
 			<assert test="if (@type = 'static' and @minimumUpdatePeriod) then false() else true()">If MPD is of type "static" minimumUpdatePeriod shall not be defined.</assert>
 			<!-- R1.6 -->
@@ -110,11 +110,13 @@
 			<!-- R7.2 -->
 			<assert test="if (not(@indexRange) and @indexRangeExact) then false() else true()">If indexRange is not present indexRangeExact shall not be present.</assert>
 			<!-- R7.3 -->
-			<assert test="if (@initialization and (contains(@initialization, '$Number$') or contains(@initialization, '$Time$'))) then false() else true()">Neither $Number$ nor the $Time$ identifier shall be included in the initialization attribute.</assert>
+			<assert test="if (@initialization and (matches(@initialization, '\$Number(%.[^\$]*)?\$') or matches(@initialization, '\$Time(%.[^\$]*)?\$'))) then false() else true()">Neither $Number$ nor the $Time$ identifier shall be included in the initialization attribute.</assert>
 			<!-- R7.4 -->
-			<assert test="if (@bitstreamSwitching and (contains(@bitstreamSwitching, '$Number$') or contains(@bitstreamSwitching, '$Time$'))) then false() else true()">Neither $Number$ nor the $Time$ identifier shall be included in the bitstreamSwitching attribute.</assert>
+			<assert test="if (@bitstreamSwitching and (matches(@bitstreamSwitching, '\$Number(%.[^\$]*)?\$') or matches(@bitstreamSwitching, '\$Time(%.[^\$]*)?\$'))) then false() else true()">Neither $Number$ nor the $Time$ identifier shall be included in the bitstreamSwitching attribute.</assert>
 			<!-- R7.5-->
-			<assert test="if (matches(@media, '\$.*\$')) then every $y in (for $x in tokenize(@media, '\$(Bandwidth|Time|Number|RepresentationID)\$') return matches($x, '\$.*\$')) satisfies $y eq false() else true()">Only identifiers such as $Bandwidth$, $Time$, $RepresentationID$, or $Number$ shall be used.</assert>
+			<assert test="if (matches(@media, '\$.[^\$]*\$')) then every $y in (for $x in tokenize(@media, '\$(Bandwidth|Time|Number|RepresentationID)(%.[^\$]*)?\$') return matches($x, '\$.[^\$]*\$')) satisfies $y eq false() else true()">Only identifiers such as $Bandwidth$, $Time$, $RepresentationID$, or $Number$ shall be used.</assert>
+			<!-- R7.6-->
+			<assert test="if (matches(@media, '\$RepresentationID%.[^\$]*\$')) then false() else true()">$RepresentationID$ shall not have a format tag.</assert>
 		</rule>
 	</pattern>
 	<pattern name="SegmentList element">

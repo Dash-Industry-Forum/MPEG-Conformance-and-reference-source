@@ -16,14 +16,6 @@
    <svrl:ns-prefix-in-attribute-values uri="http://www.w3.org/2001/XMLSchema-instance" prefix="xsi"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:MPD"/>
-   <svrl:failed-assert test="if (@type = 'static' and not(@mediaPresentationDuration)) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>If MPD is of type "static" mediaPresentationDuration shall be defined.</svrl:text>
-   </svrl:failed-assert>
-   <svrl:failed-assert test="if (not(@mediaPresentationDuration) and not(@minimumUpdatePeriod)) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>If mediaPresentationDuration is not defined for the MPD minimumUpdatePeriod shall be defined or vice versa.</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Period"/>
    <svrl:active-pattern/>
@@ -33,8 +25,12 @@
    <svrl:fired-rule context="dash:Representation"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:SegmentTemplate"/>
+   <svrl:failed-assert test="if (matches(@media, '\$.[^\$]*\$')) then every $y in (for $x in tokenize(@media, '\$(Bandwidth|Time|Number|RepresentationID)(%.[^\$]*)?\$') return matches($x, '\$.[^\$]*\$')) satisfies $y eq false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='SegmentTemplate' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
+      <svrl:text>Only identifiers such as $Bandwidth$, $Time$, $RepresentationID$, or $Number$ shall be used.</svrl:text>
+   </svrl:failed-assert>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:SegmentList"/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
