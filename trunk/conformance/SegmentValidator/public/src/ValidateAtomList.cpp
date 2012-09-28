@@ -1211,7 +1211,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
         bool segmentFound = false;
         UInt64 offset = 0;
         for(segmentNum = 0 ; segmentNum < vg.segmentInfoSize ; segmentNum++)
-        {
+        {            
             if(aoe->offset == offset)
             {
                 segmentFound = true;
@@ -1239,11 +1239,11 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
             else if(currentBrand == 'msix') {
 				msixFound = true;
 			}
-            else if(currentBrand == 'sims') {
+            else if(segmentFound && currentBrand == 'sims') {
 				vg.simsInStyp[segmentNum] = true;
 			}
             else if(currentBrand == 'lmsg') {
-				if(segmentNum != vg.segmentInfoSize)
+				if(segmentFound && segmentNum != vg.segmentInfoSize)
                     errprint("Brand 'lmsg' found as a compatible brand for segment number %d (not the last segment %d); violates Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): In all cases for which a Representation contains more than one Media Segment ... If the Media Segment is not the last Media Segment in the Representation, the 'lmsg' compatibility brand shall not be present.\n",segmentNum,vg.segmentInfoSize);
 			}
 						
@@ -1265,7 +1265,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
         if (vg.isomain && (vg.startWithSAP <= 0 || vg.startWithSAP > 3) && !msixFound)
             errprint("msix not found in styp of a segment, with main profile and startWithSAP %d, violating: Section 8.5.3. of ISO/IEC 23009-1:2012(E): Each Media Segment of the Representations not having @startWithSAP present or having @startWithSAP value 0 or greater than 3 shall comply with the formats defined in 6.3.4.3, i.e. the brand 'msix'\n",vg.startWithSAP);
         
-		if (vg.checklevel && !vg.simsInStyp[segmentNum]) {
+		if (vg.checklevel && segmentFound && !vg.simsInStyp[segmentNum]) {
 				errprint("sims not found in styp of a segment, while SubRepresentation@level checks invoked, violating: Section 7.3.4. of ISO/IEC 23009-1:2012(E): If a SubRepresentation element is present in a Representation in the MPD and the attribute SubRepresentation@level is present, then the Media Segments in this Representation shall conform to a Sub-Indexed Media Segment as defined in 6.3.4.4 \n");
 			}
 			
