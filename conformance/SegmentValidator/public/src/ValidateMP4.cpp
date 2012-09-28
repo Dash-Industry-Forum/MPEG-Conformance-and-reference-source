@@ -617,7 +617,7 @@ void atomprintnotab(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	if (vg.printatom) {
-		vfprintf( _stdout, formatStr, (char *)ap );
+		vfprintf( _stdout, formatStr, (va_list)(char *)ap );
 	}
 	
 	va_end(ap);
@@ -633,7 +633,7 @@ void atomprint(const char *formatStr, ...)
 		while (tabcnt--) {
 			fprintf(_stdout,myTAB);
 		}
-		vfprintf( _stdout, formatStr, (char *)ap );
+		vfprintf( _stdout, formatStr, (va_list)(char *)ap );
 	}
 	
 	va_end(ap);
@@ -677,7 +677,7 @@ void atomprintdetailed(const char *formatStr, ...)
 		while (tabcnt--) {
 			fprintf(_stdout,myTAB);
 		}
-		vfprintf( _stdout, formatStr, (char *)ap );
+		vfprintf( _stdout, formatStr, (va_list)(char *)ap );
 	}
 	
 	va_end(ap);
@@ -693,7 +693,7 @@ void sampleprint(const char *formatStr, ...)
 		while (tabcnt--) {
 			fprintf(_stdout,myTAB);
 		}
-		vfprintf( _stdout, formatStr, (char *)ap );
+		vfprintf( _stdout, formatStr, (va_list)(char *)ap );
 	}
 	
 	va_end(ap);
@@ -705,7 +705,7 @@ void sampleprintnotab(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	if (vg.printsample) {
-		vfprintf( _stdout, formatStr, (char *)ap );
+		vfprintf( _stdout, formatStr, (va_list)(char *)ap );
 	}
 	
 	va_end(ap);
@@ -804,7 +804,7 @@ void warnprint(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	if (vg.warnings)
-		vfprintf( _stderr, formatStr, (char *)ap );
+		vfprintf( _stderr, formatStr, (va_list)(char *)ap );
 	
 	va_end(ap);
 }
@@ -816,7 +816,7 @@ void errprint(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	fprintf( _stderr, "### error: %s \n###        ",vg.curatompath);
-	vfprintf( _stderr, formatStr, (char *)ap );
+	vfprintf( _stderr, formatStr, (va_list)(char *)ap );
 	
 	va_end(ap);
 }
@@ -942,7 +942,7 @@ char *int64todstr_r(UInt64 num, char * str)
 //  careful about using more than one call to this in the same print statement, they end up all being the same
 char *langtodstr(UInt16 num)
 {
-	static char str[4];
+	static char str[5];
 
 	str[4] = 0;
 	
@@ -1126,7 +1126,6 @@ OSErr ValidateElementaryVideoStream( atomOffsetEntry *aoe, void *refcon )
 	BitBuffer bb;
 	Ptr dataP;
 	UInt32 dataSize;
-	OSErr valerr;
 	UInt32 refcons[2];
 	
 	if (vg.checklevel < checklevel_samples)
@@ -1162,12 +1161,12 @@ OSErr ValidateElementaryVideoStream( atomOffsetEntry *aoe, void *refcon )
 			if (sampleNum == 0) {
 				atomprint("<Video_Sample_Description offset=\"%s\" size=\"%d\"",
 								int64toxstr(offset1),dataSize); vg.tabcnt++;
-					valerr = Validate_vide_ES_Bitstream( &bb, &tir );
+					Validate_vide_ES_Bitstream( &bb, &tir );
 				--vg.tabcnt; atomprint("</Video_Sample_Description>\n");
 			} else {
 				atomprint("<Video_Sample sample_num=\"%d\" offset=\"%s\" size=\"%d\"",
 								sampleNum, int64toxstr(offset1),dataSize); vg.tabcnt++;
-					valerr = Validate_vide_sample_Bitstream( &bb, &tir );
+					Validate_vide_sample_Bitstream( &bb, &tir );
 				--vg.tabcnt; atomprint("</Video_Sample_Description>\n");
 			}
 			

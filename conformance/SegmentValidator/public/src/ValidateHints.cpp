@@ -1825,10 +1825,10 @@ static OSErr Validate_isma_attribute( HintInfoRec *hir, char *inValue)
 {
 #pragma unused(hir)
 	OSErr		err = noErr;
-	SInt32	profile, i;
+	long	profile, i;
 	float	lowest, authored;
 	
-	i = sscanf(inValue,"%d,%f,%f",(int)&profile,&lowest,&authored);
+	i = sscanf(inValue,"%ld,%f,%f",&profile,&lowest,&authored);
 	if (i<3) errprint("Bad ISMA compliance attribute %s\n",inValue);
 	else {
 		if ((profile<0) || (profile>4)) errprint("Bad ISMA compliance profile value %s\n",inValue);
