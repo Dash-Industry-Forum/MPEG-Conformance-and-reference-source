@@ -1119,14 +1119,14 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 		errprint("There must be at least one compatible brand\n");
 	}
 	else {
-		int ix;
+		UInt32 ix;
 		OSType currentBrand;
 		Boolean majorBrandFoundAmongCompatibleBrands = false;
         vg.indexedFile = false;
         vg.msixInFtyp = false;
         vg.dashInFtyp = false;
         		
-		for (ix=0; ix < (int)numCompatibleBrands; ix++) {
+		for (ix=0; ix < numCompatibleBrands; ix++) {
 			BAILIFERR( GetFileDataN32( aoe, &currentBrand, offset, &offset ) );
 			if (ix<(numCompatibleBrands-1)) atomprint("\"%s\",\n", ostypetostr_r(currentBrand, tempstr1));
 			      else atomprint("\"%s\"\n",  ostypetostr_r(currentBrand, tempstr1));
@@ -1199,32 +1199,34 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 		errprint("There must be at least one compatible brand\n");
 	}
 	else {
-		int ix;
+		UInt32 ix;
 		OSType currentBrand;
 		Boolean majorBrandFoundAmongCompatibleBrands = false;
         bool msdhFound = false;
         bool msixFound = false;
-        vg.simsInStyp = false;
 
         //Which segment is it?
         int segmentNum;
         bool segmentFound = false;
         UInt64 offset = 0;
         for(segmentNum = 0 ; segmentNum < vg.segmentInfoSize ; segmentNum++)
-        {            
+        {       
             if(aoe->offset == offset)
             {
                 segmentFound = true;
                 break;
             }
             
-            offset += vg.segmentOffsetInfo[segmentNum];
+            offset += vg.segmentSizes[segmentNum];
         }
+
+        if(segmentFound)
+            vg.simsInStyp[segmentNum] = false;
 
         if(!segmentFound)
             errprint("styp not at the begining of a segment (abs. file offset %lld), this is unexpected\n",aoe->offset);
                 		
-		for (ix=0; ix < (int)numCompatibleBrands; ix++) {
+		for (ix=0; ix < numCompatibleBrands; ix++) {
 			BAILIFERR( GetFileDataN32( aoe, &currentBrand, offset, &offset ) );
 			if (ix<(numCompatibleBrands-1)) atomprint("\"%s\",\n", ostypetostr_r(currentBrand, tempstr1));
 			      else atomprint("\"%s\"\n",  ostypetostr_r(currentBrand, tempstr1));

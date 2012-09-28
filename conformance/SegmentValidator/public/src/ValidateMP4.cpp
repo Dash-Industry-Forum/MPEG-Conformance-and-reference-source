@@ -617,7 +617,7 @@ void atomprintnotab(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	if (vg.printatom) {
-		vfprintf( _stdout, formatStr, (va_list)(char *)ap );
+		vfprintf( _stdout, formatStr, ap );
 	}
 	
 	va_end(ap);
@@ -633,7 +633,7 @@ void atomprint(const char *formatStr, ...)
 		while (tabcnt--) {
 			fprintf(_stdout,myTAB);
 		}
-		vfprintf( _stdout, formatStr, (va_list)(char *)ap );
+		vfprintf( _stdout, formatStr, ap );
 	}
 	
 	va_end(ap);
@@ -677,7 +677,7 @@ void atomprintdetailed(const char *formatStr, ...)
 		while (tabcnt--) {
 			fprintf(_stdout,myTAB);
 		}
-		vfprintf( _stdout, formatStr, (va_list)(char *)ap );
+		vfprintf( _stdout, formatStr, ap );
 	}
 	
 	va_end(ap);
@@ -693,7 +693,7 @@ void sampleprint(const char *formatStr, ...)
 		while (tabcnt--) {
 			fprintf(_stdout,myTAB);
 		}
-		vfprintf( _stdout, formatStr, (va_list)(char *)ap );
+		vfprintf( _stdout, formatStr, ap );
 	}
 	
 	va_end(ap);
@@ -705,7 +705,7 @@ void sampleprintnotab(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	if (vg.printsample) {
-		vfprintf( _stdout, formatStr, (va_list)(char *)ap );
+		vfprintf( _stdout, formatStr, ap );
 	}
 	
 	va_end(ap);
@@ -804,7 +804,7 @@ void warnprint(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	if (vg.warnings)
-		vfprintf( _stderr, formatStr, (va_list)(char *)ap );
+		vfprintf( _stderr, formatStr, ap );
 	
 	va_end(ap);
 }
@@ -816,7 +816,7 @@ void errprint(const char *formatStr, ...)
 	va_start(ap, formatStr);
 	
 	fprintf( _stderr, "### error: %s \n###        ",vg.curatompath);
-	vfprintf( _stderr, formatStr, (va_list)(char *)ap );
+	vfprintf( _stderr, formatStr, ap );
 	
 	va_end(ap);
 }
