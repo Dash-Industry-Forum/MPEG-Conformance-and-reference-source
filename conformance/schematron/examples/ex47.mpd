@@ -13,7 +13,7 @@
 		<AdaptationSet group="1">
 			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" width="320" height="240" 
 											frameRate="15" id="tag0" bandwidth="128000">
-				<SegmentTemplate media="$Bandwidth$/$RepresentationID%05$.mp4v" timescale="90000" duration="20"/>
+				<SegmentTemplate media="$Bandwidth$/$RepresentationID%05d$.mp4v" timescale="90000" duration="20"/>
 			</Representation>
 		</AdaptationSet>
 	</Period>
