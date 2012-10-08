@@ -1,3 +1,7 @@
+2012-10-08
+----------
+Minor corrections to examples, as the "d" for format tags was missing
+
 2012-09-20
 ----------
 Added R7.6 and updated Example 47 for checking that RepresentationID has no format tag
