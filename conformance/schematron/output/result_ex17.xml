@@ -27,10 +27,6 @@
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
       <svrl:text>Either the Representation or the containing AdaptationSet shall have the mimeType attribute.</svrl:text>
    </svrl:failed-assert>
-   <svrl:failed-assert test="if (not(@codecs) and not(parent::dash:AdaptationSet/@codecs) and (not(@mimeType = 'application/ttml+xml') or not(parent::dash:AdaptationSet/@mimeType = 'application/ttml+xml'))) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>Either the Representation or the containing AdaptationSet shall have the codecs attribute.</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>

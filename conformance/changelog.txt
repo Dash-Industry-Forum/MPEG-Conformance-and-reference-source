@@ -1,3 +1,8 @@
+2012-10-11
+----------
+Removed R5.1 and updated R3.3 due to @codecs becoming optional
+Update Example 17
+
 2012-10-08
 ----------
 Minor corrections to examples, as the "d" for format tags was missing
