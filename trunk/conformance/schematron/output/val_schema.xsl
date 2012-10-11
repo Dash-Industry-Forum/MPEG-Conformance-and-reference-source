@@ -554,12 +554,12 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if ((@profiles and descendant::dash:Representation/@profiles) or (@width and descendant::dash:Representation/@width) or (@height and descendant::dash:Representation/@height) or (@sar and descendant::dash:Representation/@sar) or (@frameRate and descendant::dash:Representation/@frameRate) or (@audioSamplingRate and descendant::dash:Representation/@audioSamplingRate) or (@mimeType and descendant::dash:Representation/@mimeType) or (@segmentProfiles and descendant::dash:Representation/@segmentProfiles) or (@codecs and descendant::dash:Representation/@codecs and not(@mimeType = 'application/ttml+xml')) or (@maximumSAPPeriod and descendant::dash:Representation/@maximumSAPPeriod) or (@startWithSAP and descendant::dash:Representation/@startWithSAP) or (@maxPlayoutRate and descendant::dash:Representation/@maxPlayoutRate) or (@codingDependency and descendant::dash:Representation/@codingDependency) or (@scanType and descendant::dash:Representation/@scanType)) then false() else true()"/>
+         <xsl:when test="if ((@profiles and descendant::dash:Representation/@profiles) or (@width and descendant::dash:Representation/@width) or (@height and descendant::dash:Representation/@height) or (@sar and descendant::dash:Representation/@sar) or (@frameRate and descendant::dash:Representation/@frameRate) or (@audioSamplingRate and descendant::dash:Representation/@audioSamplingRate) or (@mimeType and descendant::dash:Representation/@mimeType) or (@segmentProfiles and descendant::dash:Representation/@segmentProfiles) or (@codecs and descendant::dash:Representation/@codecs) or (@maximumSAPPeriod and descendant::dash:Representation/@maximumSAPPeriod) or (@startWithSAP and descendant::dash:Representation/@startWithSAP) or (@maxPlayoutRate and descendant::dash:Representation/@maxPlayoutRate) or (@codingDependency and descendant::dash:Representation/@codingDependency) or (@scanType and descendant::dash:Representation/@scanType)) then false() else true()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
                                 xmlns:schold="http://www.ascc.net/xml/schematron"
                                 xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if ((@profiles and descendant::dash:Representation/@profiles) or (@width and descendant::dash:Representation/@width) or (@height and descendant::dash:Representation/@height) or (@sar and descendant::dash:Representation/@sar) or (@frameRate and descendant::dash:Representation/@frameRate) or (@audioSamplingRate and descendant::dash:Representation/@audioSamplingRate) or (@mimeType and descendant::dash:Representation/@mimeType) or (@segmentProfiles and descendant::dash:Representation/@segmentProfiles) or (@codecs and descendant::dash:Representation/@codecs and not(@mimeType = 'application/ttml+xml')) or (@maximumSAPPeriod and descendant::dash:Representation/@maximumSAPPeriod) or (@startWithSAP and descendant::dash:Representation/@startWithSAP) or (@maxPlayoutRate and descendant::dash:Representation/@maxPlayoutRate) or (@codingDependency and descendant::dash:Representation/@codingDependency) or (@scanType and descendant::dash:Representation/@scanType)) then false() else true()">
+                                test="if ((@profiles and descendant::dash:Representation/@profiles) or (@width and descendant::dash:Representation/@width) or (@height and descendant::dash:Representation/@height) or (@sar and descendant::dash:Representation/@sar) or (@frameRate and descendant::dash:Representation/@frameRate) or (@audioSamplingRate and descendant::dash:Representation/@audioSamplingRate) or (@mimeType and descendant::dash:Representation/@mimeType) or (@segmentProfiles and descendant::dash:Representation/@segmentProfiles) or (@codecs and descendant::dash:Representation/@codecs) or (@maximumSAPPeriod and descendant::dash:Representation/@maximumSAPPeriod) or (@startWithSAP and descendant::dash:Representation/@startWithSAP) or (@maxPlayoutRate and descendant::dash:Representation/@maxPlayoutRate) or (@codingDependency and descendant::dash:Representation/@codingDependency) or (@scanType and descendant::dash:Representation/@scanType)) then false() else true()">
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
@@ -756,22 +756,6 @@
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
                <svrl:text>Either the Representation or the containing AdaptationSet shall have the mimeType attribute.</svrl:text>
-            </svrl:failed-assert>
-         </xsl:otherwise>
-      </xsl:choose>
-
-		    <!--ASSERT -->
-<xsl:choose>
-         <xsl:when test="if (not(@codecs) and not(parent::dash:AdaptationSet/@codecs) and (not(@mimeType = 'application/ttml+xml') or not(parent::dash:AdaptationSet/@mimeType = 'application/ttml+xml'))) then false() else true()"/>
-         <xsl:otherwise>
-            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
-                                xmlns:schold="http://www.ascc.net/xml/schematron"
-                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (not(@codecs) and not(parent::dash:AdaptationSet/@codecs) and (not(@mimeType = 'application/ttml+xml') or not(parent::dash:AdaptationSet/@mimeType = 'application/ttml+xml'))) then false() else true()">
-               <xsl:attribute name="location">
-                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
-               </xsl:attribute>
-               <svrl:text>Either the Representation or the containing AdaptationSet shall have the codecs attribute.</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
