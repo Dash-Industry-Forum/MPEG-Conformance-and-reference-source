@@ -121,6 +121,43 @@ int GetFileData( atomOffsetEntry *aoe, void *dataP, UInt64 offset64, UInt64 size
 	}
 
 	if (newoffset64) *newoffset64 = offset64 + size;
+
+    {
+        static int first = 1, count = 0;
+        static FILE* dbg;
+
+        if(count < 2048)
+        {
+            if(first)
+            {
+                dbg = fopen("debug.bin","wb");
+                if(!dbg)
+                    fprintf(stderr,"Could not open debug.bin!\n");
+            }
+            else
+            {
+                dbg = fopen("debug.bin","a");
+                if(!dbg)
+                    fprintf(stderr,"Could not open debug.bin for appending!\n");
+            }
+
+            if(dbg)
+            {
+                for(int index = 0 ; index < size ; index ++)
+                {
+                    fwrite (&(((unsigned char *)dataP)[index]),1,1,dbg);
+                    if(count < 100);
+                        //printf("%c ",(((unsigned char *)dataP)[index]));
+                }
+                    
+                count += size;
+            }
+
+        fclose(dbg);
+        }
+        first = 0;
+    }
+
 bail:
 	return err;
 }
