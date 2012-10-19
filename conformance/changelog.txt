@@ -1,3 +1,7 @@
+2012-10-19
+----------
+Updated XLINK examples to point to the new online storage
+
 2012-10-11
 ----------
 Removed R5.1 and updated R3.3 due to @codecs becoming optional
