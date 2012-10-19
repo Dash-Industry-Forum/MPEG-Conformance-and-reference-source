@@ -10,6 +10,6 @@
 					<Initialization sourceURL="http://www.example.com/rep-QVGA-HQ/seg-init.mp4"/>
 				</SegmentBase>
 			</Representation>
-			<Representation xlink:href="http://www-itec.uni-klu.ac.at/~mwaltl/uni/nobackup/ex02_circular.mpd" xlink:actuate="onRequest" xmlns:xlink="http://www.w3.org/1999/xlink"/>
+			<Representation xlink:href="http://ftp-itec.uni-klu.ac.at/dash/conformance/xlink_files/ex02_circular.mpd" xlink:actuate="onRequest" xmlns:xlink="http://www.w3.org/1999/xlink"/>
 		</AdaptationSet>
 </Period>
