@@ -458,22 +458,6 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) &gt; 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) &gt; 1))) then false() else true()"/>
-         <xsl:otherwise>
-            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
-                                xmlns:schold="http://www.ascc.net/xml/schematron"
-                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) &gt; 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) &gt; 1))) then false() else true()">
-               <xsl:attribute name="location">
-                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
-               </xsl:attribute>
-               <svrl:text>If SegmentTemplate or SegmentList is defined within Period it shall not be redefined in AdaptationSet or Representation.</svrl:text>
-            </svrl:failed-assert>
-         </xsl:otherwise>
-      </xsl:choose>
-
-		    <!--ASSERT -->
-<xsl:choose>
          <xsl:when test="if (not(@id) and ancestor::dash:MPD/@type = 'dynamic') then false() else true()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -676,22 +660,6 @@
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
                <svrl:text>At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in AdaptationSet.</svrl:text>
-            </svrl:failed-assert>
-         </xsl:otherwise>
-      </xsl:choose>
-
-		    <!--ASSERT -->
-<xsl:choose>
-         <xsl:when test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) &gt; 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) &gt; 1))) then false() else true()"/>
-         <xsl:otherwise>
-            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
-                                xmlns:schold="http://www.ascc.net/xml/schematron"
-                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) &gt; 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) &gt; 1))) then false() else true()">
-               <xsl:attribute name="location">
-                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
-               </xsl:attribute>
-               <svrl:text>If SegmentTemplate or SegmentList is defined within AdaptationSet it shall not be redefined in Representation.</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>

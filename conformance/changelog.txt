@@ -1,6 +1,6 @@
-2012-10-19
+2012-10-23
 ----------
-Updated XLINK examples to point to the new online storage
+Removed R2.4 and R3.10 (disallowed more than one SegmentList/SegmentTemplate per Period)
 
 2012-10-11
 ----------

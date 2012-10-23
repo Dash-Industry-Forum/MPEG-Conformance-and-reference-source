@@ -20,10 +20,6 @@
    <svrl:fired-rule context="dash:Period"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
-   <svrl:failed-assert test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) &gt; 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) &gt; 1))) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>If SegmentTemplate or SegmentList is defined within AdaptationSet it shall not be redefined in Representation.</svrl:text>
-   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Representation"/>

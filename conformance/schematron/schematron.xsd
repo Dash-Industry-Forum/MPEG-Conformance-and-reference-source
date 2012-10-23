@@ -37,10 +37,8 @@
 			<!-- R2.3 -->
 			<assert test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()">At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in Period.</assert>
 			<!-- R2.4 -->
-			<assert test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) > 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) > 1))) then false() else true()">If SegmentTemplate or SegmentList is defined within Period it shall not be redefined in AdaptationSet or Representation.</assert>
-			<!-- R2.5 -->
 			<assert test="if (not(@id) and ancestor::dash:MPD/@type = 'dynamic') then false() else true()">If the MPD is dynamic the Period element shall have an id.</assert>
-			<!-- R2.6 -->
+			<!-- R2.5 -->
 			<assert test="if (not(descendant-or-self::dash:SegmentBase) and not(descendant-or-self::dash:SegmentTemplate) and not(descendant-or-self::dash:SegmentList)) then false() else true()">At least one SegmentBase, SegmentTemplate or SegmentList shall be defined in Period, AdaptationSet or Representation.</assert>
 		</rule>
 	</pattern>
@@ -67,8 +65,6 @@
 			<assert test="if ((@profiles = 'urn:mpeg:dash:profile:isoff-on-demand:2011' or ancestor::dash:MPD/@profiles  = 'urn:mpeg:dash:profile:isoff-on-demand:2011' ) and (@mimeType and (@mimeType != 'video/mp4' and @mimeType != 'audio/mp4' and @mimeType != 'application/mp4'))) then false() else true()">For ISO BMFF On-Demand profile, the @mimeType shall equal video/mp4, audio/mp4 or application/mp4.</assert>
 			<!-- R3.9 -->
 			<assert test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()">At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in AdaptationSet.</assert>
-			<!-- R3.10 -->
-			<assert test="if (((child::dash:SegmentTemplate and count(descendant-or-self::dash:SegmentTemplate) > 1) or (child::dash:SegmentList and count(descendant-or-self::dash:SegmentList) > 1))) then false() else true()">If SegmentTemplate or SegmentList is defined within AdaptationSet it shall not be redefined in Representation.</assert>
 		</rule>
 	</pattern>
 	<pattern name="ContentComponent element">
