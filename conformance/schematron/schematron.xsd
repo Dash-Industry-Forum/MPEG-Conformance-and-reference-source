@@ -39,7 +39,7 @@
 			<!-- R2.4 -->
 			<assert test="if (not(@id) and ancestor::dash:MPD/@type = 'dynamic') then false() else true()">If the MPD is dynamic the Period element shall have an id.</assert>
 			<!-- R2.5 -->
-			<assert test="if (not(descendant-or-self::dash:SegmentBase) and not(descendant-or-self::dash:SegmentTemplate) and not(descendant-or-self::dash:SegmentList)) then false() else true()">At least one SegmentBase, SegmentTemplate or SegmentList shall be defined in Period, AdaptationSet or Representation.</assert>
+			<assert test="if (not(descendant-or-self::dash:BaseURL) and not(descendant-or-self::dash:SegmentTemplate) and not(descendant-or-self::dash:SegmentList)) then false() else true()">At least one BaseURL, SegmentTemplate or SegmentList shall be defined in Period, AdaptationSet or Representation.</assert>
 		</rule>
 	</pattern>
 	<pattern name="AdaptationSet element">
