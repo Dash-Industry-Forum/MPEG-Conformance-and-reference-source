@@ -1,3 +1,7 @@
+2012-10-28
+----------
+Correction on R2.5 which checked for SegmentBase instead of BaseURL
+
 2012-10-23
 ----------
 Removed R2.4 and R3.10 (disallowed more than one SegmentList/SegmentTemplate per Period)
