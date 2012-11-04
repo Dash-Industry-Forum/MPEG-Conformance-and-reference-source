@@ -481,7 +481,7 @@ int main(void)
 
 usageError:
 	fprintf( stderr, "Usage: %s [-filetype <type>] "
-								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap] [-level] [-isolive] [-isoondemand] [-isomain]\n", "ValidateMP4" );
+								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap TYPE] [-level] [-isolive] [-isoondemand] [-isomain]\n", "ValidateMP4" );
 	fprintf( stderr, "            [-samplenumber <number>] [-verbose <options> [-help] inputfile\n" );
 	fprintf( stderr, "    -a[tompath] <atompath> - limit certain operations to <atompath> (e.g. moov-1:trak-2)\n" );
 	fprintf( stderr, "                     this effects -checklevel and -printtype (default is everything) \n" );

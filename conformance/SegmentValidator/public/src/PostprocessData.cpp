@@ -30,6 +30,7 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
     
     bool sidxFoundInPreviousSegment = false;
     bool sidxFound = false;
+    bool ftypFound = false;
         
     for(int index = (initializationSegment ? 1 : 0) ; index < segmentInfoSize ; index++)
     {
@@ -47,7 +48,7 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
             if (list[i].offset == offset)
             {
                 boxAtSegmentStartFound = true;
-                
+               
                 if (list[i].type != 'styp' && list[i].type != 'sidx' && list[i].type != 'moof' && (list[i].type != 'ftyp' || initializationSegment))
                 {
                     if(list[i].type == 'ftyp' && initializationSegment)
@@ -60,6 +61,16 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
 
                 for(int j = i ; list[j].offset < (offset+segmentSizes[index]) ; j++)
                 {
+					if(list[j].type == 'ftyp') {
+						ftypFound = 1;
+					}
+					else if(list[j].type == 'moov') {
+						if (ftypFound) {
+							initializationSegment = 1;
+						} else {
+							errprint("no ftyp box found, violating: Section 4.3 of ISO/IEC 14496-12:2012(E)\n");
+						}
+					}
                     if(list[j].type == 'moof')
                     {                        
                         if (j == (cnt-1) || list[j+1].offset >= (offset+segmentSizes[index]) || list[j+1].type != 'mdat')
@@ -75,13 +86,16 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
 
                         ssixFoundInSegment = true;
                     }
-                    
-                    if((vg.isoondemand || vg.isoLive || vg.isomain) && fragmentInSegmentFound && (list[j].type == 'sidx' || list[j].type == 'ssix'))
-                        errprint("Indexing information (sidx/ssix) found in segment %d (at file absolute offset %lld) following a moof, violating: Section 8.3.3. of ISO/IEC 23009-1:2012(E): All Segment Index ('sidx') and Subsegment Index ('ssix') boxes shall be placed before any Movie Fragment ('moof') boxes\n",index,list[j].offset);
-                        
+                    /*JLF: this is only valid for onDemand profile (8.3.3) and live (8.4.3)*/
+					if (fragmentInSegmentFound && (list[j].type == 'sidx' || list[j].type == 'ssix')) {
+						if (vg.isoondemand)
+		                        errprint("Indexing information (sidx/ssix) found in segment %d (at file absolute offset %lld) following a moof, violating: Section 8.3.3. of ISO/IEC 23009-1:2012(E): All Segment Index ('sidx') and Subsegment Index ('ssix') boxes shall be placed before any Movie Fragment ('moof') boxes\n",index,list[j].offset);
+						else if (vg.isoLive)
+		                        errprint("Indexing information (sidx/ssix) found in segment %d (at file absolute offset %lld) following a moof, violating: Section 8.4.3. of ISO/IEC 23009-1:2012(E): In Media Segments, all Segment Index ('sidx') and Subsegment Index ('ssix') boxes shall be placed before any Movie Fragment ('moof') boxes\n",index,list[j].offset);
+					}
                 }
 
-                if(!fragmentInSegmentFound)
+                if(!fragmentInSegmentFound && !initializationSegment)
                     errprint("No fragment found in segment %d\n",index+1);                   
             }
 
@@ -124,7 +138,7 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
         offset+=segmentSizes[index];
     }
 
-    if(!sidxFound)
+	if(vg.msixInFtyp && !sidxFound)
         errprint("No indexing info found while 'msix' was a compatible brand: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall carry 'msix' as a compatible brand \n");
 
 }
@@ -698,7 +712,7 @@ void checkSegmentStartWithSAP(int startWithSAP, MovieInfoRec *mir)
 
 OSErr processIndexingInfo(MovieInfoRec *mir)
 {
-    UInt32 i;
+    UInt32 i, sidxIndex;
     UInt64 absoluteOffset;
     UInt64 referenceEPT;
     UInt64 lastLeafEPT = 0;
@@ -708,7 +722,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
     UInt64 segmentOffset = 0;
     
     int firstMediaSegment = vg.initializationSegment ? 1 : 0;
-    
+	sidxIndex = 0;
     for(long trackIndex = 0 ; trackIndex < mir->numTIRs ; trackIndex++)
     {
         for(i = firstMediaSegment ; i < (UInt32)vg.segmentInfoSize ; i++)
@@ -731,6 +745,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
                 if(mir->sidxInfo[j].offset >= segmentOffset && (previousSidx == NULL || previousSidx->offset < segmentOffset))
                 {
                     firstSidxOfSegment = &mir->sidxInfo[j];
+					sidxIndex = j;
                     break;
                 }
             }
@@ -739,25 +754,53 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
             if(firstSidxOfSegment == NULL)
                 continue;
 
+            UInt32 ref_size = 0;
             long double segmentDurationSec = 0;
 
             for(UInt32 j = 0 ; j < mir->numFragments; j++)
             {
+				/*compute size of segment*/
+				if (!ref_size) {
+					for (UInt32 k=0; k<firstSidxOfSegment->reference_count; k++) {
+						ref_size += firstSidxOfSegment->references[k].referenced_size;
+					}
+				}
+
                 if(mir->moofInfo[j].offset >= segmentOffset && mir->moofInfo[j].offset < firstSidxOfSegment->offset)
                     errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box shall be placed before any 'moof' box. Violated for fragment number %d\n",j);
+
+				/*check that segment indexing covers the entire moof's duration*/
+				if (segmentOffset + ref_size < mir->moofInfo[j].offset) {
+					long double diff = ABS(segmentDurationSec - firstSidxOfSegment->cumulatedDuration);		            
+					if(diff > (long double)1.0/(long double)mir->tirList[trackIndex].mediaTimeScale)
+						errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",i-firstMediaSegment,segmentDurationSec,firstSidxOfSegment->cumulatedDuration,mir->tirList[trackIndex].trackID,diff);
+
+					/*find next sidx*/
+					for(UInt32 k = sidxIndex ; k < mir->numSidx ; k++) {
+						if (mir->sidxInfo[k].offset >= segmentOffset + ref_size) {
+							sidxIndex = k;
+							ref_size = 0;
+		                    firstSidxOfSegment = &mir->sidxInfo[k];
+							segmentOffset = firstSidxOfSegment->offset;
+							segmentDurationSec = 0;
+							break;
+						}
+					}
+				}
 
                 if(mir->moofInfo[j].samplesToBePresented && mir->moofInfo[j].offset >= segmentOffset && mir->moofInfo[j].offset < (segmentOffset+vg.segmentSizes[i]) )
                 {
                     segmentDurationSec += (mir->moofInfo[j].moofPresentationEndTimePerTrack[trackIndex] - mir->moofInfo[j].moofEarliestPresentationTimePerTrack[trackIndex]);
                 }
             }
-                        
-            long double diff = ABS(segmentDurationSec - firstSidxOfSegment->cumulatedDuration);
-            
-            if(diff > (long double)1.0/(long double)mir->tirList[trackIndex].mediaTimeScale)
-                errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",i-firstMediaSegment,segmentDurationSec,firstSidxOfSegment->cumulatedDuration,mir->tirList[trackIndex].trackID,diff);
+			if (ref_size) {                        
+				long double diff = ABS(segmentDurationSec - firstSidxOfSegment->cumulatedDuration);
+	            
+				if(diff > (long double)1.0/(long double)mir->tirList[trackIndex].mediaTimeScale)
+					errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",i-firstMediaSegment,segmentDurationSec,firstSidxOfSegment->cumulatedDuration,mir->tirList[trackIndex].trackID,diff);
 
-            segmentOffset += vg.segmentSizes[i];  
+				segmentOffset += vg.segmentSizes[i];  
+			}
         }
     }
     

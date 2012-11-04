@@ -1067,10 +1067,11 @@ OSErr ValidateAtomOfType( OSType theType, long flags, ValidateAtomTypeProcPtr va
 
 	// 
 	if ((flags & kTypeAtomFlagMustHaveOne)  && (typeCnt == 0)) {
-		if( theType == IODSAID )
-			warnprint( "\nWARNING: no 'iods' atom\n");
-		else
+		if( theType == IODSAID ) {
+//			warnprint( "\nWARNING: no 'iods' atom\n");
+		} else {
 			errprint("No '%s' atoms\n",cstr);
+		}
 	} else if ((flags & kTypeAtomFlagCanHaveAtMostOne) && (typeCnt > 1)) {
 		errprint("Multiple '%s' atoms not allowed\n",cstr);
 	}
@@ -1225,7 +1226,9 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 
         if(!segmentFound)
             errprint("styp not at the begining of a segment (abs. file offset %lld), this is unexpected\n",aoe->offset);
-                		
+                	
+		/*skip styp size, tag, major brand and version*/
+		offset += 16;
 		for (ix=0; ix < numCompatibleBrands; ix++) {
 			BAILIFERR( GetFileDataN32( aoe, &currentBrand, offset, &offset ) );
 			if (ix<(numCompatibleBrands-1)) atomprint("\"%s\",\n", ostypetostr_r(currentBrand, tempstr1));
@@ -1267,10 +1270,11 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
         if (vg.isomain && (vg.startWithSAP <= 0 || vg.startWithSAP > 3) && !msixFound)
             errprint("msix not found in styp of a segment, with main profile and startWithSAP %d, violating: Section 8.5.3. of ISO/IEC 23009-1:2012(E): Each Media Segment of the Representations not having @startWithSAP present or having @startWithSAP value 0 or greater than 3 shall comply with the formats defined in 6.3.4.3, i.e. the brand 'msix'\n",vg.startWithSAP);
         
+/*
 		if (vg.checklevel && segmentFound && !vg.simsInStyp[segmentNum]) {
 				errprint("sims not found in styp of a segment, while SubRepresentation@level checks invoked, violating: Section 7.3.4. of ISO/IEC 23009-1:2012(E): If a SubRepresentation element is present in a Representation in the MPD and the attribute SubRepresentation@level is present, then the Media Segments in this Representation shall conform to a Sub-Indexed Media Segment as defined in 6.3.4.4 \n");
 			}
-			
+*/	
  	}
  	
  	atomprint("]>\n"); 
