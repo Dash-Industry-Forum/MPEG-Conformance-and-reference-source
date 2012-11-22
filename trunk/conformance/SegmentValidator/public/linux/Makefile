@@ -11,6 +11,8 @@ NAME=  ValidateMP4
 ### include debug information: 1=yes, 0=no
 DBG= 1
 
+compatibility= -m32
+
 DEPEND= dependencies
 
 BINDIR= ./bin
@@ -21,8 +23,8 @@ OBJDIR= ./obj
 
 CC=     $(shell which g++)
 
-LIBS= -lcurl
-FLAGS=  -ffloat-store -Wall -I$(INCDIR) -DLITTLEENDIAN -Wno-multichar -Wno-unknown-pragmas -fno-permissive -Wno-write-strings
+LIBS= #-lcurl
+FLAGS= -ffloat-store -Wall -I$(INCDIR) -DLITTLEENDIAN -Wno-multichar -Wno-unknown-pragmas -fno-permissive -Wno-write-strings
 
 ifdef DBG
 SUFFIX= #.dbg
