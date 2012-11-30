@@ -10,6 +10,7 @@
 	<Period xlink:href="http://ftp-itec.uni-klu.ac.at/dash/conformance/xlink_files/ex01_include.mpd"
                 xlink:actuate="onRequest" start="PT06H"/>
 	<Period start="PT08H" id="10">
+		<BaseURL>http://www.example.com</BaseURL>
 		<AdaptationSet group="1">
 			<Representation  id="QVGA-LQ" mimeType="video/mp4" codecs="avc1.42E00C, mp4a.40.2" bandwidth="192000" width="320" height="240">
 				<SegmentBase>

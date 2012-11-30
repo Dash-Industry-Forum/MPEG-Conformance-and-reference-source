@@ -245,6 +245,7 @@
     </xs:sequence>
     <xs:attribute name="timescale" type="xs:unsignedInt"/>
     <xs:attribute name="presentationTimeOffset" type="xs:unsignedLong"/>
+    <xs:attribute name="timeShiftBufferDepth" type="xs:duration"/>
     <xs:attribute name="indexRange" type="xs:string"/>
     <xs:attribute name="indexRangeExact" type="xs:boolean" default="false"/>
     <xs:anyAttribute namespace="##other" processContents="lax"/>
