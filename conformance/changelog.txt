@@ -1,3 +1,8 @@
+2012-11-30
+----------
+Added missing element in SegmentBaseType defined in the CORR.1
+Updated an example of XLink due to an error which should not occur
+
 2012-10-28
 ----------
 Correction on R2.5 which checked for SegmentBase instead of BaseURL
