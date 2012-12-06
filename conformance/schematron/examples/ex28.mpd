@@ -8,7 +8,7 @@
 	minBufferTime="PT10.00S"
 	mediaPresentationDuration="PT3256S"
 	maxSegmentDuration="PT5S"
-	type="dynamic" availabilityStartTime="2001-12-17T09:40:57Z"
+	type="dynamic" availabilityStartTime="2001-12-17T09:40:57Z" publishTime="2001-12-17T09:40:57Z"
 	profiles="urn:mpeg:dash:profile:isoff-main:2011">
 	<Period start="PT0S" id="1">
 		<AdaptationSet group="1">

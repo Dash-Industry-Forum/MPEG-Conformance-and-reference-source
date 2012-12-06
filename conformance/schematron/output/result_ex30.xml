@@ -43,4 +43,5 @@
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Role"/>
    <svrl:fired-rule context="dash:Role"/>
+   <svrl:active-pattern/>
 </svrl:schematron-output>

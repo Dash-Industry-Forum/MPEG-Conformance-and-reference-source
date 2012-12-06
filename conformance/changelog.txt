@@ -1,3 +1,13 @@
+2012-12-06
+----------
+Updated Schematron to work if multiple profiles are defined
+
+2012-11-30-2
+------------
+Updated conformance to include PDAM.1
+Added R1.7 and R16.0 to check new semantics.
+Added Example 52 and 53
+
 2012-11-30
 ----------
 Added missing element in SegmentBaseType defined in the CORR.1
