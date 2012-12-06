@@ -7,7 +7,7 @@
 	xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
 	minBufferTime="PT10.00S"
 	 mediaPresentationDuration="PT3256S"
-	type="dynamic" availabilityStartTime="2001-12-17T09:40:57Z"
+	type="dynamic" availabilityStartTime="2001-12-17T09:40:57Z" publishTime="2001-12-17T09:40:57Z"
 	profiles="urn:mpeg:dash:profile:isoff-main:2011">
 	<Period start="PT0S" id="1">
 	<AdaptationSet group="1" minBandwidth="100000" maxBandwidth="20000" minFrameRate="15" maxFrameRate="5" minHeight="1080" maxHeight="720" minWidth="640" maxWidth="320">

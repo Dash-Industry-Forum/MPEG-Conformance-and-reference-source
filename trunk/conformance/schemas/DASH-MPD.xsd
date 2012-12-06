@@ -33,6 +33,7 @@
     <xs:attribute name="type" type="PresentationType" default="static"/>
     <xs:attribute name="availabilityStartTime" type="xs:dateTime"/>
     <xs:attribute name="availabilityEndTime" type="xs:dateTime"/>
+    <xs:attribute name="publishTime" type="xs:dateTime"/>
     <xs:attribute name="mediaPresentationDuration" type="xs:duration"/>
     <xs:attribute name="minimumUpdatePeriod" type="xs:duration"/>
     <xs:attribute name="minBufferTime" type="xs:duration" use="required"/>
@@ -58,6 +59,7 @@
       <xs:element name="SegmentBase" type="SegmentBaseType" minOccurs="0"/>
       <xs:element name="SegmentList" type="SegmentListType" minOccurs="0"/>
       <xs:element name="SegmentTemplate" type="SegmentTemplateType" minOccurs="0"/>
+      <xs:element name="EventStream" type="EventStreamType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="AdaptationSet" type="AdaptationSetType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="Subset" type="SubsetType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
@@ -70,7 +72,34 @@
     <xs:attribute name="bitstreamSwitching" type="xs:boolean" default="false"/>
     <xs:anyAttribute namespace="##other" processContents="lax"/>
   </xs:complexType>
-
+  
+  <!-- Event Stream -->
+  <xs:complexType name="EventStreamType">
+    <xs:sequence>
+      <xs:element name="Event" type="EventType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>      
+    </xs:sequence>
+    <xs:attribute ref="xlink:href"/>
+    <xs:attribute ref="xlink:actuate" default="onRequest"/>
+    <xs:attribute name="schemeIdUri" type="xs:anyURI" use="required"/>
+    <xs:attribute name="value" type="xs:string"/>
+    <xs:attribute name="timescale" type="xs:unsignedInt"/>
+  </xs:complexType>
+  
+  
+  <!-- Event  -->
+  <xs:complexType name="EventType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="presentationTime" type="xs:unsignedLong" default="0"/>
+        <xs:attribute name="duration" type="xs:unsignedLong"/>
+        <xs:attribute name="id" type="xs:unsignedInt"/>
+        <xs:anyAttribute namespace="##other" processContents="lax"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  
+  
   <!-- Adaptation Set -->
   <xs:complexType name="AdaptationSetType">
     <xs:complexContent>
@@ -187,6 +216,7 @@
       <xs:element name="ContentProtection" type="DescriptorType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="EssentialProperty" type="DescriptorType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="SupplementalProperty" type="DescriptorType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="InbandEventStream" type="DescriptorType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="profiles" type="xs:string"/>
@@ -233,6 +263,7 @@
   <!-- Subset  -->
   <xs:complexType name="SubsetType">
     <xs:attribute name="contains" type="UIntVectorType" use="required"/>
+    <xs:attribute name="id" type="xs:string"/>
     <xs:anyAttribute namespace="##other" processContents="lax"/>
   </xs:complexType>
 
@@ -245,7 +276,7 @@
     </xs:sequence>
     <xs:attribute name="timescale" type="xs:unsignedInt"/>
     <xs:attribute name="presentationTimeOffset" type="xs:unsignedLong"/>
-    <xs:attribute name="timeShiftBufferDepth" type="xs:duration"/>
+	<xs:attribute name="timeShiftBufferDepth" type="xs:duration"/>
     <xs:attribute name="indexRange" type="xs:string"/>
     <xs:attribute name="indexRangeExact" type="xs:boolean" default="false"/>
     <xs:anyAttribute namespace="##other" processContents="lax"/>
