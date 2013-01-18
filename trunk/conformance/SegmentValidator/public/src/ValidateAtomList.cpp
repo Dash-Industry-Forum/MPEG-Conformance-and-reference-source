@@ -1248,8 +1248,13 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 				vg.simsInStyp[segmentNum] = true;
 			}
             else if(currentBrand == 'lmsg') {
+				if(segmentFound && segmentNum != (vg.segmentInfoSize-1))
+                    errprint("Brand 'lmsg' found as a compatible brand for segment number %d (not the last segment %d); violates Section 7.3.1. of ISO/IEC 23009-1:2012(E): In all cases for which a Representation contains more than one Media Segment ... If the Media Segment is not the last Media Segment in the Representation, the 'lmsg' compatibility brand shall not be present.\n",segmentNum+1,vg.segmentInfoSize);
+			}
+
+            if(segmentFound && (segmentNum == (vg.segmentInfoSize-1)) && vg.dash264base && (vg.dynamic || vg.isoLive) && currentBrand != 'lmsg') {
 				if(segmentFound && segmentNum != vg.segmentInfoSize)
-                    errprint("Brand 'lmsg' found as a compatible brand for segment number %d (not the last segment %d); violates Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): In all cases for which a Representation contains more than one Media Segment ... If the Media Segment is not the last Media Segment in the Representation, the 'lmsg' compatibility brand shall not be present.\n",segmentNum,vg.segmentInfoSize);
+                    errprint("Brand 'lmsg' not found as a compatible brand for the last segment (number %d); violates Section 3.2.3. of Interoperability Point DASH264: If the MPD@type is equal to \"dynamic\" or if it includes MPD@profile attribute in-cludes \"urn:mpeg:dash:profile:isoff-live:2011\", then: if the Media Segment is the last Media Segment in the Representation, this Me-dia Segment shall carry the 'lmsg' compatibility brand\n",segmentNum+1);
 			}
 						
 		}
