@@ -88,8 +88,15 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                     }
                     /*JLF: this is only valid for onDemand profile (8.3.3) and live (8.4.3)*/
 					if (fragmentInSegmentFound && (list[j].type == 'sidx' || list[j].type == 'ssix')) {
-						if (vg.isoondemand)
-		                        errprint("Indexing information (sidx/ssix) found in segment %d (at file absolute offset %lld) following a moof, violating: Section 8.3.3. of ISO/IEC 23009-1:2012(E): All Segment Index ('sidx') and Subsegment Index ('ssix') boxes shall be placed before any Movie Fragment ('moof') boxes\n",index,list[j].offset);
+						if (vg.isoondemand || vg.dash264base)
+						{
+		                        errprint("Indexing information (sidx/ssix) found in segment %d (at file absolute offset %lld) following a moof, violating: ",index,list[j].offset);
+
+                                if(vg.isoondemand)
+                                    errprint("Section 8.3.3. of ISO/IEC 23009-1:2012(E): All Segment Index ('sidx') and Subsegment Index ('ssix') boxes shall be placed before any Movie Fragment ('moof') boxes\n");
+                                else
+                                    errprint("Section 3.2.3. Interoperability Point DASH264: In Media Segments, all Segment Index ('sidx') and Subsegment Index ('ssix') boxes, if present, shall be placed before any Movie Fragment ('moof') boxes.\n");
+						}
 						else if (vg.isoLive)
 		                        errprint("Indexing information (sidx/ssix) found in segment %d (at file absolute offset %lld) following a moof, violating: Section 8.4.3. of ISO/IEC 23009-1:2012(E): In Media Segments, all Segment Index ('sidx') and Subsegment Index ('ssix') boxes shall be placed before any Movie Fragment ('moof') boxes\n",index,list[j].offset);
 					}

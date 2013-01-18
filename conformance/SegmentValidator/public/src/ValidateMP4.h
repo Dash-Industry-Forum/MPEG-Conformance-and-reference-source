@@ -655,8 +655,10 @@ typedef struct {
     bool    isoLive;
     bool    isoondemand;
     bool    isomain;
+    bool    dynamic;
     bool    subRepLevel;
     bool    bss;
+    bool    dash264base;
     unsigned int  numControlTracks;
     unsigned int  *numControlLeafs;
     LeafInfo **controlLeafInfo;

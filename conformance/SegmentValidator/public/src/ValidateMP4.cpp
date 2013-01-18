@@ -200,20 +200,20 @@ int main(void)
 //	vg.print_sampleraw = true;
 //	vg.print_hintpayload = true;
     vg.visualProfileLevelIndication = 255;
+    // this is simply the wrong place for this;  it's not a program parameter, it's the mpeg-4
+    //   profile/level indication as found in the video stream.
+    // But neither movie info nor track info are available at the right points.  Ugh [dws]
+    
     vg.checkSegAlignment = false;
     vg.checkSubSegAlignment = false;
     vg.isoLive = false;
     vg.isoondemand = false;
+    vg.dynamic = false;
     vg.isomain = false;
     vg.bss = false;
     vg.subRepLevel = false;
     vg.startWithSAP = -1;
-    // this is simply the wrong place for this;  it's not a program parameter, it's the mpeg-4
-    //   profile/level indication as found in the video stream.
-    // But neither movie info nor track info are available at the right points.  Ugh [dws]
-
-
-
+    vg.dash264base = false;
 		
 	// Check the parameters
 	for( argn = 1; argn < argc; argn++ )
@@ -274,6 +274,8 @@ int main(void)
                 vg.isoondemand = true;
         } else if ( keymatch( arg, "isomain", 7 ) ) {
                 vg.isomain = true;
+        } else if ( keymatch( arg, "dynamic", 7 ) ) {
+                vg.dynamic = true;
         } else if ( keymatch( arg, "level", 5 ) ) {
                 vg.subRepLevel = true;
         } else if ( keymatch( arg, "startwithsap", 6 ) ) {
@@ -282,6 +284,8 @@ int main(void)
                 vg.bss = true; vg.checkSegAlignment = true; //The conditions required for setting the @segmentAlignment attribute to a value other than 'false' for the Adaptation Set are fulfilled.
         } else if ( keymatch( arg, "leafinfo", 1 ) ) {
                 getNextArgStr( &leafInfoFileName, "leafinfo" ); gotleafInfoFile = true;
+        } else if ( keymatch( arg, "dash264base", 7 ) ) {
+                vg.dash264base = true;
 		} else if ( keymatch( arg, "samplenumber", 1 ) ) {
 			getNextArgStr( &vg.samplenumberstr, "samplenumber" );
 
@@ -481,7 +485,7 @@ int main(void)
 
 usageError:
 	fprintf( stderr, "Usage: %s [-filetype <type>] "
-								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap TYPE] [-level] [-isolive] [-isoondemand] [-isomain]\n", "ValidateMP4" );
+								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap TYPE] [-level] [-bss] [-isolive] [-isoondemand] [-isomain] [-dynamic] [-dash264base]\n", "ValidateMP4" );
 	fprintf( stderr, "            [-samplenumber <number>] [-verbose <options> [-help] inputfile\n" );
 	fprintf( stderr, "    -a[tompath] <atompath> - limit certain operations to <atompath> (e.g. moov-1:trak-2)\n" );
 	fprintf( stderr, "                     this effects -checklevel and -printtype (default is everything) \n" );
@@ -504,9 +508,11 @@ usageError:
 	fprintf( stderr, "    -isolive          Make checks specific for media segments conforming to ISO Base media file format live profile\n" );
 	fprintf( stderr, "    -isoondemand      Make checks specific for media segments conforming to ISO Base media file format On Demand profile\n" );
 	fprintf( stderr, "    -isomain          Make checks specific for media segments conforming to ISO Base media file format main profile\n" );
+	fprintf( stderr, "    -dynamic          MPD type=dynamic\n" );
 	fprintf( stderr, "    -startwithsap     Check for a specific SAP type as announced in the MPD\n" );
 	fprintf( stderr, "    -level            SubRepresentation@level checks\n" );
 	fprintf( stderr, "    -bss              Make checks specific for bitstream switching\n" );
+	fprintf( stderr, "    -dash264base      Make checks specific for DASH264 Base IOP\n" );
 	fprintf( stderr, "    -s[amplenumber] <number> - limit sample checking or printing operations to sample <number> \n" );
 	fprintf( stderr, "                     most effective in combination with -atompath (default is all samples) \n" );
 
