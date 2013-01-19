@@ -58,6 +58,7 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                 }
 
                 bool fragmentInSegmentFound = false;
+                bool moovInSegmentFound = false;
 
                 for(int j = i ; list[j].offset < (offset+segmentSizes[index]) ; j++)
                 {
@@ -65,9 +66,12 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
 						ftypFound = 1;
 					}
 					else if(list[j].type == 'moov') {
+
+                        moovInSegmentFound = true;
+                        
 						if (ftypFound) {
 							initializationSegment = 1;
-						} else {
+						} else if(index == 0){
 							errprint("no ftyp box found, violating: Section 4.3 of ISO/IEC 14496-12:2012(E)\n");
 						}
 					}
@@ -103,7 +107,10 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                 }
 
                 if(!fragmentInSegmentFound && !initializationSegment)
-                    errprint("No fragment found in segment %d\n",index+1);                   
+                    errprint("No fragment found in segment %d\n",index+1);
+
+                if(vg.dsms[index] && !moovInSegmentFound)
+                    errprint("Segment %d has dsms compatible brand (Self-initializing media segment), however, moov box not found in this segment as expected.\n",index+1);
             }
 
             if(boxAtSegmentStartFound == true)
@@ -112,7 +119,6 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                 {
                     sidxFoundInSegment = true;
                     sidxFound = true;
-                    vg.indexedFile = true;
 
                     if(!initializationSegment && !vg.msixInFtyp)
                         errprint("msix not found in ftyp of a self-intializing segment %d, indxing info found, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall carry 'msix' as a compatible brand \n",index);

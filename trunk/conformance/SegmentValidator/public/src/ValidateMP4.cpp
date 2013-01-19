@@ -412,6 +412,7 @@ int main(void)
                 vg.segmentSizes = (UInt64 *)malloc(sizeof(UInt64)*numSegments);
                 vg.segmentInfoSize = numSegments;
                 vg.simsInStyp = (bool *)malloc(sizeof(bool)*numSegments);
+                vg.dsms = (bool *)malloc(sizeof(bool)*numSegments);
             }
 
             numSegments = 0;
@@ -428,6 +429,7 @@ int main(void)
                 {
                     vg.segmentSizes[numSegments] = temp2;
                     vg.simsInStyp[numSegments] = false;
+                    vg.dsms[numSegments] = false;
                 }
                 numSegments++;
                 if(numSegments == 1 && temp1 > 0)
@@ -456,6 +458,8 @@ int main(void)
         vg.segmentSizes[0] = aoe.size;
         vg.simsInStyp = (bool *)malloc(sizeof(bool)*1);
         vg.simsInStyp[0] = false;
+        vg.dsms = (bool *)malloc(sizeof(bool)*1);
+        vg.dsms[0] = false;
         vg.brandDASH = false;   //For non-segmented file = self-intializing segment, brand DASH shall be in ftyp and this will be re-initialized
     }
     vg.processedStypes = 0;

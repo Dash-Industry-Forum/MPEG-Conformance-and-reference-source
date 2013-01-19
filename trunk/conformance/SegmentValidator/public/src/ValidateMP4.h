@@ -645,6 +645,7 @@ typedef struct {
 
     UInt64 *segmentSizes;
     bool   *simsInStyp;
+    bool   *dsms;
     long    segmentInfoSize;
     long    processedStypes;
     UInt32  accessUnitDurationNonIndexedTrack;
@@ -679,7 +680,6 @@ typedef struct {
 
 	long	majorBrand;
 	Boolean	brandDASH;
-    Boolean indexedFile;
     Boolean dashInFtyp; //Split from brandDASH since the latter is also set if the file is segmented
     Boolean msixInFtyp;
 
