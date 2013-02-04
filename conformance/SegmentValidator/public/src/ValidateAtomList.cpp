@@ -1719,6 +1719,11 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
     atomerr = ValidateAtomOfType( 'traf', 0, 
         Validate_traf_Atom, cnt, list, moofInfo );
     if (!err) err = atomerr;
+
+    atomerr = ValidateAtomOfType( 'pssh', 0, 
+        Validate_pssh_Atom, cnt, list, moofInfo );
+    if (!err) err = atomerr;
+
     
 	//
 	for (i = 0; i < cnt; i++) {

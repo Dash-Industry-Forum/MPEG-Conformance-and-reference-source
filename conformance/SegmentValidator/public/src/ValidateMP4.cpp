@@ -214,6 +214,7 @@ int main(void)
     vg.subRepLevel = false;
     vg.startWithSAP = -1;
     vg.dash264base = false;
+    vg.dash264enc = false;
 		
 	// Check the parameters
 	for( argn = 1; argn < argc; argn++ )
@@ -284,8 +285,10 @@ int main(void)
                 vg.bss = true; vg.checkSegAlignment = true; //The conditions required for setting the @segmentAlignment attribute to a value other than 'false' for the Adaptation Set are fulfilled.
         } else if ( keymatch( arg, "leafinfo", 1 ) ) {
                 getNextArgStr( &leafInfoFileName, "leafinfo" ); gotleafInfoFile = true;
-        } else if ( keymatch( arg, "dash264base", 7 ) ) {
+        } else if ( keymatch( arg, "dash264base", 11 ) ) {
                 vg.dash264base = true;
+        } else if ( keymatch( arg, "dash264enc", 10 ) ) {
+                vg.dash264enc = true;
 		} else if ( keymatch( arg, "samplenumber", 1 ) ) {
 			getNextArgStr( &vg.samplenumberstr, "samplenumber" );
 
@@ -489,7 +492,7 @@ int main(void)
 
 usageError:
 	fprintf( stderr, "Usage: %s [-filetype <type>] "
-								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap TYPE] [-level] [-bss] [-isolive] [-isoondemand] [-isomain] [-dynamic] [-dash264base]\n", "ValidateMP4" );
+								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap TYPE] [-level] [-bss] [-isolive] [-isoondemand] [-isomain] [-dynamic] [-dash264base] [-dash264enc]\n", "ValidateMP4" );
 	fprintf( stderr, "            [-samplenumber <number>] [-verbose <options> [-help] inputfile\n" );
 	fprintf( stderr, "    -a[tompath] <atompath> - limit certain operations to <atompath> (e.g. moov-1:trak-2)\n" );
 	fprintf( stderr, "                     this effects -checklevel and -printtype (default is everything) \n" );
@@ -517,6 +520,7 @@ usageError:
 	fprintf( stderr, "    -level            SubRepresentation@level checks\n" );
 	fprintf( stderr, "    -bss              Make checks specific for bitstream switching\n" );
 	fprintf( stderr, "    -dash264base      Make checks specific for DASH264 Base IOP\n" );
+	fprintf( stderr, "    -dash264enc       Make checks specific for encrypted DASH264 content\n" );
 	fprintf( stderr, "    -s[amplenumber] <number> - limit sample checking or printing operations to sample <number> \n" );
 	fprintf( stderr, "                     most effective in combination with -atompath (default is all samples) \n" );
 
