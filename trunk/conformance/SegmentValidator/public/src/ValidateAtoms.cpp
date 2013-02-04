@@ -2675,6 +2675,39 @@ bail:
 
 }
 
+OSErr Validate_pssh_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+    OSErr err = noErr;
+    UInt32 version;
+    UInt32 flags;
+    UInt64 offset;
+    
+    // Get version/flags
+    BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+    
+    // Get data 
+	UInt8	SystemID[16]; 
+    BAILIFERR( GetFileData( aoe,SystemID, offset, 16 , &offset ) );
+
+	UInt32 DataSize;
+    BAILIFERR( GetFileDataN32( aoe, &DataSize, offset, &offset ) );
+    
+	UInt8 *Data;
+    
+    Data = (UInt8 *)malloc(DataSize*sizeof(UInt8)); 
+    BAILIFERR( GetFileData( aoe,Data, offset, DataSize , &offset ) );
+
+    free(Data);
+    
+    // All done
+    aoe->aoeflags |= kAtomValidated;
+bail:
+    return err;
+
+
+}
+
+
 OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
 {
 	OSErr err = noErr;
@@ -3495,17 +3528,34 @@ OSErr Validate_schi_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
 	atomprint(" comment=\"%d contained atoms\" >\n",cnt);
-	//
-	for (i = 0; i < cnt; i++) {
+
+    // Process 'tenc' atoms
+	atomerr = ValidateAtomOfType( 'tenc', kTypeAtomFlagCanHaveAtMostOne, 
+		Validate_tenc_Atom, cnt, list, nil );
+	if (!err) err = atomerr;
+
+	bool schiFound;
+
+    schiFound = false;
+
+    for (i = 0; i < cnt; i++) {
 		entry = &list[i];
 
 		if (entry->aoeflags & kAtomValidated) continue;
 
 		switch (entry->type) {
+            
+			case 'schi':
+                schiFound = true;
+            break;
+            
 			default:
 				warnprint("WARNING: unknown schi atom '%s' length %ld\n",ostypetostr(entry->type), entry->size);
 				break;
 		}
+
+        if(vg.dash264enc && schiFound == false)
+            errprint("No 'tenc' atom found within 'schi' content when checks involed for encrypted content, violating SEction 8.2.1 of ISO-IEC_23001-7\n");
 		
 		if (!err) err = atomerr;
 	}
@@ -3516,6 +3566,39 @@ OSErr Validate_schi_Atom( atomOffsetEntry *aoe, void *refcon )
 bail:
 	return err;
 }
+
+OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+    OSErr err = noErr;
+    UInt32 version;
+    UInt32 flags;
+    UInt64 offset;
+    
+    // Get version/flags
+    BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+    
+    // Get data 
+    UInt8    temp1[3];
+    BAILIFERR( GetFileData( aoe,temp1, offset, 3 , &offset ) );
+    
+    UInt32 default_IsEncrypted;
+    default_IsEncrypted = (temp1[2] << 16) || (temp1[1] << 8) || temp1[0];
+
+    //For now, no use of it, just play around to supress compiler warnings.
+    default_IsEncrypted = default_IsEncrypted;
+    
+	UInt8   default_IV_size;
+    BAILIFERR( GetFileData( aoe,&default_IV_size, offset, 1 , &offset ) );
+
+	UInt8	default_KID[16]; 
+    BAILIFERR( GetFileData( aoe,default_KID, offset, 16 , &offset ) );
+    
+    // All done
+    aoe->aoeflags |= kAtomValidated;
+bail:
+    return err;
+}
+
 
 //==========================================================================================
 
