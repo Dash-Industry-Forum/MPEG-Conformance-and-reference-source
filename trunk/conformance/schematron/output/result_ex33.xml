@@ -32,12 +32,5 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:FramePacking"/>
-   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:14496:10:frame_packing_arrangement_type:2011') and not(contains(parent::dash:AdaptationSet/@codecs, 'avc') or contains(parent::dash:AdaptationSet/@codecs, 'svc') or contains(parent::dash:AdaptationSet/@codecs, 'mvc')) and not(contains(parent::dash:Representation/@codecs, 'avc') or contains(parent::dash:Representation/@codecs, 'svc') or contains(parent::dash:Representation/@codecs, 'mvc'))) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Representation' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='FramePacking' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>The URI urn:mpeg:dash:14496:10:frame_packing_arrangement_type:2011 is used for Adaptation Sets or Representations that contain a video component that conforms to ISO/IEC 14496-10.</svrl:text>
-   </svrl:failed-assert>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
    <svrl:active-pattern/>
 </svrl:schematron-output>

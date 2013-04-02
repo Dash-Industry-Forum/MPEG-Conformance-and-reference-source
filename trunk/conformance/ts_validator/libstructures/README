@@ -1,0 +1,13 @@
+A library of standard data structures in C, similar to STL in C++.  Includes variable-length arrays, deques, hashtables, avl trees, binary heaps, and many other useful structures, with a simple and intuitive interface.
+
+This library is copyright Avail Media, Inc. written by Alex Izvorski <aizvorski@gmail.com> and distributed under the LGPL, except for hashtable.c, hashtable.h, hashtable_itr.c, hashtable_itr.h which are modified from work originally written by Christopher Clark and are distributed under a BSD license.
+
+This is an initial open-source release of a commercial library developed for in-house use.  It is mature software which has been used in a number of projects and comes with a full suite of regression tests.
+
+It occupies the same niche as glib, gdsl, libmba, and others, but it differs in several critical aspects:
+ - LGPL licensed - many of the other options are GPL
+ - variety of structures - many of the other options concentrate on one class of structures e.g. just trees
+ - does not force user to use the library's memory management
+ - does not force user to use strong typing, or adopt the library's types for everything - but typing is available if desired
+ - orthogonal: can use just one part of the library (e.g. deques) and not even link with the rest
+

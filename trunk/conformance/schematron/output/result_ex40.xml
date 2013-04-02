@@ -32,8 +32,6 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Role"/>
    <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:role:2011') and not(@value = 'caption' or @value = 'subtitle' or @value = 'main' or @value = 'alternate' or @value = 'supplementary' or @value = 'commentary' or @value = 'dub')) then false else true()"
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Role' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">

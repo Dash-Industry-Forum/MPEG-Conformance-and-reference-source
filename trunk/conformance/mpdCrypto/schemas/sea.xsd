@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<xs:schema xmlns="urn:mpeg:DASH:schema:sea:2012" xmlns:dash="urn:mpeg:dash:schema:mpd:2011" xmlns:xs="http://www.w3.org/2001/XMLSchema" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="urn:mpeg:dash:schema:sea:2012">
+
+    <xs:import namespace="urn:mpeg:dash:schema:mpd:2011" schemaLocation="DASH-MPD.xsd"/>
+
+    <!-- Global encryption properties -->
+
+    <xs:complexType name="SegmentEncryption">
+        <xs:sequence>
+            <xs:any maxOccurs="unbounded" minOccurs="0" namespace="##other" processContents="lax"/>
+        </xs:sequence>
+
+        <xs:attribute name="encryptionSystemUrn" type="xs:anyURI" use="required"/>
+        <xs:attribute default="8" name="keyLength" type="xs:unsignedInt"/>
+        <xs:attribute default="1.0" name="earlyAvailability" type="xs:double"/>
+        <xs:attribute default="false" name="ivEncryptionFlag" type="xs:boolean"/>
+        <xs:anyAttribute namespace="##other" processContents="lax"/>
+
+    </xs:complexType>
+    
+    <xs:complexType name="KeySystem">
+        <xs:sequence>
+            <xs:any maxOccurs="unbounded" minOccurs="0" namespace="##other" processContents="lax"/>
+        </xs:sequence>
+        <xs:attribute name="keySystemUrn" type="xs:anyURI" use="required"/>
+        <xs:attribute name="keyLicenseUrlTemplate" type="xs:anyURI"/>
+        <xs:anyAttribute namespace="##other" processContents="lax"/>        
+    </xs:complexType>
+
+    <!-- Cryptoperiod signaling -->
+
+    <xs:complexType name="CryptoPeriodType">
+        <xs:sequence>
+            <xs:any maxOccurs="unbounded" minOccurs="0" namespace="##other" processContents="lax"/>
+        </xs:sequence>
+        <xs:attribute name="duration" type="xs:unsignedInt"/>
+        <xs:attribute name="IV" type="xs:hexBinary"/>
+        <xs:attribute name="keyUriTemplate" type="xs:anyURI" use="required"/>
+        <xs:attribute name="ivUriTemplate" type="xs:anyURI"/>
+        <xs:anyAttribute namespace="##other" processContents="lax"/>
+    </xs:complexType>
+
+    <xs:complexType name="CryptoPeriod">
+        <xs:complexContent>
+            <xs:extension base="CryptoPeriodType">
+                <xs:attribute name="startSegment" type="xs:unsignedInt"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="CryptoTimeline">
+        <xs:complexContent>
+            <xs:extension base="CryptoPeriodType">
+                <xs:attribute default="0" name="offset" type="xs:unsignedInt"/>
+                <xs:attribute name="numPeriods" type="xs:unsignedInt"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <!-- Authenticity signaling -->
+    <xs:complexType name="ContentDigest">
+        <xs:attribute name="digestUrlTemplate" type="xs:string" use="required"/>
+        <xs:anyAttribute namespace="##other" processContents="lax"/>
+    </xs:complexType>
+
+    <xs:element name="ContentAuthentication" type="dash:DescriptorType"/>
+
+    <xs:complexType name="CryptoSignature">
+        <xs:attribute name="keyUrl" type="xs:anyURI" use="required"/>
+        <xs:attribute name="signatureUrlTemplate" type="xs:string" use="required"/>
+        <xs:attribute name="signatureLength" type="xs:unsignedInt"/>
+        <xs:anyAttribute namespace="##other" processContents="lax"/>
+    </xs:complexType>
+
+</xs:schema>

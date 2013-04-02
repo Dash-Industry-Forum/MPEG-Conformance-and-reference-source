@@ -1,0 +1,32 @@
+The license which applies to each file is included in the file.  This is just a convenient summary.
+
+There are two types of licenses in this library, LGPL and a (two or three clause) BSD-style license.
+
+The following files are covered by LGPL (copy of license included in separate file):
+
+Makefile
+binheap.c
+hashtable_str.c
+hashtable_test.c
+varray.c
+vqarray.c
+vqarray_test.c
+binheap.h
+hashtable_str.h
+test_macros.h
+varray.h
+vqarray.h
+
+The following files are covered by a three-clause BSD license, copyright 2002-2004 Christopher Clark, with local modifications:
+
+hashtable.c
+hashtable.c
+hashtable_itr.c
+hashtable_itr.c
+hashtable.h
+hashtable.h
+hashtable_itr.h
+hashtable_itr.h
+hashtable_private.h
+hashtable_private.h
+

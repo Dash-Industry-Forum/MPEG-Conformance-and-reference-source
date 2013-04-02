@@ -33,11 +33,4 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:AudioChannelConfiguration"/>
-   <svrl:failed-assert test="if (not(@schemeIdUri = 'urn:mpeg:dash:23003:3:audio_channel_configuration:2011')) then false() else true()"
-                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AudioChannelConfiguration' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
-      <svrl:text>schemeIdUri for AudioChannelConfiguration descriptor shall be urn:mpeg:dash:23003:3:audio_channel_configuration:2011.</svrl:text>
-   </svrl:failed-assert>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
 </svrl:schematron-output>

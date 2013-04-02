@@ -36,11 +36,6 @@
    <svrl:fired-rule context="dash:ContentProtection"/>
    <svrl:fired-rule context="dash:ContentProtection"/>
    <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:FramePacking"/>
-   <svrl:fired-rule context="dash:FramePacking"/>
-   <svrl:active-pattern/>
-   <svrl:fired-rule context="dash:AudioChannelConfiguration"/>
-   <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Role"/>
    <svrl:fired-rule context="dash:Role"/>
    <svrl:active-pattern/>
