@@ -1,10 +1,19 @@
+2013-04-02
+----------
+Remove Ruleset 13 and 14 due to changes in Cor.1
+Added mimeType check for application/ttml+xml
+
+2013-01-07
+----------
+Updated conformance to latest version of the SegmentValidator
+
 2012-12-06
 ----------
 Updated Schematron to work if multiple profiles are defined
 
 2012-11-30-2
 ------------
-Updated conformance to include PDAM.1
+Updated conformance to include DAM.1
 Added R1.7 and R16.0 to check new semantics.
 Added Example 52 and 53
 

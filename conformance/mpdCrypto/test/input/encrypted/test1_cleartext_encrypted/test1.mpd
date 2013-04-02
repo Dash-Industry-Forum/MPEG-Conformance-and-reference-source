@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:ns2="http://www.w3.org/1999/xlink" minBufferTime="PT10.00S" mediaPresentationDuration="PT3256S" availabilityStartTime="2001-12-17T09:40:57Z" type="dynamic" profiles="urn:mpeg:dash:profile:isoff-main:2011">
+    <Period start="PT0S" id="1">
+        <AdaptationSet group="1">
+            <ContentProtection schemeIdUri="urn:mpeg:dash:sea:enc:2012">
+                <SegmentEncryption xmlns:ns3="urn:mpeg:dash:schema:mpd:2011" xmlns="" encryptionSystemUri="urn:mpeg:dash:sea:aes128-cbc:2013" ivEncryptionFlag="true"/>
+                <KeySystem xmlns:ns3="urn:mpeg:dash:schema:mpd:2011" xmlns="" keySystemUri="urn:mpeg:dash:sea:keys:baseline:http:2013"/>
+                <CryptoTimeline xmlns:ns3="urn:mpeg:dash:schema:mpd:2011" xmlns="" keyUriTemplate="test/input/encrypted/test1_cleartext_encrypted/key14601449.bin" numCryptoPeriods="3" numSegments="1"/>
+            </ContentProtection>
+            <Representation bandwidth="189000" id="tag0" codecs="avc1.644028, svc1" mimeType="video/mp4" frameRate="30" height="240" width="320">
+                <SegmentList duration="39">
+                    <SegmentURL media="test/input/encrypted/test1_cleartext_encrypted/seg1.mp4"/>
+                    <SegmentURL media="test/input/encrypted/test1_cleartext_encrypted/seg2.mp4"/>
+                    <SegmentURL media="test/input/encrypted/test1_cleartext_encrypted/seg3.mp4"/>
+                </SegmentList>
+            </Representation>
+        </AdaptationSet>
+    </Period>
+</MPD>

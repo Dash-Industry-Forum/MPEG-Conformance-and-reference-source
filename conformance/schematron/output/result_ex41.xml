@@ -32,8 +32,6 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Role"/>
    <svrl:fired-rule context="dash:Role"/>
    <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:stereoid:2011') and not(starts-with(@value, 'l') or starts-with(@value, 'r'))) then false() else true()"

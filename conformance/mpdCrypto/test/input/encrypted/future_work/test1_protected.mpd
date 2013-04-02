@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- R12.0 -->
+<MPD 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns="urn:mpeg:dash:schema:mpd:2011" 
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
+	minBufferTime="PT10.00S" 
+	mediaPresentationDuration="PT3256S"
+	type="dynamic" 
+	availabilityStartTime="2001-12-17T09:40:57Z"
+	profiles="urn:mpeg:dash:profile:isoff-main:2011">
+	<Period start="PT0S" id="1">
+		<AdaptationSet group="1">
+			<ContentProtection schemeIdUri="urn:mpeg:dash:sea:2012">
+				<SegmentEncryption encryptionSystemUri="urn:mpeg:dash:sea:aes128-cbc:2013"/>
+				<KeySystem keySystemUri="urn:mpeg:dash:sea:keys:baseline:http:2013"/>
+				<CryptoTimeline duration="1" offset="0" numPeriods="3" keyUriTemplate="/tmp/key.bin" IV="DEADBEEFCAFEBABEDEADBEEFCAFEBABE"/>
+			</ContentProtection>
+			<Representation mimeType="video/mp4" codecs="avc1.644028, svc1" width="320" height="240" frameRate="30" id="tag0" bandwidth="189000">
+				<SegmentList duration="39">
+					<SegmentURL media="test/mpd/protected/seg1.mp4"/>
+					<SegmentURL media="test/mpd/protected/seg2.mp4"/>
+					<SegmentURL media="test/mpd/protected/seg3.mp4"/>
+				</SegmentList>
+			</Representation>
+		</AdaptationSet>
+	</Period>
+</MPD>

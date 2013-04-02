@@ -20,7 +20,7 @@
    <svrl:fired-rule context="dash:Period"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:AdaptationSet"/>
-   <svrl:failed-assert test="if ((contains(@profiles, 'urn:mpeg:dash:profile:isoff-on-demand:2011') or contains(ancestor::dash:MPD/@profiles, 'urn:mpeg:dash:profile:isoff-on-demand:2011')) and (@mimeType and (@mimeType != 'video/mp4' and @mimeType != 'audio/mp4' and @mimeType != 'application/mp4'))) then false() else true()"
+   <svrl:failed-assert test="if ((contains(@profiles, 'urn:mpeg:dash:profile:isoff-on-demand:2011') or contains(ancestor::dash:MPD/@profiles, 'urn:mpeg:dash:profile:isoff-on-demand:2011')) and (@mimeType and (@mimeType != 'video/mp4' and @mimeType != 'audio/mp4' and @mimeType != 'application/mp4' and @mimeType != 'application/ttml+xml'))) then false() else true()"
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
       <svrl:text>For ISO BMFF On-Demand profile, the @mimeType shall equal video/mp4, audio/mp4 or application/mp4.</svrl:text>
    </svrl:failed-assert>
@@ -42,8 +42,6 @@
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='ContentProtection' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
       <svrl:text>The value of ContentProtection shall be the 4CC contained in the Scheme Type Box</svrl:text>
    </svrl:failed-assert>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
 </svrl:schematron-output>

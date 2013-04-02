@@ -36,8 +36,6 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
-   <svrl:active-pattern/>
-   <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Subset"/>
    <svrl:fired-rule context="dash:Subset"/>
    <svrl:failed-assert test="if (@id = preceding-sibling::dash:Subset/@id) then false() else true()"
