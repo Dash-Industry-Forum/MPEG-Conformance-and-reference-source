@@ -32,5 +32,11 @@
    <svrl:active-pattern/>
    <svrl:active-pattern/>
    <svrl:active-pattern/>
+   <svrl:fired-rule context="dash:Role"/>
+   <svrl:fired-rule context="dash:Role"/>
+   <svrl:failed-assert test="if ((@schemeIdUri = 'urn:mpeg:dash:stereoid:2011') and not(starts-with(@value, 'l') or starts-with(@value, 'r'))) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Role' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011'][2]">
+      <svrl:text>The value of Role (stereoid) shall start with 'l' or 'r'.</svrl:text>
+   </svrl:failed-assert>
    <svrl:active-pattern/>
 </svrl:schematron-output>
