@@ -44,6 +44,8 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Vector;
 
 /**
@@ -161,7 +163,14 @@ public class XLinkResolver {
 		dbFactory.setNamespaceAware(true); // resolve namespaces
 		
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-		Document doc = dBuilder.parse(xmlURI);
+		Document doc;
+		try {
+		  URL myURL = new URL(xmlURI);
+		  doc = dBuilder.parse(myURL.openStream());
+		}
+		catch ( MalformedURLException e ) {
+			doc = dBuilder.parse(xmlURI);
+		}		
 		doc.getDocumentElement().normalize();
 		
 		return doc;
