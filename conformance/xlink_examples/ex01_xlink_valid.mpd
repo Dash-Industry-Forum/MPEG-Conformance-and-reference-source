@@ -5,7 +5,7 @@
 	xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
 	xmlns:xlink="http://www.w3.org/1999/xlink"
 	minBufferTime="PT10.00S" mediaPresentationDuration="PT30.00S"
-	type="dynamic" availabilityStartTime="2001-12-17T09:40:57Z"
+	type="dynamic" publishTime="2001-12-17T09:40:57Z" availabilityStartTime="2001-12-17T09:40:57Z"
 	profiles="urn:mpeg:dash:profile:isoff-main:2011">
 	<Period xlink:href="http://ftp-itec.uni-klu.ac.at/dash/conformance/xlink_files/ex01_include.mpd"
                 xlink:actuate="onRequest" start="PT06H"/>
