@@ -138,9 +138,9 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 		Validate_ftyp_Atom, cnt, list, nil );
 	if (!err) err = atomerr;
 	
-	// Process 'moov' atoms
+	// Process 'moov' atoms ; check for more than 1 moov atoms done later
 	vg.mir = NULL; 
-	atomerr = ValidateAtomOfType( 'moov', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
+	atomerr = ValidateAtomOfType( 'moov', kTypeAtomFlagMustHaveOne, 
 		Validate_moov_Atom, cnt, list, nil );
 	if (!err) err = atomerr;
 	
@@ -148,11 +148,6 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 	atomerr = ValidateAtomOfType( 'meta', kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_meta_Atom, cnt, list, nil );
 	if (!err) err = atomerr;
-
-    //Some Processing like: check ordering to some extend (first sidx in segment is checked later while verifying indexing since it comes with
-    //the checks for duration
-	if(vg.brandDASH)
-        checkDASHBoxOrder(cnt,list,vg.segmentInfoSize,vg.initializationSegment,vg.segmentSizes,vg.mir);
     
 	// Count the total fragments and sidx's (if present), and allocate the required memory for that
 	vg.mir->numFragments = 0;
@@ -189,6 +184,10 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
         vg.mir->moofInfo = NULL;
         vg.mir->sidxInfo = NULL;
     }
+
+    int numMoovBoxes;
+
+    numMoovBoxes = 0;
     			
 	for (i = 0; i < cnt; i++) {
 		entry = &list[i];
@@ -232,7 +231,29 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
                     atomerr = ValidateAtomOfType( 'sidx', 0, 
                         Validate_sidx_Atom, cnt, list, vg.mir);
                     if (!err) err = atomerr;
-            break;
+                    
+                    break;
+
+            case 'moov':
+
+                    // Don't allow multiple moov boxes except for self-initializing DASH
+                    bool dsmsFound;
+
+                    numMoovBoxes++;
+
+                    if(numMoovBoxes > 1)
+                    {
+                        dsmsFound = false;
+        
+                        for(int index = 0 ; index < vg.segmentInfoSize ; index++)
+                            if( vg.dsms[index] == true )
+                                dsmsFound = true;
+
+                        if(!dsmsFound)
+                            errprint("Multiple 'moov' boxes are not allowed\n");
+                    }
+
+                    break;
             
 			default:
 				if (!(entry->aoeflags & kAtomValidated)) 
@@ -242,6 +263,11 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 		
 		if (!err) err = atomerr;
 	}
+    
+    //Some Processing like: check ordering to some extend (first sidx in segment is checked later while verifying indexing since it comes with
+    //the checks for duration
+    if(vg.brandDASH)
+        checkDASHBoxOrder(cnt,list,vg.segmentInfoSize,vg.initializationSegment,vg.segmentSizes,vg.mir);
 
   if(vg.mir->fragmented)
     postprocessFragmentInfo(vg.mir);
@@ -1123,7 +1149,6 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 		UInt32 ix;
 		OSType currentBrand;
 		Boolean majorBrandFoundAmongCompatibleBrands = false;
-        vg.indexedFile = false;
         vg.msixInFtyp = false;
         vg.dashInFtyp = false;
         		
@@ -1144,6 +1169,9 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
             else if (currentBrand == 'msix')
             {
 				vg.msixInFtyp = true;
+			}
+            else if(currentBrand == 'dsms') {
+				vg.dsms[0] = true;
 			}
 		}
 
@@ -1237,7 +1265,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 			if (majorBrand == currentBrand) {
 				majorBrandFoundAmongCompatibleBrands = true;
 			}
-            
+                        
 			if (currentBrand == 'msdh') {
 				msdhFound = true;
 			}
@@ -1247,9 +1275,17 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
             else if(segmentFound && currentBrand == 'sims') {
 				vg.simsInStyp[segmentNum] = true;
 			}
+            else if(segmentFound && currentBrand == 'dsms') {
+				vg.dsms[segmentNum] = true;
+			}
             else if(currentBrand == 'lmsg') {
+				if(segmentFound && segmentNum != (vg.segmentInfoSize-1))
+                    errprint("Brand 'lmsg' found as a compatible brand for segment number %d (not the last segment %d); violates Section 7.3.1. of ISO/IEC 23009-1:2012(E): In all cases for which a Representation contains more than one Media Segment ... If the Media Segment is not the last Media Segment in the Representation, the 'lmsg' compatibility brand shall not be present.\n",segmentNum+1,vg.segmentInfoSize);
+			}
+
+            if(segmentFound && (segmentNum == (vg.segmentInfoSize-1)) && vg.dash264base && (vg.dynamic || vg.isoLive) && currentBrand != 'lmsg') {
 				if(segmentFound && segmentNum != vg.segmentInfoSize)
-                    errprint("Brand 'lmsg' found as a compatible brand for segment number %d (not the last segment %d); violates Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): In all cases for which a Representation contains more than one Media Segment ... If the Media Segment is not the last Media Segment in the Representation, the 'lmsg' compatibility brand shall not be present.\n",segmentNum,vg.segmentInfoSize);
+                    errprint("Brand 'lmsg' not found as a compatible brand for the last segment (number %d); violates Section 3.2.3. of Interoperability Point DASH264: If the MPD@type is equal to \"dynamic\" or if it includes MPD@profile attribute in-cludes \"urn:mpeg:dash:profile:isoff-live:2011\", then: if the Media Segment is the last Media Segment in the Representation, this Me-dia Segment shall carry the 'lmsg' compatibility brand\n",segmentNum+1);
 			}
 						
 		}
@@ -1683,6 +1719,11 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
     atomerr = ValidateAtomOfType( 'traf', 0, 
         Validate_traf_Atom, cnt, list, moofInfo );
     if (!err) err = atomerr;
+
+    atomerr = ValidateAtomOfType( 'pssh', 0, 
+        Validate_pssh_Atom, cnt, list, moofInfo );
+    if (!err) err = atomerr;
+
     
 	//
 	for (i = 0; i < cnt; i++) {
