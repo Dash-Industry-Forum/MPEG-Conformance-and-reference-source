@@ -645,6 +645,7 @@ typedef struct {
 
     UInt64 *segmentSizes;
     bool   *simsInStyp;
+    bool   *dsms;
     long    segmentInfoSize;
     long    processedStypes;
     UInt32  accessUnitDurationNonIndexedTrack;
@@ -655,8 +656,11 @@ typedef struct {
     bool    isoLive;
     bool    isoondemand;
     bool    isomain;
+    bool    dynamic;
     bool    subRepLevel;
     bool    bss;
+    bool    dash264base;
+    bool    dash264enc;
     unsigned int  numControlTracks;
     unsigned int  *numControlLeafs;
     LeafInfo **controlLeafInfo;
@@ -677,7 +681,6 @@ typedef struct {
 
 	long	majorBrand;
 	Boolean	brandDASH;
-    Boolean indexedFile;
     Boolean dashInFtyp; //Split from brandDASH since the latter is also set if the file is segmented
     Boolean msixInFtyp;
 
@@ -976,6 +979,7 @@ OSErr Validate_iods_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_pssh_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_dinf_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_minf_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mdia_Atom( atomOffsetEntry *aoe, void *refcon );
@@ -1171,6 +1175,7 @@ OSErr Validate_sinf_Atom( atomOffsetEntry *aoe, void *refcon, UInt32 flags );
 OSErr Validate_frma_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_schm_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_schi_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_meta_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_xml_Atom ( atomOffsetEntry *aoe, void *refcon );
