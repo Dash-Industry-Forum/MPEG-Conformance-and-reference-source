@@ -433,7 +433,7 @@ OSErr Validate_Hint_Track( atomOffsetEntry *aoe, TrackInfoRec *tir )
 	}
 
 	H_ATOM_PRINT_INCR(("<hint_SAMPLE_DATA>\n"));
-    if(!vg.brandDASH)
+    if(!vg.dashSegment)
 		for (i = startSampleNum; i <= endSampleNum; i++) {
 			if ((vg.samplenumber==0) || (vg.samplenumber==(long)i)) {
 				err = GetSampleOffsetSize( tir, i, &sampleOffset, &sampleSize, &sampleDescriptionIndex );
@@ -740,7 +740,7 @@ static OSErr Validate_Data_Entry( HintInfoRec *hir, char *inEntry )
 					goto bail;
 				}
 
-                if(!vg.brandDASH)
+                if(!vg.dashSegment)
                 {
                     BAILIFERR( err = get_track_sample(thisTIR, sampleNum, &sampleData, &sampleDataLength, NULL) );
     				if (offset+length >sampleDataLength) {

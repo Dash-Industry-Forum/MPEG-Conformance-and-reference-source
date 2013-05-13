@@ -394,7 +394,7 @@ OSErr Validate_tkhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	// else FieldMustBe( flags, 1, "'tkhd' flags must be 1" );
 	if ((flags & 7) != flags) errprint("Tkhd flags 0x%X other than 1,2 or 4 set\n", flags);
 	if (flags == 0) warnprint( "WARNING: 'tkhd' flags == 0 (OK in a hint track)\n", flags );
-	if (tkhdHead.duration == 0 && !vg.brandDASH) warnprint( "WARNING: 'tkhd' duration == 0, track may be considered empty\n", flags );
+	if (tkhdHead.duration == 0 && !vg.dashSegment) warnprint( "WARNING: 'tkhd' duration == 0, track may be considered empty\n", flags );
 
 
 	FieldMustBe( tkhdHeadCommon.movieTimeOffset, 0, "'tkhd' movieTimeOffset must be %d not %d" );
@@ -509,7 +509,7 @@ OSErr Validate_mdhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Check required field values
 	FieldMustBe( flags, 0, "'mdvd' flags must be %d not %d" );
 	FieldMustBe( mdhdHeadCommon.quality, 0, "'mdhd' quality (reserved in mp4) must be %d not %d" );
-	FieldCheck( (mdhdHead.duration > 0 || vg.brandDASH), "'mdhd' duration must be > 0" );
+	FieldCheck( (mdhdHead.duration > 0 || vg.dashSegment), "'mdhd' duration must be > 0" );
 
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -860,7 +860,7 @@ OSErr Validate_url_Entry( atomOffsetEntry *aoe, void *refcon )
 		// no more data
 	} else {
 	
-        if(vg.brandDASH)
+        if(vg.dashSegment)
             errprint("url pointing to external data found in 'dref', violating Section 6.3.4.2. of ISO/IEC 23009-1:2012(E):  The 'moof' boxes shall use movie-fragment relative addressing for media data that does not use external data references.\n");
 
         BAILIFERR( GetFileCString( aoe, &locationP, offset, aoe->maxOffset - offset, &offset ) );
@@ -900,7 +900,7 @@ OSErr Validate_urn_Entry( atomOffsetEntry *aoe, void *refcon )
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
 
-    if ((flags & 1) == 0 && vg.brandDASH)
+    if ((flags & 1) == 0 && vg.dashSegment)
             errprint("urn entry with pointing to external data found in 'dref', violating Section 6.3.4.2. of ISO/IEC 23009-1:2012(E):  The 'moof' boxes shall use movie-fragment relative addressing for media data that does not use external data references.\n");
 
 	// Get data 
@@ -1044,7 +1044,7 @@ OSErr Validate_stts_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprint("/>\n");
 	vg.tabcnt++;
 
-    if(vg.brandDASH && entryCount != 0)
+    if(vg.dashSegment && entryCount != 0)
         errprint("stts atom, entry_count %d, violating\nSection 6.3.3. of ISO/IEC 23009-1:2012(E): The tracks in the \"moov\" box shall contain no samples \n(i.e. the entry_count in the \"stts\", \"stsc\", and \"stco\" boxes shall be set to 0)\n",entryCount);
     
 		//  changes to i stuff where needed to make it 1 based
@@ -1321,10 +1321,10 @@ OSErr Validate_stsc_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Get data 
 	BAILIFERR( GetFileDataN32( aoe, &entryCount, offset, &offset ) );
 
-    if(vg.brandDASH && entryCount != 0)
+    if(vg.dashSegment && entryCount != 0)
         errprint("stsc atom, entry_count %d, violating\nSection 6.3.3. of ISO/IEC 23009-1:2012(E): The tracks in the \"moov\" box shall contain no samples \n(i.e. the entry_count in the \"stts\", \"stsc\", and \"stco\" boxes shall be set to 0)\n",entryCount);
 
-    if (!vg.brandDASH && entryCount == 0) warnprint("WARNING: STSC atom has no entries so is un-needed. If this is a DASH file, then 'dash' is missing as a compatible brand and this is a conformance issue, hence the following program execution is not reliable!!!\n");
+    if (!vg.dashSegment && entryCount == 0) warnprint("WARNING: STSC atom has no entries so is un-needed. If this is a DASH file, then 'dash' is missing as a compatible brand and this is a conformance issue, hence the following program execution is not reliable!!!\n");
 	
 	listSize = entryCount * sizeof(SampleToChunk);
 			// 1 based array
@@ -1402,7 +1402,7 @@ OSErr Validate_stco_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
 
-    if(vg.brandDASH && entryCount != 0)
+    if(vg.dashSegment && entryCount != 0)
         errprint("stco atom, entry_count %d, violating\nSection 6.3.3. of ISO/IEC 23009-1:2012(E): The tracks in the \"moov\" box shall contain no samples \n(i.e. the entry_count in the \"stts\", \"stsc\", and \"stco\" boxes shall be set to 0)\n",entryCount);
 
 	atomprint("/>\n");
@@ -2393,7 +2393,7 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     trafInfo->duration_is_empty =  ((tf_flags & 0x010000) != 0);
     trafInfo->default_base_is_moof =  ((tf_flags & 0x020000) != 0);
 
-    if(vg.brandDASH && !trafInfo->default_base_is_moof)
+    if(vg.dashSegment && !trafInfo->default_base_is_moof)
         errprint("default-base-is-moof is not set, violating Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): ... the flag 'default-base-is-moof' shall also be set\n");
     
     if(trafInfo->base_data_offset_present)
