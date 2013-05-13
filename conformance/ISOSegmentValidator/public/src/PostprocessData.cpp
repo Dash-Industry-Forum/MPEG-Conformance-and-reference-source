@@ -212,7 +212,7 @@ OSErr postprocessFragmentInfo(MovieInfoRec *mir)
                     {
                         if(mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime != mir->tirList[index].cumulatedTackFragmentDecodeTime)
                         {
-                            if(i == 0 && vg.brandDASH)
+                            if(i == 0 && vg.dashSegment)
                             {
                                 warnprint("tfdt base media decode time %Lf not equal to accumulated decode time %Lf for track %d for the first fragment of the movie. This software does not handle incomplete presentations. Applying correction.\n",(long double)mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime/(long double)mir->tirList[index].mediaTimeScale,(long double)mir->tirList[index].cumulatedTackFragmentDecodeTime/(long double)mir->tirList[index].mediaTimeScale,mir->moofInfo[i].trafInfo[j].track_ID);                                
                                 mir->tirList[index].cumulatedTackFragmentDecodeTime = mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime;

@@ -680,8 +680,8 @@ typedef struct {
 	long	samplenumber;
 
 	long	majorBrand;
-	Boolean	brandDASH;
-    Boolean dashInFtyp; //Split from brandDASH since the latter is also set if the file is segmented
+	Boolean	dashSegment;
+    Boolean dashInFtyp;
     Boolean msixInFtyp;
 
 	Boolean	print_atompath;

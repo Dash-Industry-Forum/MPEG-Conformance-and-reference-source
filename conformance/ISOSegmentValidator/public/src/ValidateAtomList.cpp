@@ -266,7 +266,7 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
     
     //Some Processing like: check ordering to some extend (first sidx in segment is checked later while verifying indexing since it comes with
     //the checks for duration
-    if(vg.brandDASH)
+    if(vg.dashSegment)
         checkDASHBoxOrder(cnt,list,vg.segmentInfoSize,vg.initializationSegment,vg.segmentSizes,vg.mir);
 
   if(vg.mir->fragmented)
@@ -274,7 +274,7 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
   
   estimatePresentationTimes(vg.mir);
 
-   if(vg.brandDASH)
+   if(vg.dashSegment)
    {
         processSAP34(vg.mir);
         processIndexingInfo(vg.mir);
@@ -663,7 +663,7 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				errprint("Video track has zero trackWidth and/or trackHeight\n");
 				err = badAtomSize;
 			}
-			if (vg.checklevel >= checklevel_samples && !vg.brandDASH) {
+			if (vg.checklevel >= checklevel_samples && !vg.dashSegment) {
 				UInt64 sampleOffset;
 				UInt32 sampleSize;
 				UInt32 sampleDescriptionIndex;
@@ -694,7 +694,7 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				errprint("Sound track has non-zero trackWidth and/or trackHeight\n");
 				err = badAtomSize;
 			}
-			if (vg.checklevel >= checklevel_samples && !vg.brandDASH) {
+			if (vg.checklevel >= checklevel_samples && !vg.dashSegment) {
 				UInt64 sampleOffset;
 				UInt32 sampleSize;
 				UInt32 sampleDescriptionIndex;
@@ -725,7 +725,7 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				errprint("ObjectDescriptor track has non-zero trackVolume, trackWidth, or trackHeight\n");
 				err = badAtomSize;
 			}
-			if (vg.checklevel >= checklevel_samples && !vg.brandDASH) {
+			if (vg.checklevel >= checklevel_samples && !vg.dashSegment) {
 				UInt64 sampleOffset;
 				UInt32 sampleSize;
 				UInt32 sampleDescriptionIndex;
@@ -756,7 +756,7 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 				errprint("SceneDescriptor track has non-zero trackVolume, trackWidth, or trackHeight\n");
 				err = badAtomSize;
 			}
-			if (vg.checklevel >= checklevel_samples && !vg.brandDASH) {
+			if (vg.checklevel >= checklevel_samples && !vg.dashSegment) {
 				UInt64 sampleOffset;
 				UInt32 sampleSize;
 				UInt32 sampleDescriptionIndex;
@@ -910,7 +910,7 @@ OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon )
 				 " number of samples described by TimeToSample table ('stts') \n");
 		err = badAtomErr;
 	}
-	if (!vg.brandDASH && tir->mediaDuration != tir->timeToSampleDuration) {
+	if (!vg.dashSegment && tir->mediaDuration != tir->timeToSampleDuration) {
 	
 		errprint("Media duration (%s) in MediaHeader does NOT match"
 				 " sum of durations described by TimeToSample table (%s) \n", 
@@ -940,7 +940,7 @@ OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon )
 				err = badAtomErr;
 			}
 		}
-        else if(!vg.brandDASH)
+        else if(!vg.dashSegment)
 		    warnprint("WARNING: STSC empty; with an empty STSC atom, chunk mapping is not verifiable\n");
 	}
 
@@ -1163,15 +1163,17 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 			
 			if (currentBrand == 'dash')
             {
-				vg.brandDASH = true;
-                vg.dashInFtyp = true;   //Split from brandDASH since it is also set if the file is segmented
+                vg.dashInFtyp = true;
+				vg.dashSegment = true;
 			}
             else if (currentBrand == 'msix')
             {
 				vg.msixInFtyp = true;
+				vg.dashSegment = true;
 			}
             else if(currentBrand == 'dsms') {
 				vg.dsms[0] = true;
+				vg.dashSegment = true;
 			}
 		}
 
@@ -1268,17 +1270,22 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
                         
 			if (currentBrand == 'msdh') {
 				msdhFound = true;
+				vg.dashSegment = true;
 			}
             else if(currentBrand == 'msix') {
 				msixFound = true;
+				vg.dashSegment = true;
 			}
             else if(segmentFound && currentBrand == 'sims') {
 				vg.simsInStyp[segmentNum] = true;
+				vg.dashSegment = true;
 			}
             else if(segmentFound && currentBrand == 'dsms') {
 				vg.dsms[segmentNum] = true;
+				vg.dashSegment = true;
 			}
             else if(currentBrand == 'lmsg') {
+				vg.dashSegment = true;
 				if(segmentFound && segmentNum != (vg.segmentInfoSize-1))
                     errprint("Brand 'lmsg' found as a compatible brand for segment number %d (not the last segment %d); violates Section 7.3.1. of ISO/IEC 23009-1:2012(E): In all cases for which a Representation contains more than one Media Segment ... If the Media Segment is not the last Media Segment in the Representation, the 'lmsg' compatibility brand shall not be present.\n",segmentNum+1,vg.segmentInfoSize);
 			}
@@ -1504,7 +1511,7 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 	//  if that is beyond the highest chunk end we have seen, we append it;  otherwise (the rare case)
 	//   we insert it into the sorted list.  this gives us a rapid check and an output sorted list without
 	//   an n-squared overlap check and without a post-sort
-	if(!vg.brandDASH)
+	if(!vg.dashSegment)
 	{
 		UInt32 totalChunks = 0;
 		TrackInfoRec *tir;
@@ -1713,7 +1720,7 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
     else
         moofInfo->trafInfo = NULL;
 
-    if(vg.brandDASH && moofInfo->numTrackFragments == 0)
+    if(vg.dashSegment && moofInfo->numTrackFragments == 0)
         errprint("Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): 16: Each 'moof' box shall contain at least one track fragment.\n");
         
     atomerr = ValidateAtomOfType( 'traf', 0, 
@@ -1835,7 +1842,7 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
 
     flags = kTypeAtomFlagCanHaveAtMostOne;
 
-    if(vg.brandDASH)
+    if(vg.dashSegment)
         flags |= kTypeAtomFlagMustHaveOne;
     
     atomerr = ValidateAtomOfType( 'tfdt', flags, 

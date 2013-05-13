@@ -451,7 +451,7 @@ int main(void)
 
             fclose(segmentOffsetInfoFile);
         }
-        vg.brandDASH = true;    //Either this, or for non-segmented file = self-intializing segment, brand DASH shall be in ftyp
+        vg.dashSegment = true;    //Either this, or for non-segmented file = self-intializing segment, brand DASH shall be in ftyp, or use another dash-specific brand to initialize this
     }
     else
     {
@@ -463,7 +463,7 @@ int main(void)
         vg.simsInStyp[0] = false;
         vg.dsms = (bool *)malloc(sizeof(bool)*1);
         vg.dsms[0] = false;
-        vg.brandDASH = false;   //For non-segmented file = self-intializing segment, brand DASH shall be in ftyp and this will be re-initialized
+        vg.dashSegment = false;
     }
     vg.processedStypes = 0;
     vg.accessUnitDurationNonIndexedTrack = 0;
