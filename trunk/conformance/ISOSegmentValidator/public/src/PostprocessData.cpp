@@ -165,9 +165,9 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
         if(index > (initializationSegment ? 1 : 0) && (sidxFoundInSegment != sidxFoundInPreviousSegment)) //Change of coding after first segment
         {
             if(sidxFoundInSegment)
-                errprint("sidx found in Segment number %d, while it was missing in an the previous segment, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall contain one or more 'sidx' boxes. \n",index);
+                errprint("sidx found in Segment number %d, while it was missing in an the previous segment, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall contain one or more 'sidx' boxes. \n",index+1);
             else
-                errprint("sidx not found in Segment number %d, while it has been found at least in the previous segment, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall contain one or more 'sidx' boxes. \n",index);
+                errprint("sidx not found in Segment number %d, while it has been found at least in the previous segment, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall contain one or more 'sidx' boxes. \n",index+1);
         }
 
         sidxFoundInPreviousSegment = sidxFoundInSegment;
@@ -667,9 +667,9 @@ void verifyAlignment(MovieInfoRec *mir)
                 if(vg.controlLeafInfo[i][j+1].earliestPresentationTime <= tir->leafInfo[j].lastPresentationTime)
                 {
                     if(vg.controlLeafInfo[i][j+1].firstInSegment > 0)
-                        errprint("Overlapping segment: EPT of control leaf %Lf for leaf number %d is <= the latest presentation time %Lf corresponding leaf\n",vg.controlLeafInfo[i][j+1].earliestPresentationTime,j,tir->leafInfo[j].lastPresentationTime);
+                        errprint("Overlapping segment: EPT of control leaf %Lf for leaf number %d is <= the latest presentation time %Lf corresponding leaf\n",vg.controlLeafInfo[i][j+1].earliestPresentationTime,j+1,tir->leafInfo[j].lastPresentationTime);
                     else
-                        errprint("Overlapping subsegment: EPT of control leaf %Lf for leaf number %d is <= the latest presentation time %Lf corresponding leaf\n",vg.controlLeafInfo[i][j+1].earliestPresentationTime,j,tir->leafInfo[j].lastPresentationTime);
+                        errprint("Overlapping subsegment: EPT of control leaf %Lf for leaf number %d is <= the latest presentation time %Lf corresponding leaf\n",vg.controlLeafInfo[i][j+1].earliestPresentationTime,j+1,tir->leafInfo[j].lastPresentationTime);
                 }
         }
         
@@ -804,7 +804,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
 				}
 
                 if(mir->moofInfo[j].offset >= segmentOffset && mir->moofInfo[j].offset < firstSidxOfSegment->offset)
-                    errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box shall be placed before any 'moof' box. Violated for fragment number %d\n",j);
+                    errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box shall be placed before any 'moof' box. Violated for fragment number %d\n",j+1);
 
 				/*check that segment indexing covers the entire moof's duration*/
 				if (segmentOffset + ref_size < mir->moofInfo[j].offset) {
@@ -996,9 +996,9 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
                                         SAPFound = true;
                                         //printf("SAP found with presentation time %Lf \n",samplePresentationTime);
                                     }
-                                    
+
                                     if((samplePresentationTime < SAP_time) && sample_is_SAP)
-                                        errprint("SAP found with presentation time %Lf lesser than the declared SAP time %Lf (SAP_delta_time %Lf), for sidx number %d at reference count %d; first SAP shall be signaled as per Section 8.16.3.3 of ISO/IEC 14496-12 4th edition\n",samplePresentationTime,SAP_time,(double)(mir->sidxInfo[i].references[j].SAP_delta_time)/(double)mir->sidxInfo[i].timescale,i+1,j);
+                                        errprint("SAP found with presentation time %Lf lesser than the declared SAP time %Lf (SAP_delta_time %Lf), for sidx number %d at reference count %d; first SAP shall be signaled as per Section 8.16.3.3 of ISO/IEC 14496-12 4th edition\n",samplePresentationTime,SAP_time,(long double)(mir->sidxInfo[i].references[j].SAP_delta_time)/(long double)mir->sidxInfo[i].timescale,i+1,j);
                                                                         
                                     if(SAPFound == true)
                                         break;
