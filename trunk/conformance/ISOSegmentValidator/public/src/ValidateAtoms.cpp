@@ -2349,11 +2349,6 @@ OSErr Validate_mfhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Get data 
 	BAILIFERR( GetFileDataN32( aoe, &moofInfo->sequence_number, offset, &offset ) );
 
-    if(moofInfo->sequence_number <= vg.mir->sequence_number)
-        errprint( "sequence_number %d in violation of: the value in a given movie fragment be greater than in any preceding movie fragment\n",moofInfo->sequence_number );
-
-    vg.mir->sequence_number = moofInfo->sequence_number;
-
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
