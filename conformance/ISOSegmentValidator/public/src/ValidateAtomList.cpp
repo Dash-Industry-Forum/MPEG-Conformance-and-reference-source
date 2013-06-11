@@ -1700,6 +1700,11 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
         Validate_mfhd_Atom, cnt, list, moofInfo );
     if (!err) err = atomerr;
 
+    if((mir->processedFragments > 0) && (moofInfo->sequence_number <= vg.mir->sequence_number))
+        errprint( "sequence_number %d in violation of: the value in a given movie fragment be greater than in any preceding movie fragment\n",moofInfo->sequence_number );
+
+    vg.mir->sequence_number = moofInfo->sequence_number;
+
     moofInfo->index = mir->processedFragments;
     moofInfo->numTrackFragments = 0;
     moofInfo->processedTrackFragments = 0;
@@ -1880,7 +1885,8 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
             trafInfo->compositionInfoMissing = false;
             for(UInt32 j = 0 ;  j < trafInfo->trunInfo[i].sample_count ; j++)
                 if(trafInfo->trunInfo[i].sample_composition_time_offset[j] != 0)
-                    errprint("CTTS is missing, indicating composition time = decode times, as per Section 8.16.1.1 of ISO/IEC 14496-12 4th edition, while non-zero composition offsets found in track run.\n");
+                    ;// Incorrect interpertation: CTTS shall be absent when all CT = DT does not imply CTTS shall be absent iff all CT = DT
+                    //errprint("CTTS is missing, indicating composition time = decode times, as per Section 8.6.1.1 of ISO/IEC 14496-12 4th edition, while non-zero composition offsets found in track run.\n");
         }
 	}
 
