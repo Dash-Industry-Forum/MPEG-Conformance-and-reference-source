@@ -1160,10 +1160,12 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 			if (majorBrand == currentBrand) {
 				majorBrandFoundAmongCompatibleBrands = true;
 			}
-			
 			if (currentBrand == 'dash')
             {
                 vg.dashInFtyp = true;
+				vg.dashSegment = true;
+			}
+			else if (currentBrand == 'msdh') {  //Although expected in styp, it seems conforming to slip it in the initialization segment. We should use this information.
 				vg.dashSegment = true;
 			}
             else if (currentBrand == 'msix')
