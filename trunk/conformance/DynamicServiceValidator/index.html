@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript" src="verify.js"></script>
+</head>
+<body>
+<script >
+</script>
+
+<h3>Segment offerings conformance</h3>
+<textarea id="foo" rows="1" cols="100">http://tvnlive.dashdemo.edgesuite.net/live/manifest.mpd</textarea>
+<br/>
+<button type="button" onClick="process()">Press me to load MPD</button>
+
+<button type="button" onClick="exit()">Stop</button>
+
+<h4>Response information for the MPD request......</h4>
+ <br/>
+    <div id="MPDOutput"/></div>
+ <br/> 
+
+<h4>Overall progress of segment requests .....</h4>
+ <br/>
+    <div id="Progress"/></div>
+ <br/>  
+ 
+<h4>Response information for the segments requests .....</h4>
+ <br/>
+     <div id="SegmentOutput"/> <br/></div>	 
+ <br/>
+</body>
+
+</html>
