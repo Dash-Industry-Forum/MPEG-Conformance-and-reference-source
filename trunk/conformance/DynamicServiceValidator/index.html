@@ -1,33 +1,94 @@
 <!DOCTYPE html>
-<html>
-<head>
-<script type="text/javascript" src="verify.js"></script>
-</head>
-<body>
-<script >
+<html><head><meta content="text/html;charset=ISO-8859-1" http-equiv="Content-Type"><script type="text/javascript" src="resources/script/extensions.js"></script><script type="text/javascript" src="resources/script/verify.js"></script><title>Dynamic Service Conformance</title><style type="text/css">
+#btnstart {
+  border:  none;
+  background: transparent url(resources/images/btnstart.png) repeat scroll 0% 50%;
+  cursor: pointer;
+  width: 78px;
+  height: 28px;
+}
+#btnstop {
+  border:  none;
+  background: transparent url(resources/images/btnstop.png) repeat scroll 0% 50%;
+  cursor: pointer;
+  width: 78px;
+  height: 28px;
+}
+
+#SegmentOutput
+{
+background-color:rgb(221,221,221);
+box-shadow: 10px 10px 5px #888888;
+}
+
+#MPDOutput
+{
+background-color:rgb(221,221,221);
+box-shadow: 10px 10px 5px #888888;
+}
+
+#Progress
+{
+background-color:rgb(221,221,221);
+box-shadow: 10px 10px 5px #888888;
+}
+
+</style>
+<style> 
+</style></head>
+<body bgcolor="#e7ebff">
+
+<script type="text/javascript"> 
+
+function checkRTT() 
+{
+    if (document.getElementById("rttsel").checked)
+    {
+        document.getElementById("rtt").disabled = false;
+    }
+    else 
+    {
+        document.getElementById("rtt").disabled = true;
+    }
+}
+
+function checkMPD() 
+{
+    document.getElementById("mpdbox").value = document.getElementById('mpdURL').options[document.getElementById('mpdURL').selectedIndex].value;
+}
+
 </script>
+<h3 style="font-family: Helvetica,Arial,sans-serif; text-align: center; color: rgb(102, 102, 102);"><big>Dynamic Service Conformance</big></h3>
+<div style="text-align: center;"><select style="font-family: Helvetica,Arial,sans-serif;" name="mpd URL" id="mpdURL" onchange="checkMPD()"><option value="http://dashdemo.edgesuite.net/mediaexcel/live/ch1/dash.mpd">Mediaexcel (Numbered)</option><option value="http://dashdemo.edgesuite.net/mediaexcel/live/ch2/dash.mpd">Mediaexcel 
+(Timeline)</option><option value="http://tvnlive.dashdemo.edgesuite.net/live/manifest.mpd" selected="selected">TVN</option><option value="http://dash-live-path1.edgesuite.net/dash/manifest.mpd">Path 1</option></select><span style="font-family: Helvetica,Arial,sans-serif;">
+</span><textarea style="font-family: Helvetica,Arial,sans-serif;" id="mpdbox" rows="1" cols="80">http://tvnlive.dashdemo.edgesuite.net/live/manifest.mpd</textarea><span style="font-family: Helvetica,Arial,sans-serif;">    
 
-<h3>Segment offerings conformance</h3>
-<textarea id="foo" rows="1" cols="100">http://tvnlive.dashdemo.edgesuite.net/live/manifest.mpd</textarea>
-<br/>
-<button type="button" onClick="process()">Press me to load MPD</button>
+</span><button id="btnstart" style="font-family: Helvetica,Arial,sans-serif;" type="button" onclick="process()"></button><span style="font-family: Helvetica,Arial,sans-serif;">
 
-<button type="button" onClick="exit()">Stop</button>
+</span><button id="btnstop" style="font-family: Helvetica,Arial,sans-serif;" type="button" onclick="exit()"></button><span style="font-family: Helvetica,Arial,sans-serif;">
 
-<h4>Response information for the MPD request......</h4>
- <br/>
-    <div id="MPDOutput"/></div>
- <br/> 
+</span><br style="font-family: Helvetica,Arial,sans-serif;"></div><br style="font-family: Helvetica,Arial,sans-serif;">
 
-<h4>Overall progress of segment requests .....</h4>
- <br/>
-    <div id="Progress"/></div>
- <br/>  
+<div style="text-align: center;"><input style="font-family: Helvetica,Arial,sans-serif;" name="group1" onchange="checkRTT()" id="rttsel" checked="checked" type="radio"><span style="font-family: Helvetica,Arial,sans-serif;">
+RTT correction to SAE times </span><small style="font-family: Helvetica,Arial,sans-serif;">(in msec)</small><span style="font-family: Helvetica,Arial,sans-serif;"> : </span><input style="font-family: Helvetica,Arial,sans-serif;" name="rtt" min="1" max="1000000" step="1" value="300" id="rtt" type="number"><span style="font-family: Helvetica,Arial,sans-serif;">   
+</span><input style="font-family: Helvetica,Arial,sans-serif;" name="group1" onchange="checkRTT()" type="radio"><span style="font-family: Helvetica,Arial,sans-serif;"> None
+
+</span><br style="font-family: Helvetica,Arial,sans-serif;"></div><br style="font-family: Helvetica,Arial,sans-serif;">
+
+<div style="text-align: center;"><input style="font-family: Helvetica,Arial,sans-serif;" id="cscorrect" checked="checked" type="checkbox"><span style="font-family: Helvetica,Arial,sans-serif;">Dynamic clock skew correction</span><br style="font-family: Helvetica,Arial,sans-serif;">
+
+</div><h4 style="font-family: Helvetica,Arial,sans-serif; font-weight: normal; color: rgb(51, 51, 51);"><big>Response information for the MPD request .....</big></h4>
+ <br style="font-family: Helvetica,Arial,sans-serif;">
+    <div style="font-family: Helvetica,Arial,sans-serif; font-weight: normal; font-size: 80%;" id="MPDOutput"></div>
+ <br style="font-family: Helvetica,Arial,sans-serif; color: rgb(102, 102, 102);"> 
+
+<h4 style="font-family: Helvetica,Arial,sans-serif; font-weight: normal; color: rgb(51, 51, 51);"><big>Overall progress of segment requests .....</big></h4>
+ <br style="font-family: Helvetica,Arial,sans-serif;">
+    <div style="font-family: Helvetica,Arial,sans-serif; font-weight: normal; font-size: 80%;" id="Progress"></div>
+ <br style="font-family: Helvetica,Arial,sans-serif;">  
  
-<h4>Response information for the segments requests .....</h4>
- <br/>
-     <div id="SegmentOutput"/> <br/></div>	 
- <br/>
-</body>
-
-</html>
+<h4 style="font-family: Helvetica,Arial,sans-serif; font-weight: normal; color: rgb(51, 51, 51);"><big>Response information for the segments requests .....</big></h4>
+ <br>
+     <div style="font-family: Helvetica,Arial,sans-serif; font-weight: normal; font-size: 80%;" id="SegmentOutput"> <br></div>	 
+ <br>
+</body></html>
