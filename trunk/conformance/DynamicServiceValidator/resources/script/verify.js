@@ -9,9 +9,8 @@ All rights reserved.
 var MPD = {xmlHttpMPD: createXMLHttpRequestObject(), xmlData: null, FT: null, Periods: new Array(), MUP: null, segmentsDispatch: null, mpdDispatch: null, totalSegmentCount: 0, updatedSegments: 0, mpdEvents: new Array(), mpdEventCount: 5, RTTs: new Array(), numRTTs: 10, 
 clockSkew: new Array(), numClockSkew: 10, numSuccessfulChecksSAS: 0, numSuccessfulChecksSAE: 0};
 
-//Past or already available segments at the time of launching, cost a significant processing overhead at the startup, this needs to be sorted out. Right now, we keep it to a minimum
-var maxPastSegments = 1;
-var pastSegmentsDispatched = 0;
+//Past or already available segments, cost a significant processing overhead at the startup, this needs to be sorted out. Right now, we keep it to a minimum
+var maxPastSegmentsPerIteration = 2;
 
 var veryLargeDuration = 86400000; //Lets stick to 10000 days for now, Infinity not working as expected;
 
@@ -47,7 +46,13 @@ function process()
     try          // try to connect to the server
     {	
 	  var mpd_url=document.getElementById("mpdbox").value;
-	  MPD.xmlHttpMPD.open("GET", mpd_url, false);  // initiate server request
+
+      var now = new Date();
+      if(document.getElementById("cscorrect").checked)
+      {
+        now = new Date(now - getCSOffset());
+      }
+	  MPD.xmlHttpMPD.open("GET", mpd_url += (mpd_url.match(/\?/) == null ? "?" : "&") + now.getTime(), false);  // initiate server request
       MPD.xmlHttpMPD.onreadystatechange = mpdReceptionEventHandler;
       MPD.xmlHttpMPD.send(null);
     }
@@ -74,7 +79,6 @@ function mpdStatusUpdate(mpd)
     if(publishTime)
         publishTimeString = publishTime.toUTCString();
         
-    
     mpd.mpdEvents.push("Fetch: " + mpd.FT.toUTCString() + ", Publish: " + publishTimeString + ", " + mpd.updatedSegments + " new segments.");
     
     var mpdOP =document.getElementById('MPDOutput');
@@ -148,8 +152,9 @@ function segmentEventHandler() {
     if(MPD.RTTs.length >= MPD.numRTTs)
         MPD.RTTs.shift();
     
-    if(segment.SAS.deltaTime > 0)
-        MPD.RTTs.push(RTT);
+    //if(segment.SAS.deltaTime > 0)
+    MPD.RTTs.push(RTT);
+    
     statusReported = true;
 
 
@@ -258,7 +263,7 @@ function getCSOffset()
 An MPD got loaded, process the MPD and initiate URL dispatching
 ********************************************************************************************************************************/
 
-function mpdReceptionEventHandler(){
+function  mpdReceptionEventHandler(){
         
   if (MPD.xmlHttpMPD.readyState == 4){    // continue if the process is completed
     if (MPD.xmlHttpMPD.status == 200) {       // continue only if HTTP status is "OK"   
@@ -314,8 +319,15 @@ Dispatch URL request of a single time (either SAS or SAE)
 function dispatchRequest(segment,type,xmlHttp)
 {
     xmlHttp.onload = segmentEventHandler;
-    xmlHttp.open("HEAD",segment.url,true);   //Head, not get, we just need to check if segment is available, not get it
+
     var intrinsicTimeNow = new Date();
+    var urlTime = intrinsicTimeNow;
+    
+    if(document.getElementById("cscorrect").checked)
+        urlTime = new Date(urlTime - getCSOffset());
+    
+    xmlHttp.open("HEAD",segment.url += (segment.url.match(/\?/) == null ? "?" : "&") + urlTime.getTime(),true);   //Head, not get, we just need to check if segment is available, not get it
+
     var timeToSend;
 
     if(type == "SAS")
@@ -340,7 +352,8 @@ Dispatch time checks for all of the current MPD
 
 function dispatchChecks()
 {
-    
+    var pastSegmentsDispatched = 0;
+
     for(var periodIndex = 0; periodIndex < MPD.Periods.length ; periodIndex++)
     {
         var Period = MPD.Periods[periodIndex];
@@ -379,10 +392,10 @@ function dispatchChecks()
                   
                    try
             	   	{	
-                        //var now = new Date();
                         var currentSegment = Representation.Segments[i];
                         currentSegment.SAS.deltaTime = Math.ceil(currentSegment.SAS.time.getTime()- now.getTime());
                         currentSegment.SAE.deltaTime = Math.ceil(currentSegment.SAE.time.getTime() - saeCheckOffset - now.getTime());
+                        //printOutput("Index: " + i + ", SAS delta: " + currentSegment.SAS.deltaTime + ", SAE delta: " + currentSegment.SAE.deltaTime + "<br/>");
 
                         if(currentSegment.SAE.deltaTime >= 0)   //Still some time to expiry of segment
                         {
@@ -401,7 +414,7 @@ function dispatchChecks()
                                         Representation.dispatchedSASRequests ++;
                                     }
                                 }						   						   
-                                else if(pastSegmentsDispatched < maxPastSegments)
+                                else if(pastSegmentsDispatched < maxPastSegmentsPerIteration)
                                 {	
                                     currentSegment.SAS.xmlHttp = createXMLHttpRequestObject();
                                     currentSegment.SAS.xmlHttp.ref = {period: periodIndex, as: asIndex, rep: repIndex, seg: i, type: "SAS"};
@@ -678,7 +691,9 @@ function processAdaptationSet(AdaptationSet,Period)
         //printOutput("Processing rep: " + (repIndex+1));
         if(AdaptationSet.Representations[repIndex] == null)
             AdaptationSet.Representations[repIndex] = {xmlData: AdaptationSet.xmlData.getElementsByTagName("Representation")[repIndex], SegmentTemplate: AdaptationSet.SegmentTemplate, SegmentBase: AdaptationSet.SegmentBase, Segments: new Array(), duration: 0, SSN: 0, GSN: 0, 
-                                                    firstAvailableSsegment: 0, dispatchedSASRequests: 0, dispatchedSAERequests: 0, processedSASRequests: 0, processedSAERequests: 0}; 
+                                                    firstAvailableSsegment: 0, dispatchedSASRequests: 0, dispatchedSAERequests: 0, processedSASRequests: 0, processedSAERequests: 0};
+        else
+            AdaptationSet.Representations[repIndex].xmlData = AdaptationSet.xmlData.getElementsByTagName("Representation")[repIndex];
 
         processRepresentation(AdaptationSet.Representations[repIndex],Period);
     }
@@ -716,6 +731,8 @@ function processPeriod(Period)
         //printOutput("Processing AS: " + (asIndex+1));
         if(Period.AdaptationSets[asIndex] == null)
             Period.AdaptationSets[asIndex] = {xmlData: Period.xmlData.getElementsByTagName("AdaptationSet")[asIndex], SegmentTemplate: Period.SegmentTemplate, SegmentBase: Period.SegmentBase, Representations: new Array()}; 
+        else
+            Period.AdaptationSets[asIndex].xmlData = Period.xmlData.getElementsByTagName("AdaptationSet")[asIndex];
 
         processAdaptationSet(Period.AdaptationSets[asIndex],Period);
     }
@@ -735,7 +752,9 @@ function processMPD(MPDxmlData)
     for(var periodIndex = 0; periodIndex < 1/*numPeriods*/ ; periodIndex++) //Currently only first period
     {
         if(MPD.Periods[periodIndex] == null)
-            MPD.Periods[periodIndex] = {xmlData: MPDxmlData.getElementsByTagName("Period")[periodIndex], PeriodStart: 0, id: "", SegmentTemplate: null, SegmentBase: null, AdaptationSets: new Array()}; 
+            MPD.Periods[periodIndex] = {xmlData: MPDxmlData.getElementsByTagName("Period")[periodIndex], PeriodStart: 0, id: "", SegmentTemplate: null, SegmentBase: null, AdaptationSets: new Array()};
+        else
+            MPD.Periods[periodIndex].xmlData = MPDxmlData.getElementsByTagName("Period")[periodIndex];
         
         processPeriod(MPD.Periods[periodIndex]);
     }
