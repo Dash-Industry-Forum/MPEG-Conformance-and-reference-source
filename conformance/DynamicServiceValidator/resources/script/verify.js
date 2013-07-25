@@ -52,7 +52,10 @@ function process()
       {
         now = new Date(now - getCSOffset());
       }
-	  MPD.xmlHttpMPD.open("GET", mpd_url += (mpd_url.match(/\?/) == null ? "?" : "&") + now.getTime(), false);  // initiate server request
+	  MPD.xmlHttpMPD.open("GET", mpd_url += (mpd_url.match(/\?/) == null ? "?" : "&") + now.getTime(), false);  // initiate server request, trying to bypass cache using tip
+	                                                                                                            // from 
+	                                                                                                            // https://developer.mozilla.org/es/docs/XMLHttpRequest/Usar_XMLHttpRequest#Bypassing_the_cache,
+	                                                                                                            // same technique used for segment request
       MPD.xmlHttpMPD.onreadystatechange = mpdReceptionEventHandler;
       MPD.xmlHttpMPD.send(null);
     }
