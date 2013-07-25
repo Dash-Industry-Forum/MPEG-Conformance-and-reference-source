@@ -16,7 +16,7 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
         for (int i = 0; i < cnt; i++) 
         {
             if(list[i].offset < segmentSizes[0])
-            {
+            {                
                 if (list[i].type == 'moof')
                 {
                     errprint("moof found in initialization segment: Section 6.3.3. of ISO/IEC 23009-1:2012(E): It shall not contain any \"moof\" boxes\n");
@@ -216,6 +216,7 @@ OSErr postprocessFragmentInfo(MovieInfoRec *mir)
                             {
                                 warnprint("tfdt base media decode time %Lf not equal to accumulated decode time %Lf for track %d for the first fragment of the movie. This software does not handle incomplete presentations. Applying correction.\n",(long double)mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime/(long double)mir->tirList[index].mediaTimeScale,(long double)mir->tirList[index].cumulatedTackFragmentDecodeTime/(long double)mir->tirList[index].mediaTimeScale,mir->moofInfo[i].trafInfo[j].track_ID);                                
                                 mir->tirList[index].cumulatedTackFragmentDecodeTime = mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime;
+                                mir->moofInfo[i].tfdt[index] = mir->tirList[index].cumulatedTackFragmentDecodeTime;
                             }
                             else
                                 errprint("tfdt base media decode time %Lf not equal to accumulated decode time %Lf for track %d for sequence_number %d (fragment absolute count %d)\n",(long double)mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime/(long double)mir->tirList[index].mediaTimeScale,(long double)mir->tirList[index].cumulatedTackFragmentDecodeTime/(long double)mir->tirList[index].mediaTimeScale,mir->moofInfo[i].trafInfo[j].track_ID,mir->moofInfo[i].sequence_number,i+1);
@@ -480,7 +481,7 @@ void processSAP34(MovieInfoRec *mir)
                     {
                         if(sampleIndex >= numSamples)
                         {
-                            errprint("Entries in sbgp (%d) is less than the corresponding number of samples (%d) in the traf %d for moof number %d\n",numSamples,sampleIndex+1,k+1,j+1);
+                            ;//errprint("Entries in sbgp (%d) is less than the corresponding number of samples (%d) in the traf %d for moof number %d\n",numSamples,sampleIndex+1,k+1,j+1);
                             continue;
                         }
                         
@@ -516,7 +517,7 @@ void verifyLeafDurations(MovieInfoRec *mir)
                 continue;
             
             if(diff > (long double)1.0/(long double)tir->mediaTimeScale)
-                errprint("Referenced track duration %Lf of track %d does not match to subsegment_duration %Lf for leaf with EPT %Lf, difference %Le, threshold %Le\n",(tir->leafInfo[j].presentationEndTime - tir->leafInfo[j].earliestPresentationTime),tir->trackID,tir->leafInfo[j].sidxReportedDuration,tir->leafInfo[j].earliestPresentationTime,diff,(long double)1.0/(long double)tir->mediaTimeScale);
+                errprint("Referenced track duration %Lf of track %d does not match to subsegment_duration %Lf for leaf with EPT %Lf, difference %Le, threshold %Le (Leaf count %d)\n",(tir->leafInfo[j].presentationEndTime - tir->leafInfo[j].earliestPresentationTime),tir->trackID,tir->leafInfo[j].sidxReportedDuration,tir->leafInfo[j].earliestPresentationTime,diff,(long double)1.0/(long double)tir->mediaTimeScale,j+1);
         }
     }
 }
@@ -810,7 +811,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
 				if (segmentOffset + ref_size < mir->moofInfo[j].offset) {
 					long double diff = ABS(segmentDurationSec - firstSidxOfSegment->cumulatedDuration);		            
 					if(diff > (long double)1.0/(long double)mir->tirList[trackIndex].mediaTimeScale)
-						errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",i-firstMediaSegment,segmentDurationSec,firstSidxOfSegment->cumulatedDuration,mir->tirList[trackIndex].trackID,diff);
+						;//errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",i-firstMediaSegment+1,segmentDurationSec,firstSidxOfSegment->cumulatedDuration,mir->tirList[trackIndex].trackID,diff);
 
 					/*find next sidx*/
 					for(UInt32 k = sidxIndex ; k < mir->numSidx ; k++) {
@@ -834,7 +835,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
 				long double diff = ABS(segmentDurationSec - firstSidxOfSegment->cumulatedDuration);
 	            
 				if(diff > (long double)1.0/(long double)mir->tirList[trackIndex].mediaTimeScale)
-					errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",i-firstMediaSegment,segmentDurationSec,firstSidxOfSegment->cumulatedDuration,mir->tirList[trackIndex].trackID,diff);
+					errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",i-firstMediaSegment+1,segmentDurationSec,firstSidxOfSegment->cumulatedDuration,mir->tirList[trackIndex].trackID,diff);
 
 				segmentOffset += vg.segmentSizes[i];  
 			}
@@ -1005,7 +1006,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
                                     
                                     if(mir->sidxInfo[i].references[j].starts_with_SAP > 0 && checkStartWithSAP)
                                     {
-                                        errprint("starts_with_SAP declared but the first sample is not a SAP, for sidx number %d at reference count %d (checking sample %d of trun %d, traf %d, moof %d)\n",i+1,j,m+1,l+1,k+1,moofIndex+1);
+                                        errprint("starts_with_SAP declared but the first sample's composition time does not match, for sidx number %d at reference count %d (checking sample %d of trun %d, traf %d, moof %d)\n",i+1,j,m+1,l+1,k+1,moofIndex+1);
                                         checkStartWithSAP = false;
                                     }
                                 }
