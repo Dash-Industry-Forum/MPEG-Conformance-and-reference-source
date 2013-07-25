@@ -1461,6 +1461,11 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomerr = ValidateAtomOfType( 'meta', 0, 
 		Validate_meta_Atom, cnt, list, nil );
 	if (!err) err = atomerr;
+        
+	// Process 'pssh' atoms
+    atomerr = ValidateAtomOfType( 'pssh', 0, 
+        Validate_pssh_Atom, cnt, list, nil );
+    if (!err) err = atomerr;
 
 	//
 	for (i = 0; i < cnt; i++){
