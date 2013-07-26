@@ -36,10 +36,10 @@ box-shadow: 10px 10px 5px #888888;
 </style>
 <style> 
 </style></head>
-<body bgcolor="#e7ebff">
+<body bgcolor="#e7ebff" onload=parseURL();>
 
 <script type="text/javascript"> 
-
+var userMPD;
 function checkRTT() 
 {
     if (document.getElementById("rttsel").checked)
@@ -54,13 +54,33 @@ function checkRTT()
 
 function checkMPD() 
 {
-    document.getElementById("mpdbox").value = document.getElementById('mpdURL').options[document.getElementById('mpdURL').selectedIndex].value;
+	if(document.getElementById('mpdURL').options[document.getElementById('mpdURL').selectedIndex].text == "Customized")
+	{
+		document.getElementById("mpdbox").value = userMPD;
+	}
+	else
+	{
+		document.getElementById("mpdbox").value = document.getElementById('mpdURL').options[document.getElementById('mpdURL').selectedIndex].value;
+	}
+}
+
+function parseURL()
+{
+	var url = document.createElement('a');
+	url.href = document.URL;
+	var urlAux = url.href.split('=');
+	userMPD = urlAux[1];
+	if(userMPD.length > 0)
+	{
+		document.getElementById("mpdbox").value = userMPD;
+		document.getElementById("mpdURL").selectedIndex = document.getElementById("mpdURL").length-1;
+	}
 }
 
 </script>
 <h3 style="font-family: Helvetica,Arial,sans-serif; text-align: center; color: rgb(102, 102, 102);"><big>Dynamic Service Conformance</big></h3>
 <div style="text-align: center;"><select style="font-family: Helvetica,Arial,sans-serif;" name="mpd URL" id="mpdURL" onchange="checkMPD()"><option value="http://dashdemo.edgesuite.net/mediaexcel/live/ch1/dash.mpd">Mediaexcel (Numbered)</option><option value="http://dashdemo.edgesuite.net/mediaexcel/live/ch2/dash.mpd">Mediaexcel 
-(Timeline)</option><option value="http://tvnlive.dashdemo.edgesuite.net/live/manifest.mpd" selected="selected">TVN</option><option value="http://dash-live-path1.edgesuite.net/dash/manifest.mpd">Path 1</option></select><span style="font-family: Helvetica,Arial,sans-serif;">
+(Timeline)</option><option value="http://tvnlive.dashdemo.edgesuite.net/live/manifest.mpd">TVN</option><option value="http://dash-live-path1.edgesuite.net/dash/manifest.mpd">Path 1</option><option>Customized</option></select><span style="font-family: Helvetica,Arial,sans-serif;">
 </span><textarea style="font-family: Helvetica,Arial,sans-serif;" id="mpdbox" rows="1" cols="80">http://tvnlive.dashdemo.edgesuite.net/live/manifest.mpd</textarea><span style="font-family: Helvetica,Arial,sans-serif;">    
 
 </span><button id="btnstart" style="font-family: Helvetica,Arial,sans-serif;" type="button" onclick="process()"></button><span style="font-family: Helvetica,Arial,sans-serif;">
