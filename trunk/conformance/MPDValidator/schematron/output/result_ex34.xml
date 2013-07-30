@@ -39,4 +39,9 @@
       <svrl:text>The value of Role (stereoid) shall start with 'l' or 'r'.</svrl:text>
    </svrl:failed-assert>
    <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
 </svrl:schematron-output>
