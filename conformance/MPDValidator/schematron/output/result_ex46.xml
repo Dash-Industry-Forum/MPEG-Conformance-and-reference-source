@@ -42,4 +42,9 @@
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Subset' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011'][2]">
       <svrl:text>The id of each Subset within a Period shall be unique.</svrl:text>
    </svrl:failed-assert>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
 </svrl:schematron-output>

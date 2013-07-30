@@ -59,6 +59,7 @@
       <xs:element name="SegmentBase" type="SegmentBaseType" minOccurs="0"/>
       <xs:element name="SegmentList" type="SegmentListType" minOccurs="0"/>
       <xs:element name="SegmentTemplate" type="SegmentTemplateType" minOccurs="0"/>
+      <xs:element name="AssetIdentifier" type="DescriptorType" minOccurs="0" maxOccurs="1"/>
       <xs:element name="EventStream" type="EventStreamType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="AdaptationSet" type="AdaptationSetType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="Subset" type="SubsetType" minOccurs="0" maxOccurs="unbounded"/>

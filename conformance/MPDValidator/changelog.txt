@@ -1,3 +1,18 @@
+2013-06-07
+----------
+Removed rule R13.2 (check for urn role/steroid as it can be optional)
+Removed rules R3.8 and R5.1 (check for correct mimetypes for specific profiles; at the moment no possibility to determine main and additional track)
+
+2013-05-15
+----------
+Updated conformance to incorporate semantic changes from the 2nd study of DAM.1 (w13497)
+Added Ruleset 15 (FramePacking), 16 (AudioChannelConfiguration), 17 (EventStream), 18 (InbandEventStream), and 19 (Event)
+Added Examples for testing Ruleset 15, 16, 17, 18, and 19
+
+2013-05-11
+----------
+Updated conformance schema files to incorporate changes from COR.1 rev. 7 (w13495) and 2nd study of DAM.1 (w13497)
+
 2013-04-13
 ----------
 Updated validator and xlink example due to missing publishTime attribute

@@ -101,7 +101,7 @@ public class Validator {
 			System.out.println("\nStart XLink resolving\n=====================\n");
 			
 			XLinkResolver xlinkResolver = new XLinkResolver();
-			xlinkResolver.resolveXLinks(args[0]);		
+			xlinkResolver.resolveXLinks(args[0]);	
 			
 			System.out.println("XLink resolving successful\n\n");
 			

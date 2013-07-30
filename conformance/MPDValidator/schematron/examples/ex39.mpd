@@ -3,7 +3,7 @@
 <MPD
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns="urn:mpeg:dash:schema:mpd:2011"
-  xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
+  xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
   type="dynamic" publishTime="2001-12-17T09:40:57Z"
   minimumUpdatePeriod="PT2S"
   timeShiftBufferDepth="PT30M"
