@@ -518,7 +518,7 @@ function processSegmentTimeline(Representation, Period)
                 k++;
             }
          }
-         
+
         var minNewSeg = veryLargeDuration;
         var maxNewSeg = 0;
         var startIndex = Representation.GSN + 1;
@@ -652,6 +652,15 @@ Process all data pertaining a representation, mainly SAEs and SASs of all the se
 
 function processRepresentation(Representation, Period)
 {
+    var id = Representation.xmlData.getAttribute('id');
+
+    if(Representation.id != "" && Representation.id != id)
+    {
+        throw("A different Representation with id " + id + " found, previous Representation id was " + Representation.id + ", not handled, returning!");
+    }
+    
+    Representation.id = id;
+    
     var SegmentTemplate = getChildByTagName(Representation,"SegmentTemplate");
     
     if( SegmentTemplate != null )
@@ -693,10 +702,13 @@ function processAdaptationSet(AdaptationSet,Period)
     {
         //printOutput("Processing rep: " + (repIndex+1));
         if(AdaptationSet.Representations[repIndex] == null)
-            AdaptationSet.Representations[repIndex] = {xmlData: AdaptationSet.xmlData.getElementsByTagName("Representation")[repIndex], SegmentTemplate: AdaptationSet.SegmentTemplate, SegmentBase: AdaptationSet.SegmentBase, Segments: new Array(), duration: 0, SSN: 0, GSN: 0, 
+            AdaptationSet.Representations[repIndex] = {xmlData: null, id: "", SegmentTemplate: null, SegmentBase: null, Segments: new Array(), duration: 0, SSN: 0, GSN: 0, 
                                                     firstAvailableSsegment: 0, dispatchedSASRequests: 0, dispatchedSAERequests: 0, processedSASRequests: 0, processedSAERequests: 0};
-        else
-            AdaptationSet.Representations[repIndex].xmlData = AdaptationSet.xmlData.getElementsByTagName("Representation")[repIndex];
+        
+        //Initializations
+        AdaptationSet.Representations[repIndex].xmlData = AdaptationSet.xmlData.getElementsByTagName("Representation")[repIndex];
+        AdaptationSet.Representations[repIndex].SegmentTemplate = AdaptationSet.SegmentTemplate;
+        AdaptationSet.Representations[repIndex].SegmentBase = AdaptationSet.SegmentBase;
 
         processRepresentation(AdaptationSet.Representations[repIndex],Period);
     }
@@ -733,9 +745,12 @@ function processPeriod(Period)
     {
         //printOutput("Processing AS: " + (asIndex+1));
         if(Period.AdaptationSets[asIndex] == null)
-            Period.AdaptationSets[asIndex] = {xmlData: Period.xmlData.getElementsByTagName("AdaptationSet")[asIndex], SegmentTemplate: Period.SegmentTemplate, SegmentBase: Period.SegmentBase, Representations: new Array()}; 
-        else
-            Period.AdaptationSets[asIndex].xmlData = Period.xmlData.getElementsByTagName("AdaptationSet")[asIndex];
+            Period.AdaptationSets[asIndex] = {xmlData: null, SegmentTemplate: null, SegmentBase: null, Representations: new Array()}; 
+
+        //Initializations
+        Period.AdaptationSets[asIndex].xmlData = Period.xmlData.getElementsByTagName("AdaptationSet")[asIndex];
+        Period.AdaptationSets[asIndex].SegmentTemplate = Period.SegmentTemplate;
+        Period.AdaptationSets[asIndex].SegmentBase = Period.SegmentBase;
 
         processAdaptationSet(Period.AdaptationSets[asIndex],Period);
     }
@@ -755,9 +770,10 @@ function processMPD(MPDxmlData)
     for(var periodIndex = 0; periodIndex < 1/*numPeriods*/ ; periodIndex++) //Currently only first period
     {
         if(MPD.Periods[periodIndex] == null)
-            MPD.Periods[periodIndex] = {xmlData: MPDxmlData.getElementsByTagName("Period")[periodIndex], PeriodStart: 0, id: "", SegmentTemplate: null, SegmentBase: null, AdaptationSets: new Array()};
-        else
-            MPD.Periods[periodIndex].xmlData = MPDxmlData.getElementsByTagName("Period")[periodIndex];
+            MPD.Periods[periodIndex] = {xmlData: null, PeriodStart: 0, id: "", SegmentTemplate: null, SegmentBase: null, AdaptationSets: new Array()};
+
+        //Initializations
+        MPD.Periods[periodIndex].xmlData = MPDxmlData.getElementsByTagName("Period")[periodIndex];
         
         processPeriod(MPD.Periods[periodIndex]);
     }
