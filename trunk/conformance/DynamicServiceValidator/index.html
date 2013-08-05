@@ -70,7 +70,7 @@ function parseURL()
 	url.href = document.URL;
 	var urlAux = url.href.split('=');
 	userMPD = urlAux[1];
-	if(userMPD.length > 0)
+	if(userMPD && userMPD.length > 0)
 	{
 		document.getElementById("mpdbox").value = userMPD;
 		document.getElementById("mpdURL").selectedIndex = document.getElementById("mpdURL").length-1;
