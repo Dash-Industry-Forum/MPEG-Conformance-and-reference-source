@@ -335,6 +335,7 @@ function dispatchRequest(segment,type,xmlHttp)
 
     if(type == "SAS")
     {
+        //printOutput("SAS dispatch time: " + intrinsicTimeNow.getTime() + ", SAS: " + segment.SAS.time.getTime() + "<br/>");
         segment.SAS.intrinsicDispatchTime = intrinsicTimeNow;
         timeToSend = intrinsicTimeNow - segment.SAS.dispatchTimeOffset;
     }
@@ -622,8 +623,8 @@ function processSegmentTemplate(Representation, Period)
     
     do{
         var urlObj = getBaseURL(mpd.xmlData)+((media.replace("$RepresentationID$",Representation.xmlData.getAttribute("id"))).replace("$Number$",num)).replace("$Bandwidth$",Representation.xmlData.getAttribute("bandwidth"));
-        var sasObj = {time: new Date((getAST(mpd.xmlData).getTime()+Period.PeriodStart*1000+(num-Representation.SSN+1)*d*1000)), deltaTime: 0, timeOutRet : 0, xmlHttp: null, requestDispatched: false, intrinsicDispatchTime: null, dispatchTimeOffset: null};
-        var saeObj = {time: new Date((getAST(mpd.xmlData).getTime()+Period.PeriodStart*1000+(num-Representation.SSN+1)*d*1000)+getTSBD(mpd.xmlData)*1000), deltaTime: 0, timeOutRet : 0, xmlHttp: null, requestDispatched: false, intrinsicDispatchTime: null, dispatchTimeOffset: null};
+        var sasObj = {time: new Date((getAST(mpd.xmlData).getTime()+Period.PeriodStart*1000+(num-Representation.SSN)*d*1000)), deltaTime: 0, timeOutRet : 0, xmlHttp: null, requestDispatched: false, intrinsicDispatchTime: null, dispatchTimeOffset: null};
+        var saeObj = {time: new Date((getAST(mpd.xmlData).getTime()+Period.PeriodStart*1000+(num-Representation.SSN)*d*1000)+getTSBD(mpd.xmlData)*1000), deltaTime: 0, timeOutRet : 0, xmlHttp: null, requestDispatched: false, intrinsicDispatchTime: null, dispatchTimeOffset: null};
 
         if(Representation.Segments[num] == null)
         {
@@ -855,8 +856,8 @@ return ps;
 function getAST(mpd){
 var ast_string=mpd.getAttribute("availabilityStartTime"); //string
 
-if(ast_string.charAt(ast_string.length - 1) != "Z")
-    ast_string = ast_string + "Z";
+//if(ast_string.charAt(ast_string.length - 1) != "Z")
+  //  ast_string = ast_string + "Z";
 
 var ast=new Date(ast_string);		
 //ast = new Date(ast.getTime() - ast.getTimezoneOffset()*60000);  //Convert to UTC
@@ -941,8 +942,8 @@ var pt;
 if(mpd.getAttribute("publishTime")){
    var pt_string=mpd.getAttribute("publishTime");
    
-if(pt_string.charAt(pt_string.length - 1) != "Z")
-    pt_string = pt_string + "Z";
+//if(pt_string.charAt(pt_string.length - 1) != "Z")
+  //  pt_string = pt_string + "Z";
 
    var pt=new Date(pt_string);	
 
