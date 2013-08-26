@@ -81,7 +81,7 @@ function parseURL()
 <h3 style="font-family: Helvetica,Arial,sans-serif; text-align: center; color: rgb(102, 102, 102);"><big>Dynamic Service Conformance</big></h3>
 <div style="text-align: center;"><select style="font-family: Helvetica,Arial,sans-serif;" name="mpd URL" id="mpdURL" onchange="checkMPD()"><option value="http://dashdemo.edgesuite.net/mediaexcel/live/ch1/dash.mpd">Mediaexcel (Numbered)</option><option value="http://dashdemo.edgesuite.net/mediaexcel/live/ch2/dash.mpd">Mediaexcel 
 (Timeline)</option><option value="http://tvnlive.dashdemo.edgesuite.net/live/manifest.mpd">TVN</option><option value="http://dash-live-path1.edgesuite.net/dash/manifest.mpd">Path 1</option><option>Customized</option></select><span style="font-family: Helvetica,Arial,sans-serif;">
-</span><textarea style="font-family: Helvetica,Arial,sans-serif;" id="mpdbox" rows="1" cols="80">http://tvnlive.dashdemo.edgesuite.net/live/manifest.mpd</textarea><span style="font-family: Helvetica,Arial,sans-serif;">    
+</span><textarea style="font-family: Helvetica,Arial,sans-serif;" id="mpdbox" rows="1" cols="80">http://localhost/StatToDyn/statodyn.php?type=mpd&pt=1377265845&group1=on&group2=on&tsbd=120&group3=on&origmpd=http%3A%2F%2Fdash.edgesuite.net%2Fdash264%2FTestCases%2F1b%2Fos%2Fcase1b.mpd&php=http%3A%2F%2Flocalhost%2FStatToDyn%2Fstatodyn.php&mpd=&debug=0&hack=.mpd</textarea><span style="font-family: Helvetica,Arial,sans-serif;">    
 
 </span><button id="btnstart" style="font-family: Helvetica,Arial,sans-serif;" type="button" onclick="process()"></button><span style="font-family: Helvetica,Arial,sans-serif;">
 
@@ -95,7 +95,7 @@ RTT correction to SAE times </span><small style="font-family: Helvetica,Arial,sa
 
 </span><br style="font-family: Helvetica,Arial,sans-serif;"></div><br style="font-family: Helvetica,Arial,sans-serif;">
 
-<div style="text-align: center;"><input style="font-family: Helvetica,Arial,sans-serif;" id="cscorrect" checked="checked" type="checkbox"><span style="font-family: Helvetica,Arial,sans-serif;">Dynamic clock skew correction</span><br style="font-family: Helvetica,Arial,sans-serif;">
+<div style="text-align: center;"><input style="font-family: Helvetica,Arial,sans-serif;" id="cscorrect" type="checkbox"><span style="font-family: Helvetica,Arial,sans-serif;">Dynamic clock skew correction</span><br style="font-family: Helvetica,Arial,sans-serif;">
 
 </div><h4 style="font-family: Helvetica,Arial,sans-serif; font-weight: normal; color: rgb(51, 51, 51);"><big>Response information for the MPD request .....</big></h4>
  <br style="font-family: Helvetica,Arial,sans-serif;">
