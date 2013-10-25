@@ -21,5 +21,6 @@ OSErr processIndexingInfo(MovieInfoRec *mir);
 void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bool initializationSegment, UInt64 *segmentSizes, MovieInfoRec *mir);
 void checkSegmentStartWithSAP(int startWithSAP, MovieInfoRec *mir);
 void estimatePresentationTimes(MovieInfoRec*mir);
+void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir);
 
 #endif //#define _SRC_POST_PROCESS_DATA_H_
