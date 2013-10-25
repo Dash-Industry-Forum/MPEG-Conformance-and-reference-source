@@ -1833,10 +1833,11 @@ OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
 				listP[i].duration = EndianU32_BtoN(list0P[i].duration);
 				listP[i].mediaTime = EndianS32_BtoN(list0P[i].mediaTime);
 				listP[i].mediaRate = EndianU32_BtoN(list0P[i].mediaRate);
-                
-                listP[i].duration = list0P[i].duration;
-                listP[i].mediaTime = (SInt64)((Int32)list0P[i].mediaTime);
-                listP[i].mediaRate = list0P[i].mediaRate;
+
+                //Didnt understand why it was repeated here below, this seems to create a bug: we do need conversion as above, but its overwritten here below!
+                //listP[i].duration = list0P[i].duration;
+                //listP[i].mediaTime = (SInt64)((Int32)list0P[i].mediaTime);
+                //listP[i].mediaRate = list0P[i].mediaRate;
                 
 			}
 		} else if (version == 1) {
@@ -2389,7 +2390,10 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     trafInfo->default_base_is_moof =  ((tf_flags & 0x020000) != 0);
 
     if(vg.dashSegment && !trafInfo->default_base_is_moof)
-        errprint("default-base-is-moof is not set, violating Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): ... the flag 'default-base-is-moof' shall also be set\n");
+        errprint("default-base-is-moof is not set, violating Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): ... the flag 'default-base-is-moof' shall be set\n");
+    
+    if(vg.dashSegment && trafInfo->base_data_offset_present)
+        errprint("base-data-offset-present is set, violating Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): ... base-data-offset-present shall not be used\n");
     
     if(trafInfo->base_data_offset_present)
         BAILIFERR( GetFileDataN64( aoe, &trafInfo->base_data_offset, offset, &offset ) );
@@ -2404,6 +2408,8 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     
     if(trafInfo->default_sample_size_present)
         BAILIFERR( GetFileDataN32( aoe, &trafInfo->default_sample_size, offset, &offset ) );
+    else
+        trafInfo->default_sample_size = tir->default_sample_size;   //"Effective" default in that case
     
     if(trafInfo->default_sample_flags_present)
         BAILIFERR( GetFileDataN32( aoe, &trafInfo->default_sample_flags, offset, &offset ) );
@@ -2454,17 +2460,17 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
     {
         //if(trunInfo->sample_duration_present)
             trunInfo->sample_duration = (UInt32 *)malloc(trunInfo->sample_count*sizeof(UInt32));
-        //else
+        //else  //use defaults then
         //    trunInfo->sample_duration = NULL;
 
-        if(trunInfo->sample_size_present)
+        //if(trunInfo->sample_size_present)
             trunInfo->sample_size = (UInt32 *)malloc(trunInfo->sample_count*sizeof(UInt32));
-        else
-            trunInfo->sample_size = NULL;
+        //else  //use defaults then
+        //    trunInfo->sample_size = NULL;
 
         //if(trunInfo->sample_flags_present)
             trunInfo->sample_flags = (UInt32 *)malloc(trunInfo->sample_count*sizeof(UInt32));
-        //else
+        //else  //use defaults then
         //    trunInfo->sample_flags = NULL;
 
         //if(trunInfo->sample_composition_time_offsets_present)
@@ -2510,6 +2516,8 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
         
         if(trunInfo->sample_size_present)
             BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_size[i], offset, &offset ) );
+		else
+			trunInfo->sample_size[i] = trafInfo->default_sample_size;
 
         if(trunInfo->sample_flags_present)
             BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_flags[i], offset, &offset ) );
