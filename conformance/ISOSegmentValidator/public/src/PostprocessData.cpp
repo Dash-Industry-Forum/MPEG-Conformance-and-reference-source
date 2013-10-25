@@ -740,6 +740,7 @@ void checkSegmentStartWithSAP(int startWithSAP, MovieInfoRec *mir)
                                 else
                                     errprint("MPD startWithSAP %d, while SAP type found %d (> @startWithSAP) for track ID %d for segement %d\n",startWithSAP,smallestSAPType,mir->tirList[i].trackID,segmentCount);
                             }
+                            mir->moofInfo[j].announcedSAP = true;
                         }
                         segmentStarted = false;
                     }
@@ -995,6 +996,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
                                         }
                                         
                                         SAPFound = true;
+                                        moof->announcedSAP = true;
                                         //printf("SAP found with presentation time %Lf \n",samplePresentationTime);
                                     }
 
@@ -1047,6 +1049,88 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
     
 	return noErr;
     
+}
+
+void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir)
+{
+    UInt64 initSize = 0;
+
+    //Find initialization information size, we remove initialization from this, otherwise this becomes too complex and confusing: initialization info is necessary for random access but fetching this is a clearly separate part of the process (most often if not always this is a 2-step fetch)
+    for (int i = 0; i < cnt; i++) 
+    {
+        if (list[i].type == 'moov')
+        {
+            initSize = list[i].offset + list[i].size;
+        }
+    }
+    if(initSize == 0)
+    {
+        errprint("Program could not find initialization information, exiting!!");
+        exit(-1);
+    }
+    
+    for(int i = 0 ; i < mir->numTIRs ; i++)
+    {
+        TrackInfoRec *tir = &(mir->tirList[i]);
+        UInt64 bufferFullness = (UInt64)((long double)vg.bandwidth)*vg.minBufferTime;  //bits (not Bytes)
+        bool trackNonConforming = false;
+        UInt64 lastOffset = initSize;
+        //fprintf(stderr,"Buffered bytes: %Lf\n",(UInt64)((long double)vg.bandwidth)*vg.minBufferTime/8.0);
+                
+        for(UInt32 j = 0 ; j < mir->numFragments ; j++)
+        {
+            MoofInfoRec *moof = &mir->moofInfo[j];
+
+            UInt64 offset = moof->offset - initSize;
+            
+            if(moof->announcedSAP && bufferFullness > (UInt64)(vg.bandwidth*vg.minBufferTime)) //There is no buffer overflow for DASH buffer model, only case is on a SAP, as DASH spec. defines the requiremnt that the playback could be from any SAP and at the SAP, the buffer fullness is bandwidth*minBufferTime
+                bufferFullness = (UInt64)((long double)vg.bandwidth)*vg.minBufferTime;
+            
+            for(UInt32 k = 0; k < moof->numTrackFragments ; k++)
+            {
+                if(moof->trafInfo[k].track_ID == tir->trackID && moof->trafInfo[k].numTrun > 0) //Assuming 'trun' cannot be empty, 14496-12 version 4 does not indicate such a possiblity.
+                {
+                    for(UInt32 l = 0 ; l < moof->trafInfo[k].numTrun ; l++)
+                    {
+                        if(moof->trafInfo[k].trunInfo[l].data_offset_present)
+                            offset = moof->offset - initSize + moof->trafInfo[k].trunInfo[l].data_offset;
+                        else if(l == 0)
+                            errprint("data_offset absent for the first run of fragment number %d (absolute moof file offset %lld), unexpected!\n",k+1,moof->offset);
+                        
+                        for(UInt32 m = 0 ; m < moof->trafInfo[k].trunInfo[l].sample_count ; m++)
+                        {            
+                            //bool sample_is_non_sync_sample = (moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000 >> 16) != 0;
+                            //bool sample_is_SAP = !sample_is_non_sync_sample || moof->trafInfo[k].trunInfo[l].sap3[m] || moof->trafInfo[k].trunInfo[l].sap4[m];
+                                
+                            offset += moof->trafInfo[k].trunInfo[l].sample_size[m];
+
+                            UInt64 dataSizeToRemove = offset - lastOffset;
+                            //fprintf(stderr,"Size to remove: %lld, Buffer Fullness %Lf, SAP %d, duration %Lf\n",dataSizeToRemove,((long double)bufferFullness)/8.0,moof->announcedSAP,((long double)moof->trafInfo[k].trunInfo[l].sample_duration[m]/(long double)tir->mediaTimeScale));
+
+                            lastOffset = offset;
+
+                            if(dataSizeToRemove*8 > bufferFullness)   //Bufferfullness is in bits
+                            {
+                                errprint("Buffer underrun conformance error: first (and only one reported here) for sample %d of run %d of track fragment %d of fragment %d of track id %d (sample absolute file offset %lld, fragment absolute file offset %lld)\n",m+1,l+1,k+1,j+1,tir->trackID,offset - moof->trafInfo[k].trunInfo[l].sample_size[m] + initSize, moof->offset);
+                                trackNonConforming = true;
+                                break;
+                            }
+
+                            bufferFullness -= (dataSizeToRemove*8);
+
+                            bufferFullness += (UInt64)((long double)vg.bandwidth*((long double)moof->trafInfo[k].trunInfo[l].sample_duration[m]/(long double)tir->mediaTimeScale));
+                        }
+                        if(trackNonConforming) break;
+                    }
+                    if(trackNonConforming) break;
+                }
+                if(trackNonConforming) break;
+            }
+            if(trackNonConforming) break;
+        }
+    }
+
+    return;
 }
 
 

@@ -278,6 +278,8 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
    {
         processSAP34(vg.mir);
         processIndexingInfo(vg.mir);
+        if(vg.minBufferTime != -1)
+            processBuffering(cnt,list,vg.mir);
         logLeafInfo(vg.mir);
    }
 	
@@ -1716,6 +1718,7 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
     moofInfo->numTrackFragments = 0;
     moofInfo->processedTrackFragments = 0;
     moofInfo->firstFragmentInSegment = false;
+    moofInfo->announcedSAP = false;
     moofInfo->samplesToBePresented = true;
 
     for(i = 0 ;  i < mir->numTIRs ; i++)

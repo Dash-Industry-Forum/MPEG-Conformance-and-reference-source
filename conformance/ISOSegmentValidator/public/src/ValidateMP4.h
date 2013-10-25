@@ -447,6 +447,7 @@ typedef struct {
     UInt32 processedTrackFragments;
     Boolean firstFragmentInSegment;
     Boolean samplesToBePresented;    //Is there any sample to be presented?
+    Boolean announcedSAP;   //For @minBufferTime/@bandwidth checks
     
     Boolean *compositionInfoMissingPerTrack;
     
@@ -653,6 +654,8 @@ typedef struct {
     bool    checkSegAlignment;
     bool    checkSubSegAlignment;
     int  startWithSAP;
+    long double  minBufferTime;
+    SInt64  bandwidth;
     bool    isoLive;
     bool    isoondemand;
     bool    isomain;
