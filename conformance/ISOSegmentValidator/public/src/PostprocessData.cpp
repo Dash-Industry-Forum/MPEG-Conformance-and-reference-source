@@ -324,7 +324,7 @@ void estimatePresentationTimes(MovieInfoRec *mir)
 
                                  if(tir->elstInfo[e].mediaTime > 0)
                                  {
-                                     if(sampleCompositionTime >= tir->elstInfo[e].mediaTime && sampleCompositionTime < (tir->elstInfo[e].mediaTime + (SInt64)tir->elstInfo[e].duration))
+                                     if(sampleCompositionTime >= tir->elstInfo[e].mediaTime && (tir->elstInfo[e].duration == 0 || sampleCompositionTime < (tir->elstInfo[e].mediaTime + (SInt64)tir->elstInfo[e].duration)))
                                      {
                                         moof->trafInfo[k].trunInfo[l].samplePresentationTime[m] = 0 - (tir->elstInfo[e].mediaTime - presentationTime);  //Save the delta in: presentationTime = CompositionTime - (editMediaTime_i - presntationDuration)
                                         moof->trafInfo[k].trunInfo[l].sampleToBePresented[m] = true;
@@ -334,7 +334,7 @@ void estimatePresentationTimes(MovieInfoRec *mir)
                                         moof->trafInfo[k].trunInfo[l].sampleToBePresented[m] = false;
                                  }
                                  else
-                                     moof->trafInfo[k].trunInfo[l].sampleToBePresented[m] = false;
+                                     ;//Nothing related to conformance, sampleToBePresented is initialized as false: moof->trafInfo[k].trunInfo[l].sampleToBePresented[m] = false;
 
                                  cummulatedDuration += moof->trafInfo[k].trunInfo[l].sample_duration[m];
                              }
