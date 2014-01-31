@@ -96,6 +96,10 @@ and conditions in their respective submissions.
 #ifndef _SRC_VALIDATE_MP4_H_
 #define _SRC_VALIDATE_MP4_H_
 
+#define _CRT_SECURE_NO_DEPRECATE
+//void myexit(int num);
+//#define exit myexit
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -626,6 +630,12 @@ typedef struct{
         UInt32 volHeight;
 } PartialVideoSC;
 
+// to process file offset info
+typedef struct{
+	UInt64 offset;
+	UInt64 sizeRemoved;
+} OffsetInfo;
+
 
 // Validate Globals
 typedef struct {
@@ -668,6 +678,9 @@ typedef struct {
     unsigned int  *numControlLeafs;
     LeafInfo **controlLeafInfo;
     TrackTypeInfo *trackTypeInfo;
+
+	unsigned int numOffsetEntries;
+	OffsetInfo *offsetEntries;
 
 	// -----
 	atompathType atompath;
@@ -735,6 +748,7 @@ void sampleprinthexdata(char *dataP, UInt32 size);
 void sampleprinthexandasciidata(char *dataP, UInt32 size);
 void toggleprintatom( Boolean onOff );
 void loadLeafInfo(char *leafInfoFileName);
+void loadOffsetInfo(char *offsetsFileName);
 void toggleprintatomdetailed( Boolean onOff );
 void toggleprintsample( Boolean onOff );
 void copyCharsToStr( char *chars, char *str, UInt16 count );
@@ -955,6 +969,8 @@ OSErr Validate_iods_OD_Bits( Ptr dataP, unsigned long dataSize, Boolean fileForm
 
 int FindAtomOffsets( atomOffsetEntry *aoe, UInt64 startOffset, UInt64 maxOffset, 
 			long *atomCountOut, atomOffsetEntry **atomOffsetsOut );
+UInt64 getAdjustedFileOffset(UInt64 offset64);
+UInt64 inflateOffset(UInt64 offset64);
 int GetFileDataN64( atomOffsetEntry *aoe, void *dataP, UInt64 offset64, UInt64 *newoffset64 );
 int GetFileDataN32( atomOffsetEntry *aoe, void *dataP, UInt64 offset64, UInt64 *newoffset64 );
 int GetFileDataN16( atomOffsetEntry *aoe, void *dataP, UInt64 offset64, UInt64 *newoffset64 );
@@ -1083,7 +1099,7 @@ OSErr ValidateAtomOfType( OSType theType, long flags, ValidateAtomTypeProcPtr va
 		long cnt, atomOffsetEntry *list, void *refcon );
 
 #define FieldMustBe( num, value, errstr ) \
-	do { if ((num) != (value)) { err = badAtomErr; errprint(errstr "\n", (value), num); }} while (false)
+do { if ((num) != (value)) { err = badAtomErr; warnprint(errstr "\n", (value), num); } } while (false)
 
 #define FieldCheck( _condition_, errstr ) \
 	do { if (!(_condition_)) { err = badAtomErr; errprint(errstr "\n"); }} while (false)

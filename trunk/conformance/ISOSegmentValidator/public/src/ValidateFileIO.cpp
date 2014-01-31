@@ -95,7 +95,44 @@ and conditions in their respective submissions.
 
 #include "ValidateMP4.h"
 
+UInt64 getAdjustedFileOffset(UInt64 offset64)
+{
+	UInt64 adjustedOffset = offset64;
 
+	if (vg.numOffsetEntries > 0)
+	{
+		unsigned int index = 0;
+		for (index = 0; offset64 > vg.offsetEntries[index].offset; index++)
+		{
+			adjustedOffset -= vg.offsetEntries[index].sizeRemoved;
+		}
+		if (index > 0)
+			if (offset64 <= (vg.offsetEntries[index - 1].offset + vg.offsetEntries[index - 1].sizeRemoved-1))
+			{
+				fprintf(stderr, "Program requested infomration at offset %llu, which is in a removed region at index %d (offset: %llu, removed size: %llu), exiting!", offset64, index, vg.offsetEntries[index - 1].offset, vg.offsetEntries[index - 1].sizeRemoved);
+				exit(-1);
+			}
+	}
+
+	return adjustedOffset;
+}
+
+UInt64 inflateOffset(UInt64 offset64)
+{
+	UInt64 adjustedOffset = offset64;
+
+	if (vg.numOffsetEntries > 0)
+	{
+		unsigned int index = 0;
+
+		for (index = 0; adjustedOffset >= vg.offsetEntries[index].offset; index++)
+		{
+			adjustedOffset += vg.offsetEntries[index].sizeRemoved;
+		}
+	}
+
+	return adjustedOffset;
+}
 //==========================================================================================
 
 int GetFileData( atomOffsetEntry *aoe, void *dataP, UInt64 offset64, UInt64 size64, UInt64 *newoffset64 )
@@ -110,8 +147,8 @@ int GetFileData( atomOffsetEntry *aoe, void *dataP, UInt64 offset64, UInt64 size
 		err = noCanDoErr;
 		goto bail;
 	}
-	
-	err = fseek( vg.inFile, offset64, SEEK_SET );
+    
+	err = fseek(vg.inFile, getAdjustedFileOffset(offset64), SEEK_SET);
 	if (err) goto bail;
 	
 	amtRead = fread( dataP, 1, size, vg.inFile );
@@ -122,7 +159,7 @@ int GetFileData( atomOffsetEntry *aoe, void *dataP, UInt64 offset64, UInt64 size
 
 	if (newoffset64) *newoffset64 = offset64 + size;
 
-    {
+    /*{
         static int first = 1, count = 0;
         static FILE* dbg;
 
@@ -156,7 +193,7 @@ int GetFileData( atomOffsetEntry *aoe, void *dataP, UInt64 offset64, UInt64 size
         fclose(dbg);
         }
         first = 0;
-    }
+    }*/
 
 bail:
 	return err;
@@ -425,7 +462,7 @@ int GetFileStartCode( atomOffsetEntry *aoe, UInt32 *startCode, UInt64 offset64, 
 		goto bail;
 	}
 	
-	err = fseek( vg.inFile, offset64, SEEK_SET );
+	err = fseek(vg.inFile, getAdjustedFileOffset(offset64), SEEK_SET);
 	if (err) goto bail;
 	
 	bits = fgetc( vg.inFile ); curoffset++;
