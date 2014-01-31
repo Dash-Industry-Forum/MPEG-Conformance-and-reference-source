@@ -93,12 +93,15 @@ and conditions in their respective submissions.
      Test Tools it finds to be infringing or otherwise problematical.
 */
 
-
-
 #include "ValidateMP4.h"
 #if STAND_ALONE_APP
 	#include "console.h"
 #endif
+void myexit(int num)
+{
+	fprintf(stderr, "Exiting with code %d\n", num);
+	getchar();
+}
 
 #if 1
 #define myTAB "  "
@@ -181,9 +184,12 @@ int main(void)
 	int gotInputFile = false;
     bool gotSegmentInfoFile = false;
     bool gotleafInfoFile = false;
+    bool gotOffsetFile = false;
+	bool logConsole = false;
 	int err;
 	char gInputFileFullPath[1024];
 	char leafInfoFileName[1024];
+	char offsetsFileName[1024];
     char sapType[1024];
     char temp[1024];
 	int usedefaultfiletype = true;
@@ -218,6 +224,7 @@ int main(void)
     vg.startWithSAP = -1;
     vg.dash264base = false;
     vg.dash264enc = false;
+    vg.numOffsetEntries = 0;
 		
 	// Check the parameters
 	for( argn = 1; argn < argc; argn++ )
@@ -290,8 +297,12 @@ int main(void)
                 getNextArgStr( &sapType, "startwithsap" );vg.startWithSAP = atoi(sapType);
         } else if ( keymatch( arg, "bss", 3 ) ) {
                 vg.bss = true; vg.checkSegAlignment = true; //The conditions required for setting the @segmentAlignment attribute to a value other than 'false' for the Adaptation Set are fulfilled.
-        } else if ( keymatch( arg, "leafinfo", 1 ) ) {
+        } else if ( keymatch( arg, "leafinfo", 8 ) ) {
                 getNextArgStr( &leafInfoFileName, "leafinfo" ); gotleafInfoFile = true;
+		} else if ( keymatch( arg, "offsetinfo", 9 ) ) {
+				getNextArgStr( &offsetsFileName, "offsetinfo" ); gotOffsetFile = true;
+		} else if (keymatch(arg, "logconsole", 10)) {
+			logConsole = true;
         } else if ( keymatch( arg, "dash264base", 11 ) ) {
                 vg.dash264base = true;
         } else if ( keymatch( arg, "dash264enc", 10 ) ) {
@@ -311,6 +322,17 @@ int main(void)
 
 	//=====================
 	// Process input parameters
+
+	if (logConsole)
+	{
+		FILE * tempfp = freopen("stdout.txt", "w", stdout);
+		if (tempfp == NULL)
+			fprintf(stderr, "Error creating redirect file stdout.txt!\n");
+
+		tempfp = freopen("stderr.txt", "w", stderr);
+		if (tempfp == NULL)
+			fprintf(stderr, "Error creating redirect file stderr.txt!\n");
+	}
 	
 	if ((usedefaultfiletype && (vg.filetypestr[0] == 0)) ||				// default to mp4
 		      (strcmp(vg.filetypestr, "mp4") == 0)) {
@@ -392,11 +414,15 @@ int main(void)
 
 	fprintf(stdout,"\n\n\n<!-- Source file is '%s' -->\n", gInputFileFullPath);
 
+	if (gotOffsetFile)
+		loadOffsetInfo(offsetsFileName);
+
 	vg.inFile = infile;
 	vg.inOffset = 0;
 	err = fseek(infile, 0, SEEK_END);
 	if (err) goto bail;
-	vg.inMaxOffset = ftell( infile );
+	UInt64 tttemp = ftell(infile);
+	vg.inMaxOffset = inflateOffset(ftell(infile));
 	if (vg.inMaxOffset < 0) {
 		err = vg.inMaxOffset;
 		goto bail;
@@ -505,11 +531,11 @@ int main(void)
 
 usageError:
 	fprintf( stderr, "Usage: %s [-filetype <type>] "
-								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap TYPE] [-level] [-bss] [-isolive] [-isoondemand] [-isomain] [-dynamic] [-dash264base] [-dash264enc]\n", "ValidateMP4" );
-	fprintf( stderr, "            [-samplenumber <number>] [-verbose <options> [-help] inputfile\n" );
-	fprintf( stderr, "    -a[tompath] <atompath> - limit certain operations to <atompath> (e.g. moov-1:trak-2)\n" );
+								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap TYPE] [-level] [-bss] [-isolive] [-isoondemand] [-isomain] [-dynamic] [-dash264base] [-dash264enc]", "ValidateMP4" );
+	fprintf( stderr, " [-samplenumber <number>] [-verbose <options>] [-offsetinfo <Offset Info File>] [-logconsole ] [-help] inputfile\n" );
+	fprintf( stderr, "    -a[tompath]      <atompath> - limit certain operations to <atompath> (e.g. moov-1:trak-2)\n" );
 	fprintf( stderr, "                     this effects -checklevel and -printtype (default is everything) \n" );
-	fprintf( stderr, "    -p[rinttype] <options> - controls output (combine options with +) \n" );
+	fprintf( stderr, "    -p[rinttype]     <options> - controls output (combine options with +) \n" );
 	fprintf( stderr, "                     atompath - output the atompath for each atom \n" );
 	fprintf( stderr, "                     atom - output the contents of each atom \n" );
 	fprintf( stderr, "                     fulltable - output those long tables (e.g. samplesize tables)  \n" );
@@ -517,12 +543,12 @@ usageError:
 	fprintf( stderr, "                                 (depending on the track type, this is the same as sampleraw) \n" );
 	fprintf( stderr, "                     sampleraw - output the samples in raw form \n" );
 	fprintf( stderr, "                     hintpayload - output payload for hint tracks \n" );
-	fprintf( stderr, "    -c[hecklevel] <level> - increase the amount of checking performed \n" );
+	fprintf( stderr, "    -c[hecklevel]    <level> - increase the amount of checking performed \n" );
 	fprintf( stderr, "                     1: check the moov container (default -atompath is ignored) \n" );
 	fprintf( stderr, "                     2: check the samples \n" );
 	fprintf( stderr, "                     3: check the payload of hint track samples \n" );
-	fprintf( stderr, "    -infofile <Segment Info File> - Offset file generated by assembler \n" );
-	fprintf( stderr, "    -leafinfo <Leaf Info File> - Information file generated by this software (named leafinfo.txt) for another representation, provided to run for cross-checks of alignment\n" );
+	fprintf( stderr, "    -infofile        <Segment Info File> - Offset file generated by assembler \n" );
+	fprintf( stderr, "    -leafinfo         <Leaf Info File> - Information file generated by this software (named leafinfo.txt) for another representation, provided to run for cross-checks of alignment\n" );
 	fprintf( stderr, "    -segal  -         Check Segment alignment based on <Leaf Info File>\n" );
 	fprintf( stderr, "    -ssegal -         Check Subegment alignment based on <Leaf Info File>\n" );
 	fprintf( stderr, "    -bandwidth        For checking @bandwidth/@minBufferTime\n" );
@@ -536,9 +562,11 @@ usageError:
 	fprintf( stderr, "    -bss              Make checks specific for bitstream switching\n" );
 	fprintf( stderr, "    -dash264base      Make checks specific for DASH264 Base IOP\n" );
 	fprintf( stderr, "    -dash264enc       Make checks specific for encrypted DASH264 content\n" );
-	fprintf( stderr, "    -s[amplenumber] <number> - limit sample checking or printing operations to sample <number> \n" );
-	fprintf( stderr, "                     most effective in combination with -atompath (default is all samples) \n" );
-
+	fprintf( stderr, "    -s[amplenumber]   <number> - limit sample checking or printing operations to sample <number> \n" );
+	fprintf( stderr, "                      most effective in combination with -atompath (default is all samples) \n" );
+	fprintf( stderr, "    -offsetinfo       <Offset Info File> - Partial file optimization information file: if the file has several byte ranges removed, this file provides the information as offset-bytes removed pairs\n");
+	fprintf( stderr, "    -logconsole       Redirect stdout and stderr to stdout.txt and stderr.txt, respectively \n");
+	
 	fprintf( stderr, "    -h[elp] - print this usage message \n" );
 
 
@@ -548,7 +576,12 @@ bail:
 	if (infile) {
 		fclose(infile);
 	}
-	
+	if (logConsole)
+	{
+		fclose(stdout);
+		fclose(stderr);
+	}
+
 	return err;
 }
 
@@ -590,6 +623,55 @@ void loadLeafInfo(char *leafInfoFileName)
     fclose(leafInfoFile);
 }
 
+void loadOffsetInfo(char *offsetsFileName)
+{
+    FILE *offsetsFile = fopen(offsetsFileName,"rt");
+    if(offsetsFile == NULL)
+    {
+        printf("Offset info file %s not found, exiting!\n",offsetsFileName);
+        exit(-1);
+    }
+
+	int numEntries = 0;
+    UInt64 dummy1, dummy2;
+
+	while(1)
+	{
+        int ret = fscanf(offsetsFile,"%llu %llu\n",&dummy1,&dummy2);
+        if(ret > 2)
+        {
+            printf("%d entries found on entry number %d, improper offset info file, exiting!\n",ret,numEntries+1);
+            exit(-1);
+        }
+        if(ret < 2)
+            break;
+        numEntries ++;
+	}
+    
+    if(numEntries == 0)
+    {
+        printf("No valid entries found in offset info file, exiting!\n");
+        exit(-1);
+    }
+    vg.numOffsetEntries = numEntries;
+
+    vg.offsetEntries = (OffsetInfo *)malloc(vg.numOffsetEntries*sizeof(OffsetInfo));
+    if(vg.offsetEntries == NULL)
+    {
+        printf("Failure to allocate %d offset entries, exiting!\n",vg.numOffsetEntries);
+        exit(-1);
+    }
+
+	rewind(offsetsFile);
+
+    for(unsigned int index = 0 ; index < vg.numOffsetEntries ; index ++)
+    {
+        fscanf(offsetsFile,"%llu %llu\n",&vg.offsetEntries[index].offset,&vg.offsetEntries[index].sizeRemoved);
+		index = index;
+    }
+    
+    fclose(offsetsFile);
+}
 
 //==========================================================================================
 
@@ -1181,7 +1263,7 @@ OSErr ValidateElementaryVideoStream( atomOffsetEntry *aoe, void *refcon )
 				goto nextone;
 			}
 			
-			dataSize = offset3 - offset1;
+			dataSize = (UInt32)(offset3 - offset1);
 			BAILIFNIL( dataP = (Ptr)malloc(dataSize), allocFailedErr );
 			err = GetFileData( vg.fileaoe, dataP, offset1, dataSize, nil );
 			
