@@ -7,9 +7,6 @@
 void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bool initializationSegment, UInt64 *segmentSizes, MovieInfoRec *mir)
 {
     UInt64 offset = 0;
-
-    bool psshInInit = false;
-    bool tencInInit = false;
     
     if(initializationSegment)
     {
@@ -25,12 +22,6 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                 {
                     errprint("mdat found in initialization segment: Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): The Initialization Segment shall not contain any media data with an assigned presentation time.\n");
                 }
-
-                if(vg.dash264enc && list[i].type == 'pssh')
-                    psshInInit = true;
-                
-                if(vg.dash264enc && list[i].type == 'tenc')
-                    tencInInit = true;
             }
         }
         
@@ -46,8 +37,6 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
         bool boxAtSegmentStartFound = false;
         bool sidxFoundInSegment = false;
         bool ssixFoundInSegment = false;
-        bool psshFoundInSegment = false;
-        bool tencFoundInSegment = false;
         
         for (int i = 0; i < cnt; i++) 
         {
@@ -86,12 +75,6 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
 							errprint("no ftyp box found, violating: Section 4.3 of ISO/IEC 14496-12:2012(E)\n");
 						}
 					}
-
-                    if(vg.dash264enc && list[i].type == 'pssh')
-                        psshFoundInSegment = true;
-                    
-                    if(vg.dash264enc && list[i].type == 'tenc')
-                        tencFoundInSegment = true;
                     
                     if(list[j].type == 'moof')
                     {                        
@@ -130,11 +113,11 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                 if(vg.dsms[index] && !moovInSegmentFound)
                     errprint("Segment %d has dsms compatible brand (Self-initializing media segment), however, moov box not found in this segment as expected.\n",index+1);
                 
-                if(vg.dash264enc && !psshInInit && !psshFoundInSegment)
-                    errprint("DASH264 DRM checks: No pssh found in initialization segment and also missing in media Segment %d.\n",index+1);
+                if(vg.dash264enc && !vg.psshInInit && !vg.psshFoundInSegment[index])
+                    errprint("DASH264 DRM checks: No pssh found in initialization segment and also missing in media Segment %d.\n",index);
 
-                if(vg.dash264enc && !tencInInit && !tencFoundInSegment)
-                    errprint("DASH264 DRM checks: No tenc found in initialization segment and also missing in media Segment %d.\n",index+1);
+                if(vg.dash264enc && !vg.tencInInit && !vg.tencFoundInSegment[index])
+                    errprint("DASH264 DRM checks: No tenc found in initialization segment and also missing in media Segment %d.\n",index);
             }
 
             if(boxAtSegmentStartFound == true)
@@ -272,7 +255,8 @@ void initializeLeafInfo(MovieInfoRec *mir, long numMediaSegments)
                     {
                         mir->tirList[i].leafInfo[mediaSegmentNumber - 1].lastMoofIndex = mir->moofInfo[k-1].index;
                         mir->tirList[i].leafInfo[mediaSegmentNumber - 1].lastPresentationTime = mir->moofInfo[k-1].moofLastPresentationTimePerTrack[i];
-                        mir->tirList[i].leafInfo[mediaSegmentNumber - 1].presentationEndTime = mir->moofInfo[k-1].moofPresentationEndTimePerTrack[i];
+                        mir->tirList[i].leafInfo[mediaSegmentNumber - 1].presentationEndTime = mir->moofInfo[k-1].moofPresentationEndTimePerTrack[i];                        
+                        mir->tirList[i].leafInfo[mediaSegmentNumber - 1].offset = mir->moofInfo[k-1].offset;
                     }
 
                     if((long)mediaSegmentNumber == (numMediaSegments - 1))
@@ -280,6 +264,7 @@ void initializeLeafInfo(MovieInfoRec *mir, long numMediaSegments)
                         mir->tirList[i].leafInfo[mediaSegmentNumber].lastMoofIndex = mir->moofInfo[mir->numFragments-1].index;
                         mir->tirList[i].leafInfo[mediaSegmentNumber].lastPresentationTime = mir->moofInfo[mir->numFragments-1].moofLastPresentationTimePerTrack[i];
                         mir->tirList[i].leafInfo[mediaSegmentNumber].presentationEndTime = mir->moofInfo[mir->numFragments-1].moofPresentationEndTimePerTrack[i];
+                        mir->tirList[i].leafInfo[mediaSegmentNumber].offset = mir->moofInfo[mir->numFragments-1].offset;
                     }
 
                     mediaSegmentNumber++;
@@ -941,6 +926,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
                     tir->leafInfo[leafsProcessed - 1].lastPresentationTime = mir->moofInfo[moofIndex - 1].moofLastPresentationTimePerTrack[trackIndex];
                     tir->leafInfo[leafsProcessed - 1].presentationEndTime = mir->moofInfo[moofIndex - 1].moofPresentationEndTimePerTrack[trackIndex];
                     tir->leafInfo[leafsProcessed - 1].lastMoofIndex = mir->moofInfo[moofIndex - 1].index;
+                    tir->leafInfo[leafsProcessed - 1].offset = mir->moofInfo[moofIndex - 1].offset;
                 }
 
                 if(leafsProcessed == (tir->numLeafs - 1))
@@ -948,6 +934,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
                     tir->leafInfo[leafsProcessed].lastPresentationTime = mir->moofInfo[mir->numFragments - 1].moofLastPresentationTimePerTrack[trackIndex];
                     tir->leafInfo[leafsProcessed].presentationEndTime= mir->moofInfo[mir->numFragments - 1].moofPresentationEndTimePerTrack[trackIndex];
                     tir->leafInfo[leafsProcessed].lastMoofIndex = mir->moofInfo[mir->numFragments - 1].index;
+                    tir->leafInfo[leafsProcessed].offset = mir->moofInfo[mir->numFragments - 1].offset;
                 }
                 
                 tir->leafInfo[leafsProcessed].firstInSegment = leafsProcessed > 0 ? checkSegmentBoundry(mir->moofInfo[moofIndex - 1].offset, absoluteOffset) : true;
@@ -1105,7 +1092,7 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir)
                             offset += moof->trafInfo[k].trunInfo[l].sample_size[m];
 
                             UInt64 dataSizeToRemove = offset - lastOffset;
-                            //fprintf(stderr,"Size to remove: %lld, Buffer Fullness %Lf, SAP %d, duration %Lf\n",dataSizeToRemove,((long double)bufferFullness)/8.0,moof->announcedSAP,((long double)moof->trafInfo[k].trunInfo[l].sample_duration[m]/(long double)tir->mediaTimeScale));
+                            //fprintf(stderr,"Size to remove: %lld, Buffer Fullness: %Lf, SAP: %d, duration: %Lf\n",dataSizeToRemove,((long double)bufferFullness)/8.0,moof->announcedSAP,((long double)moof->trafInfo[k].trunInfo[l].sample_duration[m]/(long double)tir->mediaTimeScale));
 
                             lastOffset = offset;
 

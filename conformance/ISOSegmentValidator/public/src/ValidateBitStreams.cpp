@@ -2485,7 +2485,7 @@ OSErr Validate_DecSpecific_Descriptor( BitBuffer *inbb, UInt8 ObjectType, UInt8 
 			break;
 	}
 	
-	if (bb->bits_left != 0) errprint("Validate DecoderSpecificInfo didn't use %ld bits\n", bb->bits_left);
+	if (bb->bits_left != 0) warnprint("Validate DecoderSpecificInfo didn't use %ld bits\n", bb->bits_left);
 
 	err = SkipBytes(inbb, size); if (err) goto bail;
 	

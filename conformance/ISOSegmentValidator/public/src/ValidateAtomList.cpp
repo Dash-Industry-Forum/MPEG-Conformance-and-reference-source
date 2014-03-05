@@ -1183,7 +1183,7 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		if (!majorBrandFoundAmongCompatibleBrands) {
 				
-				errprint("major brand ('%.4s') not also found in list of compatible brands\n", 
+				warnprint("major brand ('%.4s') not also found in list of compatible brands\n", 
 						     ostypetostr_r(majorBrand,tempstr2));
 			}
 
@@ -1311,7 +1311,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 			}
         
 		if (!msixFound && (vg.mir->numSidx > 0)) {
-				errprint("msix not found in styp of a segment, while indxing info found, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall carry 'msix' as a compatible brand \n");
+				warnprint("msix not found in styp of a segment, while indxing info found, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall carry 'msix' as a compatible brand \n");
 			}
 
         if (vg.isomain && (vg.startWithSAP <= 0 || vg.startWithSAP > 3) && !msixFound)
@@ -1362,11 +1362,17 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
     if(vg.initializationSegment && ((aoe->offset + aoe->size) > vg.segmentSizes[0]))
         errprint("Complete moov not found in initialization segment: Section 6.3.3. of ISO/IEC 23009-1:2012(E): The Initialization Segment shall contain an \"ftyp\" box, and a \"moov\" box\n");	
 
-	// find out how many tracks we have so we can allocate our struct
+	// find out how many tracks we have so we can allocate our struct. Also check if we have encryption-related boxes
 	for (i = 0; i < cnt; i++) {
 		entry = &list[i];
 		if (entry->type == 'trak') {
 			++trakCnt;
+		}
+		if (entry->type == 'pssh') {
+			vg.psshInInit = true;
+		}
+		if (entry->type == 'tenc') {
+			vg.tencInInit = true;
 		}
 	}
 	
@@ -1727,8 +1733,18 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
     }
     
 	for (i = 0; i < cnt; i++)
+	{
 		if (list[i].type == 'traf')
             moofInfo->numTrackFragments++;
+        
+		if (list[i].type == 'pssh') {
+			vg.psshFoundInSegment[getSegmentNumberByOffset(moofInfo->offset)] = true;
+		}
+        
+		if (list[i].type == 'tenc') {
+			vg.tencFoundInSegment[getSegmentNumberByOffset(moofInfo->offset)] = true;
+		}
+	}
 
     if(moofInfo->numTrackFragments > 0)
         moofInfo->trafInfo = (TrafInfoRec *)malloc(moofInfo->numTrackFragments*sizeof(TrafInfoRec));

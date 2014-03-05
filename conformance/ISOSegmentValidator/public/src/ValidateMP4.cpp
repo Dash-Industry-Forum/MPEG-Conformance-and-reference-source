@@ -454,6 +454,8 @@ int main(void)
                 vg.segmentSizes = (UInt64 *)malloc(sizeof(UInt64)*numSegments);
                 vg.segmentInfoSize = numSegments;
                 vg.simsInStyp = (bool *)malloc(sizeof(bool)*numSegments);
+                vg.psshFoundInSegment = (bool *)malloc(sizeof(bool)*numSegments);
+                vg.tencFoundInSegment = (bool *)malloc(sizeof(bool)*numSegments);
                 vg.dsms = (bool *)malloc(sizeof(bool)*numSegments);
             }
 
@@ -471,6 +473,8 @@ int main(void)
                 {
                     vg.segmentSizes[numSegments] = temp2;
                     vg.simsInStyp[numSegments] = false;
+                    vg.psshFoundInSegment[numSegments] = false;
+                    vg.tencFoundInSegment[numSegments] = false;
                     vg.dsms[numSegments] = false;
                 }
                 numSegments++;
@@ -500,10 +504,17 @@ int main(void)
         vg.segmentSizes[0] = aoe.size;
         vg.simsInStyp = (bool *)malloc(sizeof(bool)*1);
         vg.simsInStyp[0] = false;
+        vg.psshFoundInSegment = (bool *)malloc(sizeof(bool)*1);
+        vg.psshFoundInSegment[0] = false;
+        vg.tencFoundInSegment = (bool *)malloc(sizeof(bool)*1);
+        vg.tencFoundInSegment[0] = false;
         vg.dsms = (bool *)malloc(sizeof(bool)*1);
         vg.dsms[0] = false;
         vg.dashSegment = false;
     }
+    
+    vg.psshInInit = false;
+    vg.tencInInit = false;
     vg.processedStypes = 0;
     vg.accessUnitDurationNonIndexedTrack = 0;
 
