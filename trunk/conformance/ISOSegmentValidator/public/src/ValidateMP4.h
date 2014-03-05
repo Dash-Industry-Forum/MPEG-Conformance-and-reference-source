@@ -501,6 +501,7 @@ typedef struct {
     long double presentationEndTime;
     long double sidxReportedDuration;
     Boolean samplesToBePresented;
+	UInt64 offset;
 } LeafInfo;
 
 typedef struct {
@@ -656,6 +657,10 @@ typedef struct {
 
     UInt64 *segmentSizes;
     bool   *simsInStyp;
+    bool psshInInit;
+    bool tencInInit;
+	bool *psshFoundInSegment;
+	bool *tencFoundInSegment;
     bool   *dsms;
     long    segmentInfoSize;
     long    processedStypes;

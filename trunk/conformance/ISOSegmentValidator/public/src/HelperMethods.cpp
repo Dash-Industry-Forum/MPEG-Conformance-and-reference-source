@@ -1,5 +1,6 @@
 #include "HelperMethods.h"
 #include "PostprocessData.h"
+#include <math.h> 
 
 //==========================================================================================
 
@@ -152,6 +153,61 @@ bool checkSegmentBoundry(UInt64 offsetLow, UInt64 offsetHigh)
         
 }
 
+int getSegmentNumberByOffset(UInt64 offset)
+{
+    UInt64 currentBoundry = 0;
+
+    for(int i = 0 ; i < (vg.segmentInfoSize - 1) ; i++)
+    {
+        currentBoundry += vg.segmentSizes[i];
+        
+        if(offset >= currentBoundry )
+            return i;
+    }
+
+    return vg.segmentInfoSize;
+        
+}
+
+void logtempInfo(MovieInfoRec *mir)
+{
+    FILE *leafInfoFile = fopen("sidxinfo.txt","wt");
+    if(leafInfoFile == NULL)
+    {
+        printf("Error opening sidxinfo.txt, logging will not be done!\n");
+        return;
+    }
+    
+    fprintf(leafInfoFile,"%ld\n",mir->numTIRs);
+    
+    for(int i = 0 ; i < mir->numTIRs ; i++)
+    {
+        TrackInfoRec *tir = &(mir->tirList[i]);
+        fprintf(leafInfoFile,"%lu\n",tir->mediaTimeScale);
+    }
+        
+    
+    for(int i = 0 ; i < mir->numTIRs ; i++)
+    {
+        TrackInfoRec *tir = &(mir->tirList[i]);
+
+        UInt32 actualLeafCount = 0;
+
+        for(UInt32 j = 0 ; j < tir->numLeafs ; j++)
+            if(tir->leafInfo[j].hasFragments)
+                actualLeafCount ++;
+        
+        fprintf(leafInfoFile,"%u\n",(unsigned int)actualLeafCount);
+        
+        for(UInt32 j = 0 ; j < tir->numLeafs ; j++)
+            if(tir->leafInfo[j].hasFragments)
+                fprintf(leafInfoFile,"%d, %llu, %llu\n",tir->leafInfo[j].firstInSegment,(UInt64)roundl(tir->leafInfo[j].earliestPresentationTime*(long double)tir->mediaTimeScale),tir->leafInfo[j].offset);
+            
+    }
+
+    fclose(leafInfoFile);
+}
+
 void logLeafInfo(MovieInfoRec *mir)
 {
     FILE *leafInfoFile = fopen("leafinfo.txt","wt");
@@ -192,5 +248,9 @@ void logLeafInfo(MovieInfoRec *mir)
     }
 
     fclose(leafInfoFile);
+
+    logtempInfo(mir);
 }
+
+
 
