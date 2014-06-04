@@ -148,7 +148,7 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                     sidxFound = true;
 
                     if(!initializationSegment && !vg.msixInFtyp)
-                        errprint("msix not found in ftyp of a self-intializing segment %d, indxing info found, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall carry 'msix' as a compatible brand \n",index);
+                        warnprint("msix not found in ftyp of a self-intializing segment %d, indxing info found, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall carry 'msix' as a compatible brand \n",index);
                         
                 }
                 
@@ -156,7 +156,7 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                 {
                     ssixFoundInSegment = true;
                     if(!vg.simsInStyp[index])
-                        errprint("ssix found in Segment %d, but brand 'sims' not found in the styp for the segment, violating: Section 6.3.4.4. of ISO/IEC 23009-1:2012(E): It shall carry 'sims' in the Segment Type box ('styp') as a compatible brand.",index);
+                        warnprint("ssix found in Segment %d, but brand 'sims' not found in the styp for the segment, violating: Section 6.3.4.4. of ISO/IEC 23009-1:2012(E): It shall carry 'sims' in the Segment Type box ('styp') as a compatible brand.",index);
                 }
             }
 
@@ -756,7 +756,7 @@ void checkSegmentStartWithSAP(int startWithSAP, MovieInfoRec *mir)
 
 OSErr processIndexingInfo(MovieInfoRec *mir)
 {
-    UInt32 i, sidxIndex;
+    UInt32 i;
     UInt64 absoluteOffset;
     UInt64 referenceEPT;
     UInt64 lastLeafEPT = 0;
@@ -766,7 +766,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
     UInt64 segmentOffset = 0;
     
     int firstMediaSegment = vg.initializationSegment ? 1 : 0;
-	sidxIndex = 0;
+    
     for(long trackIndex = 0 ; trackIndex < mir->numTIRs ; trackIndex++)
     {
         for(i = firstMediaSegment ; i < (UInt32)vg.segmentInfoSize ; i++)
@@ -788,8 +788,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
                                     
                 if(mir->sidxInfo[j].offset >= segmentOffset && (previousSidx == NULL || previousSidx->offset < segmentOffset))
                 {
-                    firstSidxOfSegment = &mir->sidxInfo[j];
-					sidxIndex = j;
+                    firstSidxOfSegment = &mir->sidxInfo[j];                    
                     break;
                 }
             }
@@ -798,55 +797,29 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
             if(firstSidxOfSegment == NULL)
                 continue;
 
-            UInt32 ref_size = 0;
             long double segmentDurationSec = 0;
 
             for(UInt32 j = 0 ; j < mir->numFragments; j++)
             {
-				/*compute size of segment*/
-				if (!ref_size) {
-					for (UInt32 k=0; k<firstSidxOfSegment->reference_count; k++) {
-						ref_size += firstSidxOfSegment->references[k].referenced_size;
-					}
-				}
+				if (mir->moofInfo[j].offset >= segmentOffset && mir->moofInfo[j].offset < firstSidxOfSegment->offset)
+                   errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box shall be placed before any 'moof' box. Violated for fragment number %d\n", j + 1);
 
-                if(mir->moofInfo[j].offset >= segmentOffset && mir->moofInfo[j].offset < firstSidxOfSegment->offset)
-                    errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box shall be placed before any 'moof' box. Violated for fragment number %d\n",j+1);
-
-				/*check that segment indexing covers the entire moof's duration*/
-				if (segmentOffset + ref_size < mir->moofInfo[j].offset) {
-					long double diff = ABS(segmentDurationSec - firstSidxOfSegment->cumulatedDuration);		            
-					if(diff > (long double)1.0/(long double)mir->tirList[trackIndex].mediaTimeScale)
-						;//errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",i-firstMediaSegment+1,segmentDurationSec,firstSidxOfSegment->cumulatedDuration,mir->tirList[trackIndex].trackID,diff);
-
-					/*find next sidx*/
-					for(UInt32 k = sidxIndex ; k < mir->numSidx ; k++) {
-						if (mir->sidxInfo[k].offset >= segmentOffset + ref_size) {
-							sidxIndex = k;
-							ref_size = 0;
-		                    firstSidxOfSegment = &mir->sidxInfo[k];
-							segmentOffset = firstSidxOfSegment->offset;
-							segmentDurationSec = 0;
-							break;
-						}
-					}
-				}
 
                 if(mir->moofInfo[j].samplesToBePresented && mir->moofInfo[j].offset >= segmentOffset && mir->moofInfo[j].offset < (segmentOffset+vg.segmentSizes[i]) )
                 {
                     segmentDurationSec += (mir->moofInfo[j].moofPresentationEndTimePerTrack[trackIndex] - mir->moofInfo[j].moofEarliestPresentationTimePerTrack[trackIndex]);
                 }
             }
-			if (ref_size) {                        
-				long double diff = ABS(segmentDurationSec - firstSidxOfSegment->cumulatedDuration);
-	            
-				if(diff > (long double)1.0/(long double)mir->tirList[trackIndex].mediaTimeScale)
-					errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",i-firstMediaSegment+1,segmentDurationSec,firstSidxOfSegment->cumulatedDuration,mir->tirList[trackIndex].trackID,diff);
+            
+			long double diff = ABS(segmentDurationSec - firstSidxOfSegment->cumulatedDuration);
+            
+			if(diff > (long double)1.0/(long double)mir->tirList[trackIndex].mediaTimeScale)
+				errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",i-firstMediaSegment+1,segmentDurationSec,firstSidxOfSegment->cumulatedDuration,mir->tirList[trackIndex].trackID,diff);
 
-				segmentOffset += vg.segmentSizes[i];  
-			}
-        }
+			segmentOffset += vg.segmentSizes[i];  
+		}
     }
+
     
     if(vg.isoLive && mir->numTIRs > 1 && !vg.msixInFtyp)
         errprint("Check failed for DASH ISO Base media file format live profile, multiple streams yet no 'msix' compatible brand, violating Section 8.4.3. of ISO/IEC 23009-1:2012(E): Media Segments containing multiple Media Components shall comply with the formats defined in 6.3.4.3, i.e. the brand 'msix'\n");        
@@ -879,8 +852,10 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
 
                 if((double)referenceEPT/(double)mir->sidxInfo[i].timescale != (double)sidx->earliest_presentation_time/(double)sidx->timescale)
                     errprint("Referenced sidx earliest_presentation_time %lf does not match to reference EPT %lf for sidx number %d at reference count %d\n",(double)sidx->earliest_presentation_time/(double)sidx->timescale,(double)referenceEPT/(double)mir->sidxInfo[i].timescale,i+1,j);
-                
-                if((double)((long double)mir->sidxInfo[i].references[j].subsegment_duration/(long double)mir->sidxInfo[i].timescale) != (double)sidx->cumulatedDuration)
+
+                 long double diff = ABS((double)((long double)mir->sidxInfo[i].references[j].subsegment_duration/(long double)mir->sidxInfo[i].timescale) - (double)sidx->cumulatedDuration);
+                 
+                 if(diff > (long double)1.0/(long double)mir->tirList[trackIndex].mediaTimeScale)
                     errprint("Referenced sidx duration %Lf does not match to subsegment_duration %Lf for sidx number %d at reference count %d\n",sidx->cumulatedDuration,((long double)mir->sidxInfo[i].references[j].subsegment_duration/(long double)mir->sidxInfo[i].timescale),i+1,j);
 
 				if(mir->sidxInfo[i].references[j].starts_with_SAP > 0)
