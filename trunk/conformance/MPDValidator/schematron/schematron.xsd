@@ -10,19 +10,25 @@
 			<!-- R1.0 -->
 			<assert test="if (@type = 'dynamic' and not(@availabilityStartTime)) then false() else true()">If MPD is of type "dynamic" availabilityStartTime shall be defined.</assert>
 			<!-- R1.1 -->
-			<assert test="if (@type = 'static' and @timeShiftBufferDepth) then false() else true()">If MPD is of type "static" timeShiftBufferDepth shall not be defined.</assert>
+			<assert test="if (@type = 'dynamic' and not(@publishTime)) then false() else true()">If MPD is of type "dynamic" publishTime shall be defined.</assert>
 			<!-- R1.2 -->
-			<assert test="if (@type = 'static' and not(@mediaPresentationDuration)) then false() else true()">If MPD is of type "static" mediaPresentationDuration shall be defined.</assert>
+			<assert test="if (@type = 'static' and @timeShiftBufferDepth) then false() else true()">If MPD is of type "static" timeShiftBufferDepth shall not be defined.</assert>
 			<!-- R1.3 -->
-			<assert test="if (@type = 'static' and descendant::dash:Period[1]/@start and (years-from-duration(descendant::dash:Period[1]/@start) + months-from-duration(descendant::dash:Period[1]/@start) + days-from-duration(descendant::dash:Period[1]/@start) + hours-from-duration(descendant::dash:Period[1]/@start) + minutes-from-duration(descendant::dash:Period[1]/@start) +  seconds-from-duration(descendant::dash:Period[1]/@start)) > 0) then false() else true()">If MPD is of type "static" and the first period has a start attribute the start attribute shall be zero.</assert>
+			<assert test="if (@type = 'static' and not(@mediaPresentationDuration)) then false() else true()">If MPD is of type "static" mediaPresentationDuration shall be defined.</assert>
 			<!-- R1.4 -->
-			<assert test="if (not(@mediaPresentationDuration) and not(@minimumUpdatePeriod)) then false() else true()">If mediaPresentationDuration is not defined for the MPD minimumUpdatePeriod shall be defined or vice versa.</assert>
+			<assert test="if (@type = 'static' and descendant::dash:Period[1]/@start and (years-from-duration(descendant::dash:Period[1]/@start) + months-from-duration(descendant::dash:Period[1]/@start) + days-from-duration(descendant::dash:Period[1]/@start) + hours-from-duration(descendant::dash:Period[1]/@start) + minutes-from-duration(descendant::dash:Period[1]/@start) +  seconds-from-duration(descendant::dash:Period[1]/@start)) > 0) then false() else true()">If MPD is of type "static" and the first period has a start attribute the start attribute shall be zero.</assert>
 			<!-- R1.5 -->
-			<assert test="if (@type = 'static' and @minimumUpdatePeriod) then false() else true()">If MPD is of type "static" minimumUpdatePeriod shall not be defined.</assert>
+			<assert test="if (not(@mediaPresentationDuration) and not(@minimumUpdatePeriod)) then false() else true()">If mediaPresentationDuration is not defined for the MPD minimumUpdatePeriod shall be defined or vice versa.</assert>
 			<!-- R1.6 -->
-			<assert test="if (not(@profiles) or (contains(@profiles, 'urn:mpeg:dash:profile:isoff-on-demand:2011') or contains(@profiles, 'urn:mpeg:dash:profile:isoff-live:2011') or contains(@profiles, 'urn:mpeg:dash:profile:isoff-main:2011') or contains(@profiles, 'urn:mpeg:dash:profile:full:2011') or contains(@profiles, 'urn:mpeg:dash:profile:mp2t-main:2011') or contains(@profiles, 'urn:mpeg:dash:profile:mp2t-simple:2011'))) then true() else false()">The On-Demand profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-on-demand:2011". The live profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-live:2011". The main profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-main:2011". The full profile shall be identified by the URN "urn:mpeg:dash:profile:full:2011". The mp2t-main profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-main:2011". The mp2t-simple profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-simple:2011".</assert>
+			<assert test="if (@type = 'static' and @minimumUpdatePeriod) then false() else true()">If MPD is of type "static" minimumUpdatePeriod shall not be defined.</assert>
 			<!-- R1.7 -->
+			<assert test="if (not(@profiles) or (contains(@profiles, 'urn:mpeg:dash:profile:isoff-on-demand:2011') or contains(@profiles, 'urn:mpeg:dash:profile:isoff-live:2011') or contains(@profiles, 'urn:mpeg:dash:profile:isoff-main:2011') or contains(@profiles, 'urn:mpeg:dash:profile:full:2011') or contains(@profiles, 'urn:mpeg:dash:profile:mp2t-main:2011') or contains(@profiles, 'urn:mpeg:dash:profile:mp2t-simple:2011'))) then true() else false()">The On-Demand profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-on-demand:2011". The live profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-live:2011". The main profile shall be identified by the URN "urn:mpeg:dash:profile:isoff-main:2011". The full profile shall be identified by the URN "urn:mpeg:dash:profile:full:2011". The mp2t-main profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-main:2011". The mp2t-simple profile shall be identified by the URN "urn:mpeg:dash:profile:mp2t-simple:2011".</assert>
+			<!-- R1.8 -->
 			<assert test="if (not(contains(@profiles, 'urn:mpeg:dash:profile:isoff-on-demand:2011')) or not(@type) or @type='static') then true() else false()">For On-Demand profile, the MPD @type shall be "static".</assert>
+            <!-- R1.9 -->
+            <assert test="if (not(@mediaPresentationDuration) and not(@minimumUpdatePeriod) and not(dash:Period[last()]/@duration)) then false() else true()">If minimumUpdatePeriod is not present and the last period does not include the duration attribute the mediaPresentationDuration must be present.</assert>
+            <!-- R1.10 -->
+            <assert test="if (@type='dynamic' and not(@id)) then false() else true()">If the MPD type is dynamic, the id shall be present </assert>
 		</rule>
 	</pattern>
 	<pattern name="Period element">
@@ -40,6 +46,7 @@
 			<assert test="if (not(@id) and ancestor::dash:MPD/@type = 'dynamic') then false() else true()">If the MPD is dynamic the Period element shall have an id.</assert>
 			<!-- R2.5 -->
 			<assert test="if (not(descendant-or-self::dash:BaseURL) and not(descendant-or-self::dash:SegmentTemplate) and not(descendant-or-self::dash:SegmentList)) then false() else true()">At least one BaseURL, SegmentTemplate or SegmentList shall be defined in Period, AdaptationSet or Representation.</assert>
+            <assert test="if (@duration = 0 and count(child::dash:AdaptationSet)) then false() else true()">If the duration attribute is set to zero, there should only be a single AdaptationSet present.</assert>
 		</rule>
 	</pattern>
 	<pattern name="AdaptationSet element">
@@ -65,6 +72,7 @@
 			<assert test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()">At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in AdaptationSet.</assert>
 		</rule>
 	</pattern>
+
 	<pattern name="ContentComponent element">
 		<!-- R4.*: Check the conformance of ContentComponent -->
 		<rule context="dash:ContentComponent">
@@ -125,6 +133,8 @@
 		<rule context="dash:SegmentBase">
 			<!-- R9.0 -->
 			<assert test="if (not(@indexRange) and @indexRangeExact) then false() else true()">If indexRange is not present indexRangeExact shall not be present.</assert>
+            <!-- R9.1 -->
+            <assert test="if (@timeShiftBufferDepth) then if (@timeShiftbuffer &lt; dash:MPD/@timeShiftBufferDepth) then false() else true() else true()">The timeShiftBufferDepth shall not be smaller than timeShiftBufferDepth specified in the MPD element</assert>
 		</rule>
 	</pattern>
 	<pattern name="SegmentTimeline element">
@@ -179,4 +189,23 @@
 			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:outputChannelPositionList:2012') and not(count(tokenize(@value, ' ')) > 1)) then false() else true()">If URI urn:mpeg:dash:outputChannelPositionList:2012 is used the value attribute shall be a space-delimited list as defined in ISO/IEC 23001-8.</assert>
 		</rule>
 	</pattern>
+	
+	<pattern name="EventStream element">
+		<!-- R16.*: Check the conformance of SegmentList -->
+		<rule context="dash:EventStream">
+			<!-- R16.0 -->
+			<assert test="if (@actuate and not(@href)) then false() else true()">If href is not present actuate shall not be present.</assert>
+			<!-- R16.1 -->
+			<assert test="if (not(@schemeIdUri)) then false() else true()">schemeIdUri shall be present.</assert>
+		</rule>
+	</pattern>
+    
+      <pattern name="Subset element">
+        <rule context="dash:Subset">
+            <!--R17.1-->
+           <assert test="if (@id = preceding::dash:Subset/@id) then false() else true()">The id of each Subset shall be unique.</assert>
+        </rule>
+    </pattern>
+
+		
 </schema>

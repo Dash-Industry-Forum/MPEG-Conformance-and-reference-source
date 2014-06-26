@@ -6,7 +6,7 @@
 	xmlns:xlink="http://www.w3.org/1999/xlink"
 	xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
 	minBufferTime="PT10.00S"
-	 mediaPresentationDuration="PT3256S"
+	mediaPresentationDuration="PT3256S"
 	type="dynamic"  
 	profiles="urn:mpeg:dash:profile:isoff-main:2011">
 	<Period start="PT0S" id="1">

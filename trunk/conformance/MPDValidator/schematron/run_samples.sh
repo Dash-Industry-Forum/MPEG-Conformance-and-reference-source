@@ -47,3 +47,12 @@ java -jar ../saxon9.jar -versionmsg:off -s:examples/ex46.mpd -o:output/result_ex
 java -jar ../saxon9.jar -versionmsg:off -s:examples/ex47.mpd -o:output/result_ex47.xml -xsl:output/val_schema.xsl
 java -jar ../saxon9.jar -versionmsg:off -s:examples/ex48.mpd -o:output/result_ex48.xml -xsl:output/val_schema.xsl
 java -jar ../saxon9.jar -versionmsg:off -s:examples/ex49.mpd -o:output/result_ex49.xml -xsl:output/val_schema.xsl
+java -jar ../saxon9.jar -versionmsg:off -s:examples/ex40.mpd -o:output/result_ex50.xml -xsl:output/val_schema.xsl
+java -jar ../saxon9.jar -versionmsg:off -s:examples/ex41.mpd -o:output/result_ex51.xml -xsl:output/val_schema.xsl
+java -jar ../saxon9.jar -versionmsg:off -s:examples/ex42.mpd -o:output/result_ex52.xml -xsl:output/val_schema.xsl
+java -jar ../saxon9.jar -versionmsg:off -s:examples/ex43.mpd -o:output/result_ex53.xml -xsl:output/val_schema.xsl
+java -jar ../saxon9.jar -versionmsg:off -s:examples/ex44.mpd -o:output/result_ex54.xml -xsl:output/val_schema.xsl
+java -jar ../saxon9.jar -versionmsg:off -s:examples/ex45.mpd -o:output/result_ex55.xml -xsl:output/val_schema.xsl
+java -jar ../saxon9.jar -versionmsg:off -s:examples/ex46.mpd -o:output/result_ex56.xml -xsl:output/val_schema.xsl
+java -jar ../saxon9.jar -versionmsg:off -s:examples/ex47.mpd -o:output/result_ex57.xml -xsl:output/val_schema.xsl
+java -jar ../saxon9.jar -versionmsg:off -s:examples/ex48.mpd -o:output/result_ex58.xml -xsl:output/val_schema.xsl
