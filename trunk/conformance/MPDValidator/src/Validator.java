@@ -21,9 +21,11 @@
  * ***** END LICENSE BLOCK ***** */
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLDecoder;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -44,6 +46,21 @@ import org.xml.sax.SAXException;
  *	  
  * @author Markus Waltl <markus.waltl@itec.uni-klu.ac.at>
  */
+ 
+ /** Return codes for the MPEG-DASH Validator
+  * 1: You need at least JRE 1.6.0_17 to run this program!
+  * 2: Provide file to parse
+  * 3: Unable to get current path to executable
+  * 4: MPD validation not successful - DASH is not valid!
+  * 5: Malformed URL
+  * 6: SAXException occurred
+  * 7: IOException occurred
+  * 8: ParserConfigurationException occurred
+  * 9: XPathExpressionException occurred
+  * 10: XLinkException occurred
+  * 11: TransformerException occurred
+  * 12: Unexpected error
+  */
 public class Validator {
 	private static String system_os = "windows";
 	
@@ -55,7 +72,7 @@ public class Validator {
 	    // check for minimum java version (this piece of software can only
 	    // be run with JRE 1.6.0_17 or higher)
         String version = System.getProperty("java.version");
-        System.out.println("Your JRE version: " + version);
+        //System.out.println("Your JRE version: " + version);
         char minor = version.charAt(2);
         int pos = version.indexOf("_");
         int update = -1;
@@ -63,45 +80,87 @@ public class Validator {
         if (pos != -1) {
     	   try {
     		   update = Integer.valueOf(version.substring(pos+1));
-    	   } catch (NumberFormatException e) { }
+    	   } catch (NumberFormatException e) { 
+    		   pos = version.indexOf("-");
+    		   if (pos != -1) {
+    			   try {
+    	    		   update = Integer.valueOf(version.substring(pos+1));
+    	    	   } catch (NumberFormatException e2) {}	   
+    		   }
+    		   
+    	   }
         }
        
         if(minor < '6') {
     	   System.out.println("\nYou need at least JRE 1.6.0_17 to run this program!");
-    	   return;
+    	   System.out.println("\nValidation not successful!\n\n");
+    	   System.exit(1);
         }
         else {
     	   if (minor == '6' && update < 17) {
     		   System.out.println("\nYou need at least JRE 1.6.0_17 to run this program!");
+    		   System.out.println("\nValidation not successful!\n\n");
+    		   System.exit(1);
         	   return;
     	   }
         }
 		
-        if (args.length != 1) {
+        if (args.length < 1 || args.length > 2) {
    		   System.out.println("Needing a file to validate");
    		   printUsage();
-   		   return;
+   		   System.out.println("\nValidation not successful!\n\n");
+   		   System.exit(2);
 		}
+        
+        // we need the path to the directory we work in
+        // because of usage on web servers with different working directorise
+        try {
+        	String path = Validator.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+			path = URLDecoder.decode(path.substring(0, path.lastIndexOf("/") + 1), "UTF-8");
+			Definitions.DASHXSDNAME = path + Definitions.DASHXSDNAME;
+			Definitions.XSLTFILE = path + Definitions.XSLTFILE;
+		} catch (UnsupportedEncodingException e1) {
+			System.out.println("Unable to get current path to executable!");
+			System.out.println("\nValidation not successful!\n\n");
+			System.exit(3);
+		}
+        
+        Definitions.tmpOutputFile_ = System.getProperty("java.io.tmpdir");
+               
+        if ( !(Definitions.tmpOutputFile_.endsWith("/") || Definitions.tmpOutputFile_.endsWith("\\")) )
+        	Definitions.tmpOutputFile_ += System.getProperty("file.separator");
+        
+        Definitions.tmpOutputFile_ += "xlink_resolved.xml";
 
 		try {
 			String OS = System.getProperty("os.name").toLowerCase();
 			if (OS.indexOf("windows") == -1)
 				system_os = "unix";
-			
-			/*File f = new File(args[0]);
-			if (!f.exists()) {
-				System.out.println("\nFile does not exist!\n");
-				return;
-			}*/		
+
 			
 			boolean retVal = false;
+			
+			String pathToMPD = args[0];
+			URL pathToXSD = null;
+			if (args.length == 2 && args[1] != null && !args[1].equals("")) {
+				if (args[1].contains(":"))
+					pathToXSD = new URL(args[1]);
+				else {
+					File f = new File(args[1]);
+					
+					if (system_os.equals("windows"))
+						pathToXSD = new URL("file:///" + f.getAbsolutePath());
+					else
+						pathToXSD = new URL("file://" + f.getAbsolutePath());
+				}
+			}
 
 			// Step 1:
 			// XLink resolving and validation
 			System.out.println("\nStart XLink resolving\n=====================\n");
 			
 			XLinkResolver xlinkResolver = new XLinkResolver();
-			xlinkResolver.resolveXLinks(args[0]);	
+			xlinkResolver.resolveXLinks(pathToMPD);		
 			
 			System.out.println("XLink resolving successful\n\n");
 			
@@ -119,12 +178,12 @@ public class Validator {
 			// Step 2:
 			// MPD validation
 			System.out.println("\nStart MPD validation\n====================\n");
-			retVal = parseDASH(url);
+			retVal = parseDASH(url, pathToXSD);
 			if (retVal)
 				System.out.println("MPD validation successful - DASH is valid!\n\n");
 			else {
 				System.out.println("MPD validation not successful - DASH is not valid!\n\n");
-				return;
+				System.exit(4);
 			}
 			
 			// Step 3:
@@ -137,20 +196,37 @@ public class Validator {
 				System.out.println("Schematron validation not successful - DASH is not valid!\n\n");
 		} catch (MalformedURLException e) {
 			System.out.println("Malformed URL: " + e.getMessage());
+			System.out.println("\nValidation not successful!\n\n");
+			System.exit(5);
 		} catch (SAXException e) {
 			System.out.println("SAXException: " + e.getMessage());
+			System.out.println("\nValidation not successful!\n\n");
+			System.exit(6);
 		} catch (IOException e) {
 			System.out.println("IOException: " + e.getMessage());
+			System.out.println("\nValidation not successful!\n\n");
+			System.exit(7);
 		} catch (ParserConfigurationException e) {
 			System.out.println("ParserConfigurationException: " + e.getMessage());
+			System.out.println("\nValidation not successful!\n\n");
+			System.exit(8);
 		} catch (XPathExpressionException e) {
 			System.out.println("XPathExpressionException: " + e.getMessage());
+			System.out.println("\nValidation not successful!\n\n");
+			System.exit(9);
 		} catch (XLinkException e) {
 			System.out.println("XLinkException: " + e.getMessage());
+			System.out.println("\nValidation not successful!\n\n");
+			System.exit(10);
 		} catch (TransformerException e) {
 			System.out.println("TransformerException: " + e.getMessage());
+			System.out.println("\nValidation not successful!\n\n");
+			System.exit(11);
 		} catch (Exception e) {
 			System.out.println("Unexpected error: " + e.getMessage());
+			e.printStackTrace();
+			System.out.println("\nValidation not successful!\n\n");
+			System.exit(12);
 		} finally {
 			// delete the temporary file
 			File tmpFile = new File(Definitions.tmpOutputFile_);
@@ -159,19 +235,27 @@ public class Validator {
 		}
 	}
 
-	private static boolean parseDASH(URL pathToFile) throws URISyntaxException {
+	private static boolean parseDASH(URL pathToFile, URL pathToXSD) throws URISyntaxException {
 		JAXBContext jaxbContext;
 		try {
 			jaxbContext = JAXBContext.newInstance(MPD.class);
 			Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
 			SchemaFactory sf = SchemaFactory.newInstance(javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI);
-			File f = new File(Definitions.DASHXSDNAME);
-			if (!f.exists()) {
-				System.out.println("Schema cannot be found!");
-				throw new JAXBException("Schema not found");
-			}
+						
+			Schema schema = null;
 			
-			Schema schema = sf.newSchema(f);
+			if (pathToXSD != null)
+				schema = sf.newSchema(pathToXSD);
+			else {
+				// use default schema
+				File f = new File(Definitions.DASHXSDNAME);
+				if (!f.exists()) {
+					System.out.println("Schema cannot be found!");
+					throw new JAXBException("Schema not found");
+				}
+				
+				schema = sf.newSchema(f);
+			}
 			unmarshaller.setSchema(schema);
 			EventHandler e = new EventHandler();
 			unmarshaller.setEventHandler(e);
@@ -190,9 +274,10 @@ public class Validator {
 	}
 	
 	public static void printUsage() {
-		System.out.println("usage: Validator <file>");
+		System.out.println("usage: Validator <file> [<XSD>]");
 		System.out.println("=======================");
 		System.out.println("<file>   file to be validated");
+		System.out.println("<XSD>    XSD to be used for validation (optional)");
 		System.out.println("");
 	}
 

@@ -1,6 +1,6 @@
-2013-08-05
+2013-08-06
 ----------
-Reverted changes from the AMD.1 (w13497) for the IS of ISO/IEC 23009-2
+Reverted changes of AMD.1
 
 2013-06-07
 ----------
