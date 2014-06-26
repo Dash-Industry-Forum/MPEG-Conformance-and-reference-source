@@ -12,6 +12,7 @@ Properties:
   build   - location where to put the compiled files
   doc     - location where to put the doc files
   input   - input path for validating
+  schema  - input path for XSD schema to use
 
 Example for running:   ant run -Dinput=test.mpd
 	</description>
@@ -19,7 +20,8 @@ Example for running:   ant run -Dinput=test.mpd
   <property name="src" location="src"/>
   <property name="build" location="bin"/>
   <property name="doc" location="doc"/>
-	<property name="input" location="/path/to/input"/>
+  <property name="input" location="/path/to/input"/>
+  <property name="schema" value=""/>
 
   <target name="init">
     <!-- Create the time stamp -->
@@ -59,6 +61,7 @@ Example for running:   ant run -Dinput=test.mpd
 	<target name="run" depends="compile-java" description="runs the test file">
 		<java fork="true" classname="Validator" classpath="saxon9.jar:saxon9-dom.jar:xercesImpl.jar:${build}">
 			<arg value="${input}"/>
+			<arg value="${schema}"/>
 		</java>
 	</target>
 	

@@ -81,11 +81,6 @@ public class XLinkResolver {
 				
 				String link = extractXLinkHref(nNode);
 				if (link != null) {
-					// TODO: check if link is a path to an empty file
-					// if yes, skip the remote stuff and replace only XLink pointers
-					// or catch exception
-					// : note then only the XLink parameters are removed and everything else stays in this element
-					// : i.e., attributes and sub-elements
 					Document remoteDoc = parseXML(link);
 					
 					// check if referencing element type and referenced element type are the same
@@ -170,12 +165,12 @@ public class XLinkResolver {
 		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 		Document doc;
 		try {
-		  URL myURL = new URL(xmlURI);
-		  doc = dBuilder.parse(myURL.openStream());
+			URL myURL = new URL(xmlURI);
+			doc = dBuilder.parse(myURL.openStream());
 		}
 		catch ( MalformedURLException e ) {
 			doc = dBuilder.parse(xmlURI);
-		}		
+		}
 		doc.getDocumentElement().normalize();
 		
 		return doc;
