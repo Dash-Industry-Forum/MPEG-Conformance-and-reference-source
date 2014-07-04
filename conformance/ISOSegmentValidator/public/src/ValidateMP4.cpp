@@ -140,6 +140,7 @@ int main(void)
     vg.checkSubSegAlignment = false;
     vg.minBufferTime = -1;
     vg.bandwidth = -1;
+    vg.suggestBandwidth = false;
     vg.isoLive = false;
     vg.isoondemand = false;
     vg.dynamic = false;
@@ -208,6 +209,8 @@ int main(void)
             getNextArgStr( &temp, "minbuffertime" ); vg.minBufferTime = atof(temp);
         } else if ( keymatch( arg, "bandwidth", 9 ) ) {
             getNextArgStr( &temp, "bandwidth" ); vg.bandwidth = atoi(temp);
+        } else if ( keymatch( arg, "sbw", 3 ) ) {
+                vg.suggestBandwidth = true;
         } else if ( keymatch( arg, "isolive", 7 ) ) {
                 vg.isoLive = true;
         } else if ( keymatch( arg, "isoondemand", 7 ) ) {
@@ -489,6 +492,7 @@ usageError:
 	fprintf( stderr, "    -ssegal -         Check Subegment alignment based on <Leaf Info File>\n" );
 	fprintf( stderr, "    -bandwidth        For checking @bandwidth/@minBufferTime\n" );
 	fprintf( stderr, "    -minbuffertime    For checking @bandwidth/@minBufferTime\n" );
+	fprintf( stderr, "    -sbw              Suggest a good @bandwidth if the one provided is non-conforming\n" );
 	fprintf( stderr, "    -isolive          Make checks specific for media segments conforming to ISO Base media file format live profile\n" );
 	fprintf( stderr, "    -isoondemand      Make checks specific for media segments conforming to ISO Base media file format On Demand profile\n" );
 	fprintf( stderr, "    -isomain          Make checks specific for media segments conforming to ISO Base media file format main profile\n" );

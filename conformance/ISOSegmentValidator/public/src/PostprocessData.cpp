@@ -21,6 +21,8 @@ limitations under the License.
 #include <limits>
 #include "HelperMethods.h"
 #include "PostprocessData.h"
+#include <math.h> 
+#include <sstream>
 
 #define scaleToTIR(x) ((long double)(x)/(long double)tir->mediaTimeScale)
 
@@ -1035,7 +1037,8 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
 
 void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir)
 {
-    UInt64 initSize = 0;
+
+    SInt64 initSize = 0;
 
     //Find initialization information size, we remove initialization from this, otherwise this becomes too complex and confusing: initialization info is necessary for random access but fetching this is a clearly separate part of the process (most often if not always this is a 2-step fetch)
     for (int i = 0; i < cnt; i++) 
@@ -1053,54 +1056,90 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir)
     
     for(int i = 0 ; i < mir->numTIRs ; i++)
     {
-        TrackInfoRec *tir = &(mir->tirList[i]);
-        UInt64 bufferFullness = (UInt64)((long double)vg.bandwidth)*vg.minBufferTime;  //bits (not Bytes)
         bool trackNonConforming = false;
-        UInt64 lastOffset = initSize;
-        //fprintf(stderr,"Buffered bytes: %Lf\n",(UInt64)((long double)vg.bandwidth)*vg.minBufferTime/8.0);
-                
-        for(UInt32 j = 0 ; j < mir->numFragments ; j++)
+        long double currentBandwidth = (long double)vg.bandwidth;
+        long double bandwidthIncrement = 100;
+        std::stringstream errStr;
+        
+        do
         {
-            MoofInfoRec *moof = &mir->moofInfo[j];
+            TrackInfoRec *tir = &(mir->tirList[i]);
+            long double bufferFullness = currentBandwidth*vg.minBufferTime;  //bits (not Bytes)
+            SInt64 lastOffset = initSize;
+            SInt64 timeNowInTicks = (SInt64)(vg.minBufferTime*(long double)tir->mediaTimeScale);
 
-            UInt64 offset = moof->offset - initSize;
-            
-            if(moof->announcedSAP && bufferFullness > (UInt64)(vg.bandwidth*vg.minBufferTime)) //There is no buffer overflow for DASH buffer model, only case is on a SAP, as DASH spec. defines the requiremnt that the playback could be from any SAP and at the SAP, the buffer fullness is bandwidth*minBufferTime
-                bufferFullness = (UInt64)((long double)vg.bandwidth)*vg.minBufferTime;
-            
-            for(UInt32 k = 0; k < moof->numTrackFragments ; k++)
+            long double totalDataRemoved = 0;
+            long double totalBitsAdded = 0;
+            trackNonConforming = false;
+                    
+            for(UInt32 j = 0 ; j < mir->numFragments ; j++)
             {
-                if(moof->trafInfo[k].track_ID == tir->trackID && moof->trafInfo[k].numTrun > 0) //Assuming 'trun' cannot be empty, 14496-12 version 4 does not indicate such a possiblity.
+                MoofInfoRec *moof = &mir->moofInfo[j];
+
+                SInt64 offset = moof->offset - initSize;
+                
+                if(moof->announcedSAP && bufferFullness > currentBandwidth*vg.minBufferTime) //There is no buffer overflow for DASH buffer model, only case is on a SAP, as DASH spec. defines the requiremnt that the playback could be from any SAP and at the SAP, the buffer fullness is bandwidth*minBufferTime
                 {
-                    for(UInt32 l = 0 ; l < moof->trafInfo[k].numTrun ; l++)
+                    totalDataRemoved += ((bufferFullness - currentBandwidth*vg.minBufferTime)/8.0); //The clipped data, for debug information
+                    bufferFullness = currentBandwidth*vg.minBufferTime;
+                }
+                
+                for(UInt32 k = 0; k < moof->numTrackFragments ; k++)
+                {
+                    if(moof->trafInfo[k].track_ID == tir->trackID && moof->trafInfo[k].numTrun > 0) //Assuming 'trun' cannot be empty, 14496-12 version 4 does not indicate such a possiblity.
                     {
-                        if(moof->trafInfo[k].trunInfo[l].data_offset_present)
-                            offset = moof->offset - initSize + moof->trafInfo[k].trunInfo[l].data_offset;
-                        else if(l == 0)
-                            errprint("data_offset absent for the first run of fragment number %d (absolute moof file offset %lld), unexpected!\n",k+1,moof->offset);
-                        
-                        for(UInt32 m = 0 ; m < moof->trafInfo[k].trunInfo[l].sample_count ; m++)
-                        {            
-                            //bool sample_is_non_sync_sample = (moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000 >> 16) != 0;
-                            //bool sample_is_SAP = !sample_is_non_sync_sample || moof->trafInfo[k].trunInfo[l].sap3[m] || moof->trafInfo[k].trunInfo[l].sap4[m];
-                                
-                            offset += moof->trafInfo[k].trunInfo[l].sample_size[m];
+                        for(UInt32 l = 0 ; l < moof->trafInfo[k].numTrun ; l++)
+                        {
+                            if(moof->trafInfo[k].trunInfo[l].data_offset_present)
+                                offset = moof->offset - initSize + moof->trafInfo[k].trunInfo[l].data_offset;
+                            else if(l == 0)
+                                errprint("data_offset absent for the first run of fragment number %d (absolute moof file offset %lld), unexpected!\n",k+1,moof->offset);
+                            
+                            for(UInt32 m = 0 ; m < moof->trafInfo[k].trunInfo[l].sample_count ; m++)
+                            {            
+                                //bool sample_is_non_sync_sample = (moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000 >> 16) != 0;
+                                //bool sample_is_SAP = !sample_is_non_sync_sample || moof->trafInfo[k].trunInfo[l].sap3[m] || moof->trafInfo[k].trunInfo[l].sap4[m];
 
-                            UInt64 dataSizeToRemove = offset - lastOffset;
-                            //fprintf(stderr,"Size to remove: %lld, Buffer Fullness: %Lf, SAP: %d, duration: %Lf\n",dataSizeToRemove,((long double)bufferFullness)/8.0,moof->announcedSAP,((long double)moof->trafInfo[k].trunInfo[l].sample_duration[m]/(long double)tir->mediaTimeScale));
+								offset += moof->trafInfo[k].trunInfo[l].sample_size[m];
 
-                            lastOffset = offset;
+                                long double dataSizeToRemove = (long double)(offset - lastOffset);
+                                totalDataRemoved += dataSizeToRemove;
+                                //fprintf(stderr,"Total bits removed: %Lf, Size to remove: %Lf, Buffer Fullness: %Lf, average input rate: %Lf, duration: %Lf, sample %d, run %d, track fragment %d, fragment %d, track id %d (sample absolute offset %lld, fragment absolute file offset %lld)\n",totalDataRemoved,dataSizeToRemove,bufferFullness/8.0,totalBitsAdded/(((long double)timeNowInTicks/(long double)tir->mediaTimeScale)-0),((long double)moof->trafInfo[k].trunInfo[l].sample_duration[m]/(long double)tir->mediaTimeScale),m+1,l+1,k+1,j+1,tir->trackID,offset - moof->trafInfo[k].trunInfo[l].sample_size[m] + initSize, moof->offset);
 
-                            if(dataSizeToRemove*8 > bufferFullness)   //Bufferfullness is in bits
-                            {
-                                errprint("Buffer underrun conformance error: first (and only one reported here) for sample %d of run %d of track fragment %d of fragment %d of track id %d (sample absolute file offset %lld, fragment absolute file offset %lld)\n",m+1,l+1,k+1,j+1,tir->trackID,offset - moof->trafInfo[k].trunInfo[l].sample_size[m] + initSize, moof->offset);
-                                trackNonConforming = true;
-                                break;
+                                lastOffset = offset;
+
+                                if(dataSizeToRemove*8 > bufferFullness)   //Bufferfullness is in bits
+                                {
+                                    if(!trackNonConforming)
+                                    {
+                                        if(currentBandwidth == (long double)vg.bandwidth)
+                                            errStr << "Buffer underrun conformance error: first (and only one reported here) for sample " << m+1 << " of run " << l+1 <<" of track fragment " << k+1 << " of fragment " << j+1 <<" of track id " << tir->trackID << " (sample absolute file offset " << offset - moof->trafInfo[k].trunInfo[l].sample_size[m] + initSize << ", fragment absolute file offset " << moof->offset << ", bandwidth: " << (UInt64)currentBandwidth;
+
+                                        trackNonConforming = true;
+                                        break;
+                                    }
+                                    
+                                    long double finalBufferFullness = bufferFullness - dataSizeToRemove*8;
+                                    long double targetBitrate = (long double)(8*(offset - initSize))/((long double)timeNowInTicks/(long double)tir->mediaTimeScale); // Direct bitrate calculation
+                                    
+                                    //fprintf(stderr,"Recalculated: targetBitrate %Lf, byte offset %lld, time %lld: %Lf, total removed %Lf\n",targetBitrate,offset - initSize,timeNowInTicks,((long double)timeNowInTicks/(long double)tir->mediaTimeScale),totalDataRemoved,((long double)offset - initSize)-totalDataRemoved);
+
+                                    if(targetBitrate <= currentBandwidth)
+                                    {
+                                        ;//fprintf(stderr,"Program error: unexpected: calculated target bitrate %Lf for this non-conforming track (with buffer under-run) is less than or equal to its actual bandwidth %Lf , exiting!\n",targetBitrate,currentBandwidth);
+                                        //exit(-1);
+                                    }
+
+                                    //break;
+                                }
+
+                                bufferFullness -= (dataSizeToRemove*8);
+
+                                bufferFullness += (currentBandwidth*((long double)moof->trafInfo[k].trunInfo[l].sample_duration[m]/(long double)tir->mediaTimeScale));
+                                totalBitsAdded += (currentBandwidth*((long double)moof->trafInfo[k].trunInfo[l].sample_duration[m]/(long double)tir->mediaTimeScale));
+                                timeNowInTicks += moof->trafInfo[k].trunInfo[l].sample_duration[m];
                             }
-
-                            bufferFullness -= (dataSizeToRemove*8);
-
-                            bufferFullness += (UInt64)((long double)vg.bandwidth*((long double)moof->trafInfo[k].trunInfo[l].sample_duration[m]/(long double)tir->mediaTimeScale));
+                            if(trackNonConforming) break;
                         }
                         if(trackNonConforming) break;
                     }
@@ -1108,7 +1147,21 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir)
                 }
                 if(trackNonConforming) break;
             }
-            if(trackNonConforming) break;
+
+            if(trackNonConforming)
+            {
+                currentBandwidth += bandwidthIncrement;
+            }
+        }
+        while(trackNonConforming && vg.suggestBandwidth);
+
+        if(trackNonConforming || (currentBandwidth != (long double)vg.bandwidth))   //Latter means vg.suggestBandwidth is set and new bw is calculated
+        {
+            if(vg.suggestBandwidth)
+                errStr << ", estimated bandwidth: " << (UInt64)currentBandwidth;
+
+           errStr << ")\n";
+           errprint(errStr.str().c_str());
         }
     }
 
