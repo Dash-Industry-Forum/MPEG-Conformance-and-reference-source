@@ -59,7 +59,8 @@ Example for running:   ant run -Dinput=test.mpd
 	
 	
 	<target name="run" depends="compile-java" description="runs the test file">
-		<java fork="true" classname="Validator" classpath="saxon9.jar:saxon9-dom.jar:xercesImpl.jar:${build}">
+		<!-- Use "failonerror" to propagate any exit codes from the validator to ant -->
+		<java fork="true" failonerror="true" classname="Validator" classpath="saxon9.jar:saxon9-dom.jar:xercesImpl.jar:${build}">
 			<arg value="${input}"/>
 			<arg value="${schema}"/>
 		</java>
