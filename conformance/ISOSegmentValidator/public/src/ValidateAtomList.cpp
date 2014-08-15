@@ -948,7 +948,7 @@ OSErr Validate_mvex_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {
 			default:
-				warnprint("WARNING: unknown sample table atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: unknown mvex atom '%s'\n",ostypetostr(entry->type));
 				break;
 		}
 		
