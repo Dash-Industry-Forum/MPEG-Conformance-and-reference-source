@@ -54,7 +54,7 @@ Example for running:   ant run -Dinput=test.mpd
   <target name="compile-java" depends="init"
         description="compile the source" >
     <!-- Compile the java code from ${src} into ${build} -->
-    <javac srcdir="${src}" destdir="${build}" classpath="xercesImpl.jar"/>	
+    <javac srcdir="${src}" destdir="${build}" classpath="xercesImpl.jar" includeantruntime="false"/>
   </target>
 	
 	
