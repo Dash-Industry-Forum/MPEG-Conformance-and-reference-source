@@ -49,5 +49,10 @@ obj
 bin
 
 # Linux build artifacts
+*.a
+*.o
+.depend
+dash_mpeg2ts_validate
 dependencies
+h264_analyze
 
