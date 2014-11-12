@@ -82,6 +82,6 @@ $(OBJDIR)/%.o$(SUFFIX): $(ADDSRCDIR)/%.c | $(OBJDIR)
 $(OBJDIR):
 	@mkdir -p $@
 
-include $(DEPEND)
+-include $(DEPEND)
 
 

@@ -48,3 +48,6 @@ ipch/
 obj
 bin
 
+# Linux build artifacts
+dependencies
+
