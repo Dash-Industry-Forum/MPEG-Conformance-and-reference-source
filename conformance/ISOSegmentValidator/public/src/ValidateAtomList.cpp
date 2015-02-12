@@ -135,6 +135,12 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 						Validate_uuid_Atom, cnt, list, nil );
 					if (!err) err = atomerr;
 					break;
+					
+            case 'emsg':
+                    atomerr = ValidateAtomOfType( 'emsg', 0, 
+                        Validate_emsg_Atom, cnt, list, nil );
+                    if (!err) err = atomerr;
+                    break;
                     
             case 'moof':
                     if(!vg.mir->fragmented)

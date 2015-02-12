@@ -977,6 +977,7 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_sbgp_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_sgpd_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_emsg_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_tfdt_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon );
 

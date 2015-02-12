@@ -97,6 +97,10 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
 							errprint("no ftyp box found, violating: Section 4.3 of ISO/IEC 14496-12:2012(E)\n");
 						}
 					}
+					else if(list[j].type == 'emsg' && fragmentInSegmentFound)
+					{
+                        errprint("Found emsg after a moof box, violating: Section 5.10.3.3.1 of ISO/IEC 14496-12:2013(E): \"If present, any 'emsg' box shall be placed before any 'moof' box.\"\n");
+					}
                     
                     if(list[j].type == 'moof')
                     {                        
@@ -329,7 +333,7 @@ void estimatePresentationTimes(MovieInfoRec *mir)
                                  SInt64 sample_composition_time_offset = moof->trafInfo[k].trunInfo[l].version != 0 ? (SInt64)((Int32)moof->trafInfo[k].trunInfo[l].sample_composition_time_offset[m]) : (UInt32)moof->trafInfo[k].trunInfo[l].sample_composition_time_offset[m];
                                  SInt64 sampleCompositionTime = sample_composition_time_offset + (SInt64)moof->tfdt[i] + cummulatedDuration;
 
-                                 if(tir->elstInfo[e].mediaTime > 0)
+                                 if(tir->elstInfo[e].mediaTime >= 0)
                                  {
                                      if(sampleCompositionTime >= tir->elstInfo[e].mediaTime && (tir->elstInfo[e].duration == 0 || sampleCompositionTime < (tir->elstInfo[e].mediaTime + (SInt64)tir->elstInfo[e].duration)))
                                      {
@@ -1006,7 +1010,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
                         }
 
                     if(SAPFound != true)
-                        errprint("SAP not found for sidx number %d at reference count %d\n",i+1,j);
+                        errprint("SAP not found at the expected presentation time for sidx number %d at reference count %d\n",i+1,j);
     				
                 }
 

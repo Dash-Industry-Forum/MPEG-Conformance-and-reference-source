@@ -2068,7 +2068,7 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint("name =\"%s\"\n", vsdi.name);
 	atomprint("depth =\"%hd\"\n", vsdi.depth);
 	atomprint("clutID =\"%hd\"\n", vsdi.clutID);
-		FieldMustBeOneOf3( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4v' or 'avc1'", ('mp4v', 'avc1', 'encv') );
+		FieldMustBeOneOf4( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4v', 'avc1', 'encv', or 'hev1'", ('mp4v', 'avc1', 'encv', 'hev1') );
 		
 	FieldMustBe( sdh.resvd1, 0, "SampleDescription resvd1 must be %d not %d" );
 	FieldMustBe( sdh.resvdA, 0, "SampleDescription resvd1 must be %d not %d" );
@@ -2567,6 +2567,56 @@ OSErr Validate_sgpd_Atom( atomOffsetEntry *aoe, void *refcon )
 bail:
 	return err;
 
+
+}
+
+
+//==========================================================================================
+
+OSErr Validate_emsg_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+	OSErr err = noErr;
+	UInt32 version;
+	UInt32 flags;
+	UInt64 offset;
+	char *scheme_id_uri = nil;
+	char *value = nil;
+    UInt32  timescale;
+    UInt32  presentation_time_delta;
+    UInt32  event_duration;
+    UInt32  id;
+    UInt8  *message_data;    
+    //TrafInfoRec *trafInfo = (TrafInfoRec *)refcon;
+    
+	// Get version/flags
+	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+    
+    if(version != 0)
+        errprint("version = 0 for emsg box according to Section 5.10.3.3.3 of ISO/IEC 23009-1:2013(E)\n");
+        
+    if(flags != 0)
+        errprint("flags = 0 for emsg box according to Section 5.10.3.3.3 of ISO/IEC 23009-1:2013(E)\n");
+
+    BAILIFERR( GetFileCString( aoe, &scheme_id_uri, offset, aoe->maxOffset - offset, &offset ) );
+    
+    BAILIFERR( GetFileCString( aoe, &value, offset, aoe->maxOffset - offset, &offset ) );
+
+	// Get data 
+	BAILIFERR( GetFileDataN32( aoe, &timescale, offset, &offset ) );
+	
+	BAILIFERR( GetFileDataN32( aoe, &presentation_time_delta, offset, &offset ) );
+	
+	BAILIFERR( GetFileDataN32( aoe, &event_duration, offset, &offset ) );
+	
+	BAILIFERR( GetFileDataN32( aoe, &id, offset, &offset ) );
+
+	message_data = new UInt8[aoe->maxOffset - offset];
+	BAILIFERR( GetFileData( aoe,message_data, offset, aoe->maxOffset - offset , &offset ) );
+    
+    // All done
+	aoe->aoeflags |= kAtomValidated;
+bail:
+	return err;
 
 }
 
