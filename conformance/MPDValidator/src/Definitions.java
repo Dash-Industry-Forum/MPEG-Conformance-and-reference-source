@@ -40,5 +40,5 @@ public class Definitions {
 	// needed for Step 2 and 3: Schema validation and Schematron validation
 	//TODO: will maybe be replaced with remote schema!
 	public static String DASHXSDNAME = "schemas\\DASH-MPD.xsd";	
-	public static String XSLTFILE = "schematron\\output\\val_schema.xsl";
+	public static String XSLTFILE = "schematron\\output\\val_schema.xsl";	
 }

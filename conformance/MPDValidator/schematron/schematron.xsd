@@ -206,6 +206,13 @@
            <assert test="if (@id = preceding::dash:Subset/@id) then false() else true()">The id of each Subset shall be unique.</assert>
         </rule>
     </pattern>
-
+	
+	<pattern name="UTCTiming element">
+		<!-- R18.*: Check the conformance of UTCTiming -->
+		<rule context="dash:UTCTiming">
+            <!-- R18.1 -->
+			<assert test="if ((@schemeIdUri = 'urn:mpeg:dash:utc:ntp:2014') or (@schemeIdUri = 'urn:mpeg:dash:utc:sntp:2014') or (@schemeIdUri = 'urn:mpeg:dash:utc:http-head:2014') or (@schemeIdUri = 'urn:mpeg:dash:utc:http-xsdate:2014') or (@schemeIdUri = 'urn:mpeg:dash:utc:http-iso:2014') or (@schemeIdUri = 'urn:mpeg:dash:utc:http-ntp:2014') or (@schemeIdUri = 'urn:mpeg:dash:utc:direct:2014')) then true() else false()">@schemeIdUri for UTCTiming is not one of the 7 different types specified.</assert>
+		</rule>
+	</pattern>			
 		
 </schema>
