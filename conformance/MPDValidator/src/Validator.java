@@ -105,8 +105,8 @@ public class Validator {
     	   }
         }
 		
-        if (args.length < 1 || args.length > 2) {
-   		   System.out.println("Needing a file to validate");
+        if (args.length < 2 || args.length > 3) {
+   		   System.out.println("Needing a file to validate and intermediate file");
    		   printUsage();
    		   System.out.println("\nValidation not successful!\n\n");
    		   System.exit(2);
@@ -125,12 +125,7 @@ public class Validator {
 			System.exit(3);
 		}
         
-        Definitions.tmpOutputFile_ = System.getProperty("java.io.tmpdir");
-               
-        if ( !(Definitions.tmpOutputFile_.endsWith("/") || Definitions.tmpOutputFile_.endsWith("\\")) )
-        	Definitions.tmpOutputFile_ += System.getProperty("file.separator");
-        
-        Definitions.tmpOutputFile_ += "xlink_resolved.xml";
+	    Definitions.tmpOutputFile_ = args[1];	//Previously, this software was saving all temp files into java.io.tmpdir, so two parallel sessions could overwrite the same
 
 		try {
 			String OS = System.getProperty("os.name").toLowerCase();
@@ -142,11 +137,11 @@ public class Validator {
 			
 			String pathToMPD = args[0];
 			URL pathToXSD = null;
-			if (args.length == 2 && args[1] != null && !args[1].equals("")) {
-				if (args[1].contains(":"))
-					pathToXSD = new URL(args[1]);
+			if (args.length == 3 && args[2] != null && !args[2].equals("")) {
+				if (args[2].contains(":"))
+					pathToXSD = new URL(args[2]);
 				else {
-					File f = new File(args[1]);
+					File f = new File(args[2]);
 					
 					if (system_os.equals("windows"))
 						pathToXSD = new URL("file:///" + f.getAbsolutePath());
@@ -274,9 +269,10 @@ public class Validator {
 	}
 	
 	public static void printUsage() {
-		System.out.println("usage: Validator <file> [<XSD>]");
+		System.out.println("usage: Validator <file> <Resolved file> [<XSD>]");
 		System.out.println("=======================");
 		System.out.println("<file>   file to be validated");
+		System.out.println("<Resolved file>    Name (optionally including path) to store the intermediate xlink resolved file");
 		System.out.println("<XSD>    XSD to be used for validation (optional)");
 		System.out.println("");
 	}

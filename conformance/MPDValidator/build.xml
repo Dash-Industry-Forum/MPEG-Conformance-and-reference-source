@@ -12,6 +12,7 @@ Properties:
   build   - location where to put the compiled files
   doc     - location where to put the doc files
   input   - input path for validating
+  resolved - File (possibly including path) to place xlink resolved MPD 
   schema  - input path for XSD schema to use
 
 Example for running:   ant run -Dinput=test.mpd
@@ -21,6 +22,7 @@ Example for running:   ant run -Dinput=test.mpd
   <property name="build" location="bin"/>
   <property name="doc" location="doc"/>
   <property name="input" location="/path/to/input"/>
+  <property name="resolved" location="/xlink/resolved/file"/>
   <property name="schema" value=""/>
 
   <target name="init">
@@ -62,6 +64,7 @@ Example for running:   ant run -Dinput=test.mpd
 		<!-- Use "failonerror" to propagate any exit codes from the validator to ant -->
 		<java fork="true" failonerror="true" classname="Validator" classpath="saxon9.jar:saxon9-dom.jar:xercesImpl.jar:${build}">
 			<arg value="${input}"/>
+			<arg value="${resolved}"/>
 			<arg value="${schema}"/>
 		</java>
 	</target>
