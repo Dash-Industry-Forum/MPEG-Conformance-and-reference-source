@@ -34,8 +34,8 @@ UInt64 getAdjustedFileOffset(UInt64 offset64)
 		if (index > 0)
 			if (offset64 <= (vg.offsetEntries[index - 1].offset + vg.offsetEntries[index - 1].sizeRemoved-1))
 			{
-				fprintf(stderr, "Program requested infomration at offset %llu, which is in a removed region at index %d (offset: %llu, removed size: %llu), exiting!", offset64, index, vg.offsetEntries[index - 1].offset, vg.offsetEntries[index - 1].sizeRemoved);
-				exit(-1);
+			fprintf(stderr, "Program error! Requested infomration is at offset %llu, which is in a removed region at index %d (offset: %llu, removed size: %llu), exiting!", offset64, index, vg.offsetEntries[index - 1].offset, vg.offsetEntries[index - 1].sizeRemoved);
+			exit(-1);
 			}
 	}
 
