@@ -46,7 +46,11 @@
 			<assert test="if (not(@id) and ancestor::dash:MPD/@type = 'dynamic') then false() else true()">If the MPD is dynamic the Period element shall have an id.</assert>
 			<!-- R2.5 -->
 			<assert test="if (not(descendant-or-self::dash:BaseURL) and not(descendant-or-self::dash:SegmentTemplate) and not(descendant-or-self::dash:SegmentList)) then false() else true()">At least one BaseURL, SegmentTemplate or SegmentList shall be defined in Period, AdaptationSet or Representation.</assert>
-            <assert test="if (@duration = 0 and count(child::dash:AdaptationSet)) then false() else true()">If the duration attribute is set to zero, there should only be a single AdaptationSet present.</assert>
+            		<assert test="if (@duration = 0 and count(child::dash:AdaptationSet)) then false() else true()">If the duration attribute is set to zero, there should only be a single AdaptationSet present.</assert>
+			<!-- RD2.0	DASH264 -->
+			<assert test="if (contains(ancestor::dash:MPD/@profiles, 'urn:com:dashif:dash264') and dash:SegmentList) then false() else true()">DASH264 Section 3.2.2: "the Period.SegmentList element shall not be present" violated here </assert>
+			<!-- RD2.1	DASH264 -->
+			<assert test="if (contains(ancestor::dash:MPD/@profiles, 'urn:com:dashif:dash264') and (count(child::dash:AdaptationSet[@contentType='video']) > 0) and (count(descendant::dash:Role[@value='main'])=0)) then false() else true()"> DASH264 Section 3.2.2: "	If a Period contains multiple Adaptation Sets with value of the @contentType="video" then at least one Adaptation Set shall contain a Role el-ement $&lt;$Role scheme="urn:mpeg:dash:role:2011" value="main"&gt;" violated here</assert >
 		</rule>
 	</pattern>
 	<pattern name="AdaptationSet element">
@@ -70,6 +74,12 @@
 			<assert test="if (count(child::dash:Representation)=0) then false() else true()">An AdaptationSet shall have at least one Representation element.</assert>
 			<!-- R3.8 -->
 			<assert test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()">At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in AdaptationSet.</assert>
+			<!-- RD3.0	DASH264 -->
+			<assert test="if (contains(ancestor::dash:MPD/@profiles, 'urn:com:dashif:dash264') and @contentType='video' and not(@par)) then false() else true()"> DASH264 Section 3.2.4: "For any Adaptation Sets with value of the @contentType="video" the following attributes shall be present: ... @par" violated here</assert >
+			<!-- RD3.1	DASH264 -->
+			<assert test="if (contains(ancestor::dash:MPD/@profiles, 'urn:com:dashif:dash264') and @contentType='video' and @scanType) then false() else true()"> DASH264 Section 3.2.4: "For Adaptation Set or for any Representation within an Adaptation Set with value of the @contentType="video" the attribute @scanType must not be present" violated here</assert >
+			<!-- RD3.2	DASH264 -->
+			<assert test="if (contains(ancestor::dash:MPD/@profiles, 'urn:com:dashif:dash264') and @contentType='audio' and not(@lang)) then false() else true()"> DASH264 Section 3.2.4: "For any Adaptation Sets with value of the @contentType="audio" the following attributes shall be present: @lang" violated here</assert >
 		</rule>
 	</pattern>
 
@@ -89,6 +99,14 @@
 			<assert test="if (not(child::dash:SegmentTemplate or parent::dash:AdaptationSet/dash:SegmentTemplate or ancestor::dash:Period/dash:SegmentTemplate) and (contains(@profiles, 'urn:mpeg:dash:profile:isoff-live:2011') or contains(ancestor::dash:MPD/@profiles, 'urn:mpeg:dash:profile:isoff-live:2011') or contains(parent::dash:AdaptationSet/@profiles, 'urn:mpeg:dash:profile:isoff-live:2011'))) then false() else true()">For live profile, the SegmentTemplate element shall be present on at least one of the three levels, the Period level containing the Representation, the Adaptation Set containing the Representation, or on Representation level itself.</assert>
 			<!-- R5.2 -->
 			<assert test="if ((child::dash:SegmentBase and child::dash:SegmentTemplate and child::dash:SegmentList) or (child::dash:SegmentBase and child::dash:SegmentTemplate) or (child::dash:SegmentBase and child::dash:SegmentList) or (child::dash:SegmentTemplate and child::dash:SegmentList)) then false() else true()">At most one of SegmentBase, SegmentTemplate and SegmentList shall be defined in Representation.</assert>
+			<!-- RD5.0	DASH264 -->
+			<assert test="if (contains(ancestor::dash:MPD/@profiles, 'urn:com:dashif:dash264') and parent::dash:AdaptationSet/@contentType='video' and (((@width != preceding-sibling::dash:Representation/@width) and not(parent::dash:AdaptationSet/@maxWidth)) or ((@height != preceding-sibling::dash:Representation/@height) and not(parent::dash:AdaptationSet/@maxHeight)) or ((@frameRate != preceding-sibling::dash:Representation/@frameRate) and not(parent::dash:AdaptationSet/@maxFrameRate)))) then false() else true()"> DASH264 Section 3.2.4: "For any Adaptation Sets with value of the @contentType="video" the following attributes shall be present: @maxWidth (or @width if all Representations have the same width), @maxHeight (or @height if all Representations have the same width), @maxFrameRate (or @frameRate if all Representations have the same width)" violated here</assert >
+			<!-- RD5.1	DASH264 -->
+			<assert test="if (contains(ancestor::dash:MPD/@profiles, 'urn:com:dashif:dash264') and parent::dash:AdaptationSet/@contentType='video' and ((not(@width) and not(parent::dash:AdaptationSet/@width)) or (not(@height) and not(parent::dash:AdaptationSet/@height)) or (not(@frameRate) and not(parent::dash:AdaptationSet/@frameRate)) or not(@sar))) then false() else true()"> DASH264 Section 3.2.4: "For any Representation within an Adaptation Set with value of the @contentType="video" the following attributes shall be present: @width, if not present in AdaptationSet element; @height, if not present in AdaptationSet element; @frameRate, if not present in AdaptationSet element; @sar" violated here</assert >
+			<!-- RD5.2	DASH264 -->
+			<assert test="if (contains(ancestor::dash:MPD/@profiles, 'urn:com:dashif:dash264') and parent::dash:AdaptationSet/@contentType='video' and @scanType) then false() else true()"> DASH264 Section 3.2.4: "For Adaptation Set or for any Representation within an Adaptation Set with value of the @contentType="video" the attribute @scanType must not be present" violated here</assert >
+			<!-- RD5.3	DASH264 -->
+			<assert test="if (contains(ancestor::dash:MPD/@profiles, 'urn:com:dashif:dash264') and parent::dash:AdaptationSet/@contentType='audio' and ((not(@audioSamplingRate) and not(parent::dash:AdaptationSet/@audioSamplingRate)) or (not(dash:AudioChannelConfiguration) and not(parent::dash:AdaptationSet/dash:AudioChannelConfiguration)))) then false() else true()"> DASH264 Section 3.2.4: "o	For any Representation within an Adaptation Set with value of the @contentType="audio" the following elements and attributes shall be present: @audioSamplingRate, if not present in AdaptationSet element; AudioChannelConfiguration, if not present in AdaptationSet element" violated here</assert >
 		</rule>
 	</pattern>
 	<pattern name="SubRepresentation element">
