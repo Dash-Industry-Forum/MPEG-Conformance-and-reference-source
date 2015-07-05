@@ -349,7 +349,7 @@ int main(void)
 	vg.inOffset = 0;
 	err = fseek(infile, 0, SEEK_END);
 	if (err) goto bail;
-	UInt64 tttemp = ftell(infile);
+//	UInt64 tttemp = ftell(infile);
 	vg.inMaxOffset = inflateOffset(ftell(infile));
 	if (vg.inMaxOffset < 0) {
 		err = vg.inMaxOffset;

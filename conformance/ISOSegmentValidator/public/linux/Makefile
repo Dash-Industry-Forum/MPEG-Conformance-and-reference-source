@@ -71,15 +71,17 @@ depend:
 	@$(SHELL) -ec '$(CC) -MM $(CFLAGS) -I$(INCDIR) $(SRC) | sed '\''s@\(.*\)\.o[ :]@$(OBJDIR)/\1.o$(SUFFIX):@g'\'' >$(DEPEND)'
 	@echo
 
-$(OBJDIR)/%.o$(SUFFIX): $(SRCDIR)/%.cpp
+$(OBJDIR)/%.o$(SUFFIX): $(SRCDIR)/%.cpp | $(OBJDIR)
 	@echo 'compiling object file "$@" ...'
 	@$(CC) $(compatibility) -c -o $@ $(FLAGS) $<
 
-$(OBJDIR)/%.o$(SUFFIX): $(ADDSRCDIR)/%.c
+$(OBJDIR)/%.o$(SUFFIX): $(ADDSRCDIR)/%.c | $(OBJDIR)
 	@echo 'compiling object file "$@" ...'
 	@$(CC) $(compatibility) -c -o $@ $(FLAGS) $<
 
+$(OBJDIR):
+	@mkdir -p $@
 
-include $(DEPEND)
+-include $(DEPEND)
 
 
