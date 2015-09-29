@@ -598,7 +598,7 @@ typedef struct {
     SInt64  bandwidth;
     unsigned int  width;
     unsigned int  height;
-    argstr codecs;
+    char codecs[25]="";
 	bool	suggestBandwidth;
     bool    isoLive;
     bool    isoondemand;

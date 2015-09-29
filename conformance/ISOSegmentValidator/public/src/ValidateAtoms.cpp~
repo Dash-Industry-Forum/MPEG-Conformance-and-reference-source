@@ -501,7 +501,7 @@ OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
 	tir->mediaType = hdlrInfo->componentSubType;
 	atomprint("handler_type=\"%s\"\n", ostypetostr(hdlrInfo->componentSubType));
-	
+	warnprint("handler_type=\"%s\"\n", ostypetostr(hdlrInfo->componentSubType));
 	// Get Handler Info Name
 	BAILIFERR( GetFileCString( aoe, &nameP, offset, aoe->maxOffset - offset, &offset ) );
 	atomprint("name=\"%s\"\n", nameP);
@@ -518,7 +518,7 @@ OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		//Explicit check for ac-4
 		if(!strcmp(vg.codecs, "ac-4") && strcmp(ostypetostr(hdlrInfo->componentSubType),"soun"))
-		    warnprint("handler_type is not 'soun', 'soun' is expected for 'ac-4'\n" );	
+		    warnprint("handler_type is not 'soun', 'soun' is expected for 'ac-4'" );	
 	
 	tir->hdlrInfo = hdlrInfo;
 	// All done
