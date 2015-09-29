@@ -16,6 +16,10 @@
    <svrl:ns-prefix-in-attribute-values uri="http://www.w3.org/2001/XMLSchema-instance" prefix="xsi"/>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:MPD"/>
+   <svrl:failed-assert test="if (@type = 'dynamic' and not(@publishTime)) then false() else true()"
+                       location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
+      <svrl:text>If MPD is of type "dynamic" publishTime shall be defined.</svrl:text>
+   </svrl:failed-assert>
    <svrl:active-pattern/>
    <svrl:fired-rule context="dash:Period"/>
    <svrl:active-pattern/>
@@ -39,4 +43,7 @@
                        location="/*[local-name()='MPD' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='Period' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AdaptationSet' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']/*[local-name()='AudioChannelConfiguration' and namespace-uri()='urn:mpeg:dash:schema:mpd:2011']">
       <svrl:text>If URI urn:mpeg:dash:outputChannelPositionList:2012 is used the value attribute shall be a space-delimited list as defined in ISO/IEC 23001-8.</svrl:text>
    </svrl:failed-assert>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
+   <svrl:active-pattern/>
 </svrl:schematron-output>
