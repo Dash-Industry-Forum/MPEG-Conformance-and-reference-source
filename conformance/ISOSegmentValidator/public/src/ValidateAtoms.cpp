@@ -349,6 +349,16 @@ OSErr Validate_tkhd_Atom( atomOffsetEntry *aoe, void *refcon )
 
 
 	// All done
+		// Check whether height and width are matching with those from MPD
+		if(EndianS16_BtoN(EndianS32_NtoB(tkhdHeadCommon.trackWidth)) != vg.width)
+		{ 
+		  errprint("Width in TrackHeaderBox is not matching with out of box width information \n");
+		}
+		if(EndianS16_BtoN(EndianS32_NtoB(tkhdHeadCommon.trackHeight))!= vg.height)
+		{ 
+		  errprint("Height in TrackHeaderBox is not matching with out of box height information \n");
+		}
+		
 	aoe->aoeflags |= kAtomValidated;
 
 bail:
@@ -508,6 +518,10 @@ OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 			"'hdlr' handler type must be be one of ", 
 			('odsm', 'crsm', 'sdsm', 'vide', 'soun', 'm7sm', 'ocsm', 'ipsm', 'mjsm', 'hint') );
 
+		//Explicit check for ac-4
+		if(!strcmp(vg.codecs, "ac-4") && strcmp(ostypetostr(hdlrInfo->componentSubType),"soun"))
+		    warnprint("handler_type is not 'soun', 'soun' is expected for 'ac-4'\n" );	
+	
 	tir->hdlrInfo = hdlrInfo;
 	// All done
 	atomprint("/>\n"); 
@@ -2824,9 +2838,9 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint(">\n"); //vg.tabcnt++; 
 
 	// Check required field values
-	FieldMustBeOneOf2( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4a' or 'enca' ", ( 'mp4a', 'enca' ) );
+	FieldMustBeOneOf3( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4a' or 'enca' or 'ac-4' ", ( 'mp4a', 'enca','ac-4' ) );
 	
-	if( (sdh.sdType != 'mp4a') && (sdh.sdType != 'enca') && !fileTypeKnown ){	
+	if( (sdh.sdType != 'mp4a') && (sdh.sdType != 'enca') && (sdh.sdType != 'ac-4') && !fileTypeKnown ){	
 			warnprint("WARNING: Don't know about this sound descriptor type \"%s\"\n", 
 				ostypetostr(sdh.sdType));
 			// goto bail;
