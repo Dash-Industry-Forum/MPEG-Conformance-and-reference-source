@@ -140,6 +140,8 @@ int main(void)
     vg.checkSubSegAlignment = false;
     vg.minBufferTime = -1;
     vg.bandwidth = -1;
+    vg.width = 0;
+    vg.height = 0;
     vg.suggestBandwidth = false;
     vg.isoLive = false;
     vg.isoondemand = false;
@@ -240,6 +242,13 @@ int main(void)
 
 
 
+		} else if ( keymatch( arg, "width", 5 ) ) {
+                          getNextArgStr( &temp, "width" ); vg.width = atoi(temp);
+                } else if ( keymatch( arg, "height", 6 ) ) {
+                          getNextArgStr( &temp, "height" ); vg.height = atoi(temp);
+		} else if ( keymatch( arg, "codecs", 6 ) ) {
+                          getNextArgStr( &vg.codecs, "codecs" ); 
+                 		  			  
 		} else {
 			fprintf( stderr, "Unexpected option \"%s\"\n", arg);
 			err = -1;
@@ -315,6 +324,11 @@ int main(void)
     if((vg.minBufferTime == -1) != (vg.bandwidth == -1))
     {
         fprintf( stderr, "minBufferTime and bandwidth must be provided together as options!\n" );
+        goto usageError;
+    }
+    if((vg.width == 0) != (vg.height == 0))
+    {
+        fprintf( stderr, "width and height must be provided together as options!\n" );
         goto usageError;
     }
 
@@ -491,6 +505,8 @@ usageError:
 	fprintf( stderr, "    -ssegal -         Check Subegment alignment based on <Leaf Info File>\n" );
 	fprintf( stderr, "    -bandwidth        For checking @bandwidth/@minBufferTime\n" );
 	fprintf( stderr, "    -minbuffertime    For checking @bandwidth/@minBufferTime\n" );
+	fprintf( stderr, "    -width            For checking width\n" );
+	fprintf( stderr, "    -height           For checking height\n" );
 	fprintf( stderr, "    -sbw              Suggest a good @bandwidth if the one provided is non-conforming\n" );
 	fprintf( stderr, "    -isolive          Make checks specific for media segments conforming to ISO Base media file format live profile\n" );
 	fprintf( stderr, "    -isoondemand      Make checks specific for media segments conforming to ISO Base media file format On Demand profile\n" );

@@ -365,7 +365,9 @@ OSErr Validate_minf_Atom( atomOffsetEntry *aoe, void *refcon )
 		default:
 			warnprint("WARNING: unknown media type '%s'\n",ostypetostr(tir->mediaType));
 	}
-
+                 //Explicit check for ac-4
+		if(!strcmp(vg.codecs, "ac-4") && strcmp(ostypetostr(tir->mediaType),"soun"))
+		    warnprint("Media Information Header Box should contain Sound Media Header Box for 'ac-4'\n" );	
 
 	// Process 'dinf' atoms
 	atomerr = ValidateAtomOfType( 'dinf', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 

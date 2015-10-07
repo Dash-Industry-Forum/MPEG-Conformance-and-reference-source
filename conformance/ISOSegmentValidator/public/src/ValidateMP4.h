@@ -596,6 +596,9 @@ typedef struct {
     int  startWithSAP;
     long double  minBufferTime;
     SInt64  bandwidth;
+    unsigned int  width;
+    unsigned int  height;
+    argstr codecs;
 	bool	suggestBandwidth;
     bool    isoLive;
     bool    isoondemand;
