@@ -600,6 +600,8 @@ typedef struct {
     unsigned int  height;
     argstr codecs;
     argstr indexRange;
+    int lowerindexRange;
+    int higherindexRange;
     
 	bool	suggestBandwidth;
     bool    isoLive;

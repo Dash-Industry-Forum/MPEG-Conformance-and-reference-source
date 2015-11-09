@@ -2705,12 +2705,7 @@ bail:
 
 
 OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
-{
-  
-  //for the index range, verify that 
-  //sidxInfo->offset > starting of index range && 
-  //sidxInfo->offset + sidxInfo->size < ending of index range
-  
+{  
 	OSErr err = noErr;
     int i;
 	UInt32 version;
@@ -2724,58 +2719,22 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
     sidxInfo->offset = aoe->offset;
     sidxInfo->size = aoe->size;
     
-    char lower[8];						//initialize arrays lower and higher to save the lower & higher indices of indexRange
-    char higher[8];
-    int tmp=0;							//initialize temp variables
-    int tmp1=0;
+ /*for the index range, verify that 
+  sidxInfo->offset > starting of index range && 
+  sidxInfo->offset + sidxInfo->size < ending of index range */
     
-  while (vg.indexRange[tmp] != '\0')				//loop for indexRange, check along complete length
-
-  {
-    if (vg.indexRange[tmp] !='"' || vg.indexRange[tmp]!='-')	
-      lower[tmp1] = vg.indexRange[tmp];				//store lower value of index range
-    
-    tmp++;
-    tmp1++;
-    
-    if (vg.indexRange[tmp] == '-')
-    {
-      lower[tmp1]='\0';
-      break; 
-    }
-  }
-  
-  int tmp2=0;
-  tmp++;
-  while (vg.indexRange != '\0')
-  {
-    
-    if (vg.indexRange[tmp] !='"' || vg.indexRange[tmp]!='-')	//store higher value of index range
-      higher[tmp2] = vg.indexRange[tmp];
-    
-    tmp++;
-    tmp2++;
-    
-    if (vg.indexRange[tmp] == '\0')
-    {
-      higher[tmp2]='\0';
-      break;
-    }
-  }
-  
-  
-  int lowerindexRange = atoi(lower);		//convert char array to int
-  int higherindexRange = atoi(higher);
-  
-  
   int offs=sidxInfo->offset;       //convert to int value and store it in a variable
   int siz=sidxInfo->size;
   
   
-  if (offs < lowerindexRange || (offs + siz) > higherindexRange)
-    errprint("sidx offset %d is less than starting of indexRange %d, OR sum of sidx offset %d and sidx size %d is greater than ending of indexRange %d\n",offs,lowerindexRange,offs,siz,higherindexRange);
+  if (vg.lowerindexRange!=-1 && vg.higherindexRange!=-1)
+  {
+    if (offs < vg.lowerindexRange || (offs + siz) > vg.higherindexRange)
+      fprintf(stdout,"%d  %d\n",vg.lowerindexRange,vg.higherindexRange);
+      errprint("sidx offset %d is less than starting of indexRange %d, OR sum of sidx offset %d and sidx size %d is greater than ending of indexRange %d\n",offs,vg.lowerindexRange,offs,siz,vg.higherindexRange);
   
-   
+  }  
+    
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
     

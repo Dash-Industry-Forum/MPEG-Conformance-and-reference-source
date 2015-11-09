@@ -19,6 +19,9 @@ limitations under the License.
 
 
 #include "ValidateMP4.h"
+#include "string.h"
+#include "stdio.h"
+#include "stdlib.h"
 #if STAND_ALONE_APP
 	#include "console.h"
 #endif
@@ -153,7 +156,9 @@ int main(void)
     vg.dash264base = false;
     vg.dash264enc = false;
     vg.numOffsetEntries = 0;
-    //vg.indexRange = ""; 
+    vg.lowerindexRange=-1;
+    vg.higherindexRange=-1;
+    //vg.indexRange='\0'; 
     
 	// Check the parameters
 	for( argn = 1; argn < argc; argn++ )
@@ -261,7 +266,10 @@ int main(void)
 		}
 	}
 	
-
+	
+	if (vg.indexRange!='\0')
+	  sscanf (vg.indexRange,"%d-%d",&vg.lowerindexRange,&vg.higherindexRange);
+	
 	//=====================
 	// Process input parameters
 
@@ -336,10 +344,7 @@ int main(void)
         fprintf( stderr, "width and height must be provided together as options!\n" );
         goto usageError;
     }
-    //if(vg.indexRange !="")
-    //{
-    //  fprintf( stderr, "indexRange is %s\n",vg.indexRange );
-   // }
+    
 
 	if (vg.samplenumberstr[0] == 0) {
 		vg.samplenumber = 0;			// zero means print them all if you print any
