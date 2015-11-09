@@ -2710,6 +2710,10 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
   //for the index range, verify that 
   //sidxInfo->offset > starting of index range && 
   //sidxInfo->offset + sidxInfo->size < ending of index range
+  //use functions str.c_str(), stoi() and strtok()
+  
+  //fprintf(stdout,"\t\tgets here\n");
+  //fprintf(stdout,"%s\n",&vg.indexRange);
   
 	OSErr err = noErr;
     int i;
@@ -2763,19 +2767,37 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
     }
   }
   
+  //fprintf(stdout,"%s\n",strlen(lower));
+  //fprintf(stdout,"%s\n",strlen(higher));
+  /*int a=0,b=0;
+  while (lower[a] != '\0')
+    a++;
+  while (higher[b]!='\0')
+    b++;
+  fprintf(stdout,"%d\n",a);
+  fprintf(stdout,"%d\n",b);
+  */
   
   int lowerindexRange = atoi(lower);		//convert char array to int
   int higherindexRange = atoi(higher);
   
+  //fprintf(stdout,"%d\n",lowerindexRange);
+  //fprintf(stdout,"%d\n",higherindexRange);
   
   int offs=sidxInfo->offset;       //convert to int value and store it in a variable
   int siz=sidxInfo->size;
   
+  //fprintf(stdout,"%d\n",offs);
+  //fprintf(stdout,"%d\n",siz);
   
   if (offs < lowerindexRange || (offs + siz) > higherindexRange)
     errprint("sidx offset %d is less than starting of indexRange %d, OR sum of sidx offset %d and sidx size %d is greater than ending of indexRange %d\n",offs,lowerindexRange,offs,siz,higherindexRange);
   
-   
+  
+
+    
+      
+    
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
     
