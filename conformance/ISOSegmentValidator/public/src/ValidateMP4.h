@@ -599,6 +599,8 @@ typedef struct {
     unsigned int  width;
     unsigned int  height;
     argstr codecs;
+    argstr indexRange;
+    
 	bool	suggestBandwidth;
     bool    isoLive;
     bool    isoondemand;
@@ -642,7 +644,7 @@ typedef struct {
 	Boolean	print_hintpayload;
 	
 	UInt32  visualProfileLevelIndication;// to validate if IOD corresponds to VSC
-
+    
 
 } ValidateGlobals;
 

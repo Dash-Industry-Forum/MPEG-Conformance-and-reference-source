@@ -20,6 +20,10 @@ limitations under the License.
 
 #include "ValidateMP4.h"
 
+#include "string.h"
+#include "stdio.h"
+#include "stdlib.h"
+
 
 extern ValidateGlobals vg;
 
@@ -2702,6 +2706,15 @@ bail:
 
 OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
 {
+  
+  //for the index range, verify that 
+  //sidxInfo->offset > starting of index range && 
+  //sidxInfo->offset + sidxInfo->size < ending of index range
+  //use functions str.c_str(), stoi() and strtok()
+  
+  //fprintf(stdout,"\t\tgets here\n");
+  //fprintf(stdout,"%s\n",&vg.indexRange);
+  
 	OSErr err = noErr;
     int i;
 	UInt32 version;
@@ -2714,6 +2727,76 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
 
     sidxInfo->offset = aoe->offset;
     sidxInfo->size = aoe->size;
+    
+    char lower[8];						//initialize arrays lower and higher to save the lower & higher indices of indexRange
+    char higher[8];
+    int tmp=0;							//initialize temp variables
+    int tmp1=0;
+    
+  while (vg.indexRange[tmp] != '\0')				//loop for indexRange, check along complete length
+
+  {
+    if (vg.indexRange[tmp] !='"' || vg.indexRange[tmp]!='-')	
+      lower[tmp1] = vg.indexRange[tmp];				//store lower value of index range
+    
+    tmp++;
+    tmp1++;
+    
+    if (vg.indexRange[tmp] == '-')
+    {
+      lower[tmp1]='\0';
+      break; 
+    }
+  }
+  
+  int tmp2=0;
+  tmp++;
+  while (vg.indexRange != '\0')
+  {
+    
+    if (vg.indexRange[tmp] !='"' || vg.indexRange[tmp]!='-')	//store higher value of index range
+      higher[tmp2] = vg.indexRange[tmp];
+    
+    tmp++;
+    tmp2++;
+    
+    if (vg.indexRange[tmp] == '\0')
+    {
+      higher[tmp2]='\0';
+      break;
+    }
+  }
+  
+  //fprintf(stdout,"%s\n",strlen(lower));
+  //fprintf(stdout,"%s\n",strlen(higher));
+  /*int a=0,b=0;
+  while (lower[a] != '\0')
+    a++;
+  while (higher[b]!='\0')
+    b++;
+  fprintf(stdout,"%d\n",a);
+  fprintf(stdout,"%d\n",b);
+  */
+  
+  int lowerindexRange = atoi(lower);		//convert char array to int
+  int higherindexRange = atoi(higher);
+  
+  //fprintf(stdout,"%d\n",lowerindexRange);
+  //fprintf(stdout,"%d\n",higherindexRange);
+  
+  int offs=sidxInfo->offset;       //convert to int value and store it in a variable
+  int siz=sidxInfo->size;
+  
+  //fprintf(stdout,"%d\n",offs);
+  //fprintf(stdout,"%d\n",siz);
+  
+  if (offs < lowerindexRange || (offs + siz) > higherindexRange)
+    errprint("sidx offset %d is less than starting of indexRange %d, OR sum of sidx offset %d and sidx size %d is greater than ending of indexRange %d\n",offs,lowerindexRange,offs,siz,higherindexRange);
+  
+  
+
+    
+      
     
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
@@ -2728,7 +2811,7 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
         return badAtomErr;
     
     BAILIFERR( GetFileDataN32( aoe, &sidxInfo->timescale, offset, &offset ) );
-
+    
     if(tir->mediaTimeScale != sidxInfo->timescale)
         warnprint("sidx timescale %d != track timescale %d for track ID %d, Section 8.16.3.3 of ISO/IEC 14496-12 4th edition: it is recommended that this match the timescale of the reference stream or track\n",sidxInfo->timescale,tir->mediaTimeScale,sidxInfo->reference_ID);
         

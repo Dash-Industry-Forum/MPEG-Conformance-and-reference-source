@@ -153,7 +153,8 @@ int main(void)
     vg.dash264base = false;
     vg.dash264enc = false;
     vg.numOffsetEntries = 0;
-		
+    //vg.indexRange = ""; 
+    
 	// Check the parameters
 	for( argn = 1; argn < argc; argn++ )
 	{
@@ -221,7 +222,11 @@ int main(void)
                 vg.isomain = true;
         } else if ( keymatch( arg, "dynamic", 7 ) ) {
                 vg.dynamic = true;
-        } else if ( keymatch( arg, "level", 5 ) ) {
+        }
+        else if ( keymatch( arg, "indexrange", 10 ) ) {
+                getNextArgStr( &vg.indexRange, "indexrange" );	  			  
+	}
+        else if ( keymatch( arg, "level", 5 ) ) {
                 vg.subRepLevel = true;
         } else if ( keymatch( arg, "startwithsap", 6 ) ) {
                 getNextArgStr( &sapType, "startwithsap" );vg.startWithSAP = atoi(sapType);
@@ -331,6 +336,10 @@ int main(void)
         fprintf( stderr, "width and height must be provided together as options!\n" );
         goto usageError;
     }
+    //if(vg.indexRange !="")
+    //{
+    //  fprintf( stderr, "indexRange is %s\n",vg.indexRange );
+   // }
 
 	if (vg.samplenumberstr[0] == 0) {
 		vg.samplenumber = 0;			// zero means print them all if you print any
