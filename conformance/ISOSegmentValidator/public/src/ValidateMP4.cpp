@@ -19,7 +19,10 @@ limitations under the License.
 
 
 #include "ValidateMP4.h"
-#include "string.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string.h>
 #include "stdio.h"
 #include "stdlib.h"
 #if STAND_ALONE_APP
@@ -41,6 +44,8 @@ ValidateGlobals vg = {0};
 
 
 static int keymatch (const char * arg, const char * keyword, int minchars);
+
+static char** duplicateArgv(int argc, char *argv[]);      
 
 //#define STAND_ALONE_APP 1  //  #define this if you're using a source level debugger (i.e. Visual C++ in Windows)
 							  //  also, near the beginning of main(), hard-code your arguments (e.g. your test file)
@@ -71,6 +76,28 @@ static int keymatch (const char * arg, const char * keyword, int minchars)
   if (nmatched < minchars)
     return false;
   return true;			/* A-OK */
+}
+
+
+static char** duplicateArgv(int argc, char *argv[])                                                                                                                                                         
+{                                                                                                                                                                                                                                                                                                                                                                                       
+    char **array = (char**)malloc(sizeof(char*) * argc);	// First allocate overall array with each element of char*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+    int i;                  
+
+    // For each element allocate the amount of space for the number of chars in each      argument                                                                                                                                                              
+    for(i = 0; i < argc; i++)
+    {
+      int length = strlen(argv[i]);
+      array[i] = (char*)(malloc((length + 1) * sizeof(char)));
+    
+      // Cycle through all the chars and copy them in one by one
+      for(int j = 0; j <= length; j++)
+	array[i][j] = argv[i][j];
+     
+    }                  
+    
+    return array;
+
 }
 
 //==========================================================================================
@@ -107,6 +134,8 @@ int main(void)
 		"<mpeg4-file-path>"
 		};
 	int argc = sizeof(argv)/sizeof(char*);
+	
+	
 #endif
 	int argn;
 	int gotInputFile = false;
@@ -122,8 +151,11 @@ int main(void)
     char temp[1024];
 	int usedefaultfiletype = true;
 	
+	
 	FILE *infile = nil;
 	atomOffsetEntry aoe = {0};
+	
+	
 
 	vg.warnings = true;
 //	vg.qtwarnings = true;
@@ -160,10 +192,15 @@ int main(void)
     vg.higherindexRange=-1;
     //vg.indexRange='\0'; 
     
+    
+   char **array = duplicateArgv( argc,  argv);
+    
+   
 	// Check the parameters
-	for( argn = 1; argn < argc; argn++ )
+	for( argn = 1; argn < (int)((sizeof(char*) * argc)/sizeof(char*)) ; argn++ )
 	{
-		const char *arg = argv[argn];
+		
+		const char *arg = array[argn];
 		
 		if( '-' != arg[0] )
 		{
@@ -217,7 +254,8 @@ int main(void)
             getNextArgStr( &temp, "minbuffertime" ); vg.minBufferTime = atof(temp);
         } else if ( keymatch( arg, "bandwidth", 9 ) ) {
             getNextArgStr( &temp, "bandwidth" ); vg.bandwidth = atoi(temp);
-        } else if ( keymatch( arg, "sbw", 3 ) ) {
+        } 
+        else if ( keymatch( arg, "sbw", 3 ) ) {
                 vg.suggestBandwidth = true;
         } else if ( keymatch( arg, "isolive", 7 ) ) {
                 vg.isoLive = true;
@@ -244,8 +282,9 @@ int main(void)
 		} else if (keymatch(arg, "logconsole", 10)) {
 			logConsole = true;
         } else if ( keymatch( arg, "dash264base", 11 ) ) {
-                vg.dash264base = true;
-        } else if ( keymatch( arg, "dash264enc", 10 ) ) {
+               vg.dash264base = true;
+        } 
+        else if ( keymatch( arg, "dash264enc", 10 ) ) {
                 vg.dash264enc = true;
 		} else if ( keymatch( arg, "samplenumber", 1 ) ) {
 			getNextArgStr( &vg.samplenumberstr, "samplenumber" );
@@ -259,7 +298,11 @@ int main(void)
 		} else if ( keymatch( arg, "codecs", 6 ) ) {
                           getNextArgStr( &vg.codecs, "codecs" ); 
                  		  			  
-		} else {
+		}
+		//else if ( keymatch( arg, "configflag", 10 ) ) {
+                //          getNextArgStr( &temp, "configflag" ); vg.configflag = atoi(temp);
+                //}
+		else {
 			fprintf( stderr, "Unexpected option \"%s\"\n", arg);
 			err = -1;
 			goto usageError;
@@ -269,6 +312,11 @@ int main(void)
 	
 	if (vg.indexRange!='\0')
 	  sscanf (vg.indexRange,"%d-%d",&vg.lowerindexRange,&vg.higherindexRange);
+	  
+	
+	
+	
+	//newwrite();
 	
 	//=====================
 	// Process input parameters
