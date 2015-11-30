@@ -142,6 +142,7 @@ int main(void)
     vg.bandwidth = -1;
     vg.width = 0;
     vg.height = 0;
+    vg.audioChValue = 0;
     vg.suggestBandwidth = false;
     vg.isoLive = false;
     vg.isoondemand = false;
@@ -248,6 +249,8 @@ int main(void)
                           getNextArgStr( &temp, "height" ); vg.height = atoi(temp);
 		} else if ( keymatch( arg, "codecs", 6 ) ) {
                           getNextArgStr( &vg.codecs, "codecs" ); 
+	        } else if ( keymatch( arg, "audiochvalue", 12 ) ) {
+                         getNextArgStr( &temp, "audiochvalue" ); vg.audioChValue = atoi(temp);
                  		  			  
 		} else {
 			fprintf( stderr, "Unexpected option \"%s\"\n", arg);
