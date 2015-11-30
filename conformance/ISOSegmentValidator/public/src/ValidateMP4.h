@@ -599,6 +599,7 @@ typedef struct {
     unsigned int  width;
     unsigned int  height;
     argstr codecs;
+    unsigned int audioChValue;
 	bool	suggestBandwidth;
     bool    isoLive;
     bool    isoondemand;
@@ -1117,6 +1118,7 @@ typedef OSErr (*ValidateBitstreamProcPtr)( BitBuffer *bb, void *refcon );
 
 OSErr Validate_ESDAtom( atomOffsetEntry *aoe, void *refcon, ValidateBitstreamProcPtr validateBitstreamProc, char *esname );
 OSErr Validate_mp4_SD_Entry( atomOffsetEntry *aoe, void *refcon, ValidateBitstreamProcPtr validateBitstreamProc, char *esname );
+OSErr Validate_mhaC_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_avcC_Atom( atomOffsetEntry *aoe, void *refcon, char *esname );
 OSErr Validate_btrt_Atom( atomOffsetEntry *aoe, void *refcon, char *esname );

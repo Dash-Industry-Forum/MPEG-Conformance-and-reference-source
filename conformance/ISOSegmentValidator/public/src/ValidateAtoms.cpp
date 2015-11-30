@@ -2838,9 +2838,9 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint(">\n"); //vg.tabcnt++; 
 
 	// Check required field values
-	FieldMustBeOneOf3( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4a' or 'enca' or 'ac-4' ", ( 'mp4a', 'enca','ac-4' ) );
+	FieldMustBeOneOf4( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4a' or 'enca' or 'ac-4' or 'mha1' ", ( 'mp4a', 'enca','ac-4', 'mha1' ) );
 	
-	if( (sdh.sdType != 'mp4a') && (sdh.sdType != 'enca') && (sdh.sdType != 'ac-4') && !fileTypeKnown ){	
+	if( (sdh.sdType != 'mp4a') && (sdh.sdType != 'enca') && (sdh.sdType != 'ac-4') && (sdh.sdType != 'mha1') && !fileTypeKnown ){	
 			warnprint("WARNING: Don't know about this sound descriptor type \"%s\"\n", 
 				ostypetostr(sdh.sdType));
 			// goto bail;
@@ -2894,6 +2894,9 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 				BAILIFERR( Validate_sinf_Atom( entry, refcon, kTypeAtomFlagMustHaveOne ) );
 				--vg.tabcnt; atomprint("</sinf>\n");
 			}				
+			else if (entry->type == 'mhaC' ){
+			        BAILIFERR( Validate_mhaC_Atom( entry, refcon)); 
+			}
 			
 			else warnprint("Warning: Unknown atom found \"%s\": audio sample descriptions would not normally contain this\n",ostypetostr(entry->type));
 			
@@ -3007,6 +3010,48 @@ bail:
 
 
 
+
+
+//==========================================================================================
+
+typedef struct MHADecoderConfigurationRecord {
+      UInt8	configurationVersion;
+      UInt8	mpegh3daProfileLevelIndication;
+      UInt8	referenceChannelLayout;
+      UInt16	mpegh3daConfigLength;
+      UInt32    mpegh3daConfig;
+ }MHADecoderConfigurationRecord;
+
+OSErr Validate_mhaC_Atom( atomOffsetEntry *aoe, void *refcon)
+{
+        TrackInfoRec *tir = (TrackInfoRec *)refcon;
+	OSErr err = noErr;
+	UInt64 offset;
+		
+	offset = aoe->offset + aoe->atomStartSize;
+	MHADecoderConfigurationRecord mhaDecoderConfigurationRecord;
+        //errprint( "offset= %d\n",offset );
+
+	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.configurationVersion , offset, sizeof(mhaDecoderConfigurationRecord.configurationVersion), &offset ) );	
+	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daProfileLevelIndication , offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daProfileLevelIndication), &offset ) );	
+	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.referenceChannelLayout , offset, sizeof(mhaDecoderConfigurationRecord.referenceChannelLayout) , &offset ) );
+	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daConfigLength, offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daConfigLength), &offset ) );	
+        BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daConfig, offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daConfigLength*8), &offset ) );
+   
+	
+        FieldMustBe( mhaDecoderConfigurationRecord.configurationVersion , 1, "ConfigurationVersion must be %d not %d" );
+	if(vg.audioChValue != mhaDecoderConfigurationRecord.referenceChannelLayout)
+	{
+	   errprint( "The referenceChannelLayout is not matching  with out of box AudioChannelConfiguration value\n" );
+	}
+	
+	// All done
+	aoe->aoeflags |= kAtomValidated;
+
+bail:
+	return err;
+
+}
 
 
 //==========================================================================================
