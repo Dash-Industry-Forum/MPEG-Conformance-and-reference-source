@@ -20,6 +20,10 @@ limitations under the License.
 
 #include "ValidateMP4.h"
 
+#include "string.h"
+#include "stdio.h"
+#include "stdlib.h"
+
 
 extern ValidateGlobals vg;
 
@@ -2701,7 +2705,7 @@ bail:
 
 
 OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
-{
+{  
 	OSErr err = noErr;
     int i;
 	UInt32 version;
@@ -2714,6 +2718,22 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
 
     sidxInfo->offset = aoe->offset;
     sidxInfo->size = aoe->size;
+    
+ /*for the index range, verify that 
+  sidxInfo->offset > starting of index range && 
+  sidxInfo->offset + sidxInfo->size < ending of index range */
+    
+  int offs=sidxInfo->offset;       //convert to int value and store it in a variable
+  int siz=sidxInfo->size;
+  
+  
+  if (vg.lowerindexRange!=-1 && vg.higherindexRange!=-1)
+  {
+    if (offs < vg.lowerindexRange || (offs + siz) > vg.higherindexRange)
+      //fprintf(stdout,"%d  %d\n",vg.lowerindexRange,vg.higherindexRange);
+      errprint("sidx offset %d is less than starting of indexRange %d, OR sum of sidx offset %d and sidx size %d is greater than ending of indexRange %d\n",offs,vg.lowerindexRange,offs,siz,vg.higherindexRange);
+  
+  }  
     
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
@@ -2728,7 +2748,7 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
         return badAtomErr;
     
     BAILIFERR( GetFileDataN32( aoe, &sidxInfo->timescale, offset, &offset ) );
-
+    
     if(tir->mediaTimeScale != sidxInfo->timescale)
         warnprint("sidx timescale %d != track timescale %d for track ID %d, Section 8.16.3.3 of ISO/IEC 14496-12 4th edition: it is recommended that this match the timescale of the reference stream or track\n",sidxInfo->timescale,tir->mediaTimeScale,sidxInfo->reference_ID);
         
@@ -2838,9 +2858,9 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint(">\n"); //vg.tabcnt++; 
 
 	// Check required field values
-	FieldMustBeOneOf4( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4a' or 'enca' or 'ac-4' or 'mha1' ", ( 'mp4a', 'enca','ac-4', 'mha1' ) );
+	FieldMustBeOneOf3( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4a' or 'enca' or 'ac-4' ", ( 'mp4a', 'enca','ac-4' ) );
 	
-	if( (sdh.sdType != 'mp4a') && (sdh.sdType != 'enca') && (sdh.sdType != 'ac-4') && (sdh.sdType != 'mha1') && !fileTypeKnown ){	
+	if( (sdh.sdType != 'mp4a') && (sdh.sdType != 'enca') && (sdh.sdType != 'ac-4') && !fileTypeKnown ){	
 			warnprint("WARNING: Don't know about this sound descriptor type \"%s\"\n", 
 				ostypetostr(sdh.sdType));
 			// goto bail;
@@ -2894,9 +2914,6 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 				BAILIFERR( Validate_sinf_Atom( entry, refcon, kTypeAtomFlagMustHaveOne ) );
 				--vg.tabcnt; atomprint("</sinf>\n");
 			}				
-			else if (entry->type == 'mhaC' ){
-			        BAILIFERR( Validate_mhaC_Atom( entry, refcon)); 
-			}
 			
 			else warnprint("Warning: Unknown atom found \"%s\": audio sample descriptions would not normally contain this\n",ostypetostr(entry->type));
 			
@@ -3010,48 +3027,6 @@ bail:
 
 
 
-
-
-//==========================================================================================
-
-typedef struct MHADecoderConfigurationRecord {
-      UInt8	configurationVersion;
-      UInt8	mpegh3daProfileLevelIndication;
-      UInt8	referenceChannelLayout;
-      UInt16	mpegh3daConfigLength;
-      UInt32    mpegh3daConfig;
- }MHADecoderConfigurationRecord;
-
-OSErr Validate_mhaC_Atom( atomOffsetEntry *aoe, void *refcon)
-{
-        TrackInfoRec *tir = (TrackInfoRec *)refcon;
-	OSErr err = noErr;
-	UInt64 offset;
-		
-	offset = aoe->offset + aoe->atomStartSize;
-	MHADecoderConfigurationRecord mhaDecoderConfigurationRecord;
-        //errprint( "offset= %d\n",offset );
-
-	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.configurationVersion , offset, sizeof(mhaDecoderConfigurationRecord.configurationVersion), &offset ) );	
-	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daProfileLevelIndication , offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daProfileLevelIndication), &offset ) );	
-	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.referenceChannelLayout , offset, sizeof(mhaDecoderConfigurationRecord.referenceChannelLayout) , &offset ) );
-	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daConfigLength, offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daConfigLength), &offset ) );	
-        BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daConfig, offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daConfigLength*8), &offset ) );
-   
-	
-        FieldMustBe( mhaDecoderConfigurationRecord.configurationVersion , 1, "ConfigurationVersion must be %d not %d" );
-	if(vg.audioChValue != mhaDecoderConfigurationRecord.referenceChannelLayout)
-	{
-	   errprint( "The referenceChannelLayout is not matching  with out of box AudioChannelConfiguration value\n" );
-	}
-	
-	// All done
-	aoe->aoeflags |= kAtomValidated;
-
-bail:
-	return err;
-
-}
 
 
 //==========================================================================================

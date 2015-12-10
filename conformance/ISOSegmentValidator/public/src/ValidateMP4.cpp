@@ -19,6 +19,12 @@ limitations under the License.
 
 
 #include "ValidateMP4.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string.h>
+#include "stdio.h"
+#include "stdlib.h"
 #if STAND_ALONE_APP
 	#include "console.h"
 #endif
@@ -35,9 +41,11 @@ void myexit(int num)
 #endif
 
 ValidateGlobals vg = {0};
-
+int count_paramArgs=0;
 
 static int keymatch (const char * arg, const char * keyword, int minchars);
+
+static char** doubleduplicateArgv(const char * str);   
 
 //#define STAND_ALONE_APP 1  //  #define this if you're using a source level debugger (i.e. Visual C++ in Windows)
 							  //  also, near the beginning of main(), hard-code your arguments (e.g. your test file)
@@ -70,12 +78,52 @@ static int keymatch (const char * arg, const char * keyword, int minchars)
   return true;			/* A-OK */
 }
 
+
+
+
+static char** doubleduplicateArgv(const char* str)   
+{
+  FILE* f = fopen( str, "r" );			//location of text file to be opened specified by str 
+  char line[ 100 ];
+  
+  std::string l;
+  std::ifstream m(str);
+  while (std::getline(m, l))
+    ++count_paramArgs;
+  
+  int i=0;
+  char **array_paramArgs= (char**)malloc(sizeof(char*) * count_paramArgs);		//allocate memory for no. of rows
+  
+  int count=0;
+  while (fgets( line, 100, f ))					//read line from text file
+  {
+    count++;
+    char * pch;
+    pch = strtok(line,"\n, ");					//remove \n character and space
+    pch=strtok(pch," ");
+        
+    int length = strlen(pch);
+        
+    array_paramArgs[i] = (char*)(malloc((length + 1) * sizeof(char)));	//allocate memory for each row
+    int j;
+    for ( j = 0; j <= length; j++)
+    {
+      array_paramArgs[i][j] = pch[j];					//copy each row of text file into 2D array
+    }
+    
+    i++;
+  }
+  fclose(f); 
+  return array_paramArgs;
+}
+
+
 //==========================================================================================
 //_MSL_IMP_EXP_C extern int ccommand(char ***);
 
 #define getNextArgStr( _str_, _str_err_str_ ) \
 		argn++; \
-		arg = argv[argn]; \
+		arg = array_paramArgs[argn]; \
 		if( nil == arg ) \
 		{ \
 			fprintf( stderr, "Expected " _str_err_str_ " got end of args\n" ); \
@@ -104,6 +152,8 @@ int main(void)
 		"<mpeg4-file-path>"
 		};
 	int argc = sizeof(argv)/sizeof(char*);
+	
+	
 #endif
 	int argn;
 	int gotInputFile = false;
@@ -119,8 +169,11 @@ int main(void)
     char temp[1024];
 	int usedefaultfiletype = true;
 	
+	
 	FILE *infile = nil;
 	atomOffsetEntry aoe = {0};
+	
+	
 
 	vg.warnings = true;
 //	vg.qtwarnings = true;
@@ -142,7 +195,6 @@ int main(void)
     vg.bandwidth = -1;
     vg.width = 0;
     vg.height = 0;
-    vg.audioChValue = 0;
     vg.suggestBandwidth = false;
     vg.isoLive = false;
     vg.isoondemand = false;
@@ -154,11 +206,21 @@ int main(void)
     vg.dash264base = false;
     vg.dash264enc = false;
     vg.numOffsetEntries = 0;
-		
-	// Check the parameters
-	for( argn = 1; argn < argc; argn++ )
+    vg.lowerindexRange=-1;
+    vg.higherindexRange=-1;
+    //vg.indexRange='\0'; 
+    
+    char ** array_paramArgs;
+    if (strcmp(argv[7],"1")==0)
+      array_paramArgs = doubleduplicateArgv(argv[8]);   
+    
+    // Check the parameters
+      
+    	for( argn = 1; argn <count_paramArgs ; argn++ )
 	{
-		const char *arg = argv[argn];
+		
+		const char *arg = array_paramArgs[argn];	     //instead of reading from argv[], now read from array
+		//const char * arg=argv[argn];
 		
 		if( '-' != arg[0] )
 		{
@@ -212,7 +274,8 @@ int main(void)
             getNextArgStr( &temp, "minbuffertime" ); vg.minBufferTime = atof(temp);
         } else if ( keymatch( arg, "bandwidth", 9 ) ) {
             getNextArgStr( &temp, "bandwidth" ); vg.bandwidth = atoi(temp);
-        } else if ( keymatch( arg, "sbw", 3 ) ) {
+        } 
+        else if ( keymatch( arg, "sbw", 3 ) ) {
                 vg.suggestBandwidth = true;
         } else if ( keymatch( arg, "isolive", 7 ) ) {
                 vg.isoLive = true;
@@ -222,7 +285,11 @@ int main(void)
                 vg.isomain = true;
         } else if ( keymatch( arg, "dynamic", 7 ) ) {
                 vg.dynamic = true;
-        } else if ( keymatch( arg, "level", 5 ) ) {
+        }
+        else if ( keymatch( arg, "indexrange", 10 ) ) {
+                getNextArgStr( &vg.indexRange, "indexrange" );	  			  
+	}
+        else if ( keymatch( arg, "level", 5 ) ) {
                 vg.subRepLevel = true;
         } else if ( keymatch( arg, "startwithsap", 6 ) ) {
                 getNextArgStr( &sapType, "startwithsap" );vg.startWithSAP = atoi(sapType);
@@ -235,8 +302,9 @@ int main(void)
 		} else if (keymatch(arg, "logconsole", 10)) {
 			logConsole = true;
         } else if ( keymatch( arg, "dash264base", 11 ) ) {
-                vg.dash264base = true;
-        } else if ( keymatch( arg, "dash264enc", 10 ) ) {
+               vg.dash264base = true;
+        } 
+        else if ( keymatch( arg, "dash264enc", 10 ) ) {
                 vg.dash264enc = true;
 		} else if ( keymatch( arg, "samplenumber", 1 ) ) {
 			getNextArgStr( &vg.samplenumberstr, "samplenumber" );
@@ -249,17 +317,32 @@ int main(void)
                           getNextArgStr( &temp, "height" ); vg.height = atoi(temp);
 		} else if ( keymatch( arg, "codecs", 6 ) ) {
                           getNextArgStr( &vg.codecs, "codecs" ); 
-	        } else if ( keymatch( arg, "audiochvalue", 12 ) ) {
-                         getNextArgStr( &temp, "audiochvalue" ); vg.audioChValue = atoi(temp);
                  		  			  
-		} else {
+		}
+		//else if ( keymatch( arg, "configflag", 10 ) ) {
+                //          getNextArgStr( &temp, "configflag" ); vg.configflag = atoi(temp);
+                //}
+		else {
 			fprintf( stderr, "Unexpected option \"%s\"\n", arg);
 			err = -1;
 			goto usageError;
 		}
 	}
 	
-
+	for(int i = 0; i < count_paramArgs; i++)		
+	{
+	  char * currentPtr = array_paramArgs[i];
+	  free(currentPtr);			//free the memory allocated by malloc in doubleduplicateArgv
+	}
+	
+	free(array_paramArgs);
+	
+	
+	if (vg.indexRange!='\0')
+	  sscanf (vg.indexRange,"%d-%d",&vg.lowerindexRange,&vg.higherindexRange);
+	  
+	
+	
 	//=====================
 	// Process input parameters
 
@@ -334,6 +417,7 @@ int main(void)
         fprintf( stderr, "width and height must be provided together as options!\n" );
         goto usageError;
     }
+    
 
 	if (vg.samplenumberstr[0] == 0) {
 		vg.samplenumber = 0;			// zero means print them all if you print any
