@@ -599,6 +599,9 @@ typedef struct {
     unsigned int  width;
     unsigned int  height;
     argstr codecs;
+    argstr indexRange;
+    int lowerindexRange;
+    int higherindexRange;
     unsigned int audioChValue;
 	bool	suggestBandwidth;
     bool    isoLive;
