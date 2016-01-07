@@ -2720,7 +2720,7 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
     
     /*for the index range, verify that 
   sidxInfo->offset > starting of index range && 
-  sidxInfo->offset + sidxInfo->size < ending of index range */
+  sidxInfo->offset + sidxInfo->size - 1 < ending of index range */
     
   int offs=sidxInfo->offset;       //convert to int value and store it in a variable
   int siz=sidxInfo->size;
@@ -2728,7 +2728,7 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
   
   if (vg.lowerindexRange!=-1 && vg.higherindexRange!=-1)
   {
-    if (offs < vg.lowerindexRange || (offs + siz - 1) > vg.higherindexRange)
+    if (offs < vg.lowerindexRange || (offs + siz - 1 ) > vg.higherindexRange)
       //fprintf(stdout,"%d  %d\n",vg.lowerindexRange,vg.higherindexRange);
       errprint("sidx offset %d is less than starting of indexRange %d, OR sum of sidx offset %d and sidx size %d minus 1 is greater than ending of indexRange %d\n",offs,vg.lowerindexRange,offs,siz,vg.higherindexRange);
   
