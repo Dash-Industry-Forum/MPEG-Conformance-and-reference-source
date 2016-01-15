@@ -19,6 +19,12 @@ limitations under the License.
 
 
 #include "ValidateMP4.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string.h>
+#include "stdio.h"
+#include "stdlib.h"
 #if STAND_ALONE_APP
 	#include "console.h"
 #endif
@@ -38,6 +44,8 @@ ValidateGlobals vg = {0};
 
 
 static int keymatch (const char * arg, const char * keyword, int minchars);
+
+void expandArgv(int srcArgc, const char** srcArgV, int &dstArgc, const char** &dstArgv);   
 
 //#define STAND_ALONE_APP 1  //  #define this if you're using a source level debugger (i.e. Visual C++ in Windows)
 							  //  also, near the beginning of main(), hard-code your arguments (e.g. your test file)
@@ -70,12 +78,78 @@ static int keymatch (const char * arg, const char * keyword, int minchars)
   return true;			/* A-OK */
 }
 
+void writeEntry(char* srcPtr, int &srcIndex, char* &dstPtr, int &dstIndex, int maxArgc)
+{
+    if(dstIndex >= maxArgc)
+    {
+        fprintf(stderr,"May number of config arguments %d overshot, exiting!\n",maxArgc);
+        exit(-1);
+    }
+    dstPtr = (char*)(malloc((strlen(srcPtr) + 1) * sizeof(char)));  //allocate memory for each row
+    strcpy(dstPtr,srcPtr);
+
+    srcIndex++;
+    dstIndex++;
+    return;
+}
+
+void expandArgv(int srcArgc, char** srcArgV, int &dstArgc, char** &dstArgv)
+{  
+#define maxArgc 255
+
+  dstArgv= (char**)malloc(sizeof(char*) * maxArgc);		//allocate memory for no. of rows
+  
+  int dstIndex = 0;
+  
+  for (int srcIndex = 0 ; ; )					//read line from text file
+  {
+  
+    if(strcmp(srcArgV[srcIndex],"-configfile") == 0)
+    {
+        srcIndex++;
+        
+        FILE* f = fopen( srcArgV[srcIndex], "r" );          //location of text file to be opened specified by str 
+        if(f == NULL)
+        {
+            fprintf(stderr,"-configfile %s used, file not found, exiting!\n",srcArgV[srcIndex]);
+            exit(-1);
+        }
+
+        srcIndex++;
+        
+        char line[ 1000 ];
+                        
+        while (fgets( line, 1000, f ))                 //read line from text file
+        {
+          char * pch;
+          pch = strtok(line,"\n, ");                  //remove \n character and space
+          pch=strtok(pch," ");
+
+          int dummy;
+          writeEntry(pch,dummy,dstArgv[dstIndex],dstIndex,maxArgc); //Dont change srcIndex any further 
+        }
+        
+        fclose(f);        
+    }
+    else
+        writeEntry(srcArgV[srcIndex],srcIndex,dstArgv[dstIndex],dstIndex,maxArgc);
+
+    if(srcIndex >= srcArgc) //All src args processed
+    {
+        dstArgc = dstIndex;
+        break;
+    }
+  }
+  
+  return;
+}
+
 //==========================================================================================
 //_MSL_IMP_EXP_C extern int ccommand(char ***);
 
 #define getNextArgStr( _str_, _str_err_str_ ) \
 		argn++; \
-		arg = argv[argn]; \
+		arg = arrayArgc[argn]; \
 		if( nil == arg ) \
 		{ \
 			fprintf( stderr, "Expected " _str_err_str_ " got end of args\n" ); \
@@ -154,11 +228,20 @@ int main(void)
     vg.dash264base = false;
     vg.dash264enc = false;
     vg.numOffsetEntries = 0;
+    vg.lowerindexRange=-1;
+    vg.higherindexRange=-1;
+    //vg.indexRange='\0'; 
+    
+    char ** arrayArgc;
+    int uArgc;
+    expandArgv(argc,argv,uArgc,arrayArgc);   
+    
 		
 	// Check the parameters
-	for( argn = 1; argn < argc; argn++ )
+	for( argn = 1; argn < uArgc ; argn++ )
 	{
-		const char *arg = argv[argn];
+		const char *arg = arrayArgc[argn];	     //instead of reading from argv[], now read from array
+		//const char * arg=argv[argn];
 		
 		if( '-' != arg[0] )
 		{
@@ -222,6 +305,8 @@ int main(void)
                 vg.isomain = true;
         } else if ( keymatch( arg, "dynamic", 7 ) ) {
                 vg.dynamic = true;
+        } else if ( keymatch( arg, "indexrange", 10 ) ) {
+                getNextArgStr( &vg.indexRange, "indexrange" );	  			  
         } else if ( keymatch( arg, "level", 5 ) ) {
                 vg.subRepLevel = true;
         } else if ( keymatch( arg, "startwithsap", 6 ) ) {
@@ -258,6 +343,18 @@ int main(void)
 			goto usageError;
 		}
 	}
+	
+	for(int i = 0; i < uArgc; i++)		
+	{
+	  char * currentPtr = arrayArgc[i];
+	  free(currentPtr);			//free the memory allocated by malloc in doubleduplicateArgv
+	}
+	
+	free(arrayArgc);
+	
+	
+	if (vg.indexRange!='\0')
+	  sscanf (vg.indexRange,"%d-%d",&vg.lowerindexRange,&vg.higherindexRange);
 	
 
 	//=====================

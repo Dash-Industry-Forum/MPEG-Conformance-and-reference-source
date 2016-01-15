@@ -20,6 +20,9 @@ limitations under the License.
 
 #include "ValidateMP4.h"
 
+#include "string.h"
+#include "stdio.h"
+#include "stdlib.h"
 
 extern ValidateGlobals vg;
 
@@ -2714,6 +2717,23 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
 
     sidxInfo->offset = aoe->offset;
     sidxInfo->size = aoe->size;
+    
+    /*for the index range, verify that 
+  sidxInfo->offset > starting of index range && 
+  sidxInfo->offset + sidxInfo->size - 1 < ending of index range */
+    
+  int offs=sidxInfo->offset;       //convert to int value and store it in a variable
+  int siz=sidxInfo->size;
+  
+  
+  if (vg.lowerindexRange!=-1 && vg.higherindexRange!=-1)
+  {
+    if (offs < vg.lowerindexRange || (offs + siz - 1 ) > vg.higherindexRange)
+      //fprintf(stdout,"%d  %d\n",vg.lowerindexRange,vg.higherindexRange);
+      errprint("sidx offset %d is less than starting of indexRange %d, OR sum of sidx offset %d and sidx size %d minus 1 is greater than ending of indexRange %d\n",offs,vg.lowerindexRange,offs,siz,vg.higherindexRange);
+  
+  } 
+  
     
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
