@@ -561,7 +561,7 @@ void checkNonIndexedSamples(MovieInfoRec *mir)
                     {
                         for(UInt32 m = 0 ; m < moof->trafInfo[k].trunInfo[l].sample_count ; m++)
                         {            
-                            bool sample_is_non_sync_sample = (moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000 >> 16) != 0;
+                            bool sample_is_non_sync_sample = ((moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000) >> 16) != 0;
                             bool sample_is_SAP = !sample_is_non_sync_sample || moof->trafInfo[k].trunInfo[l].sap3[m] || moof->trafInfo[k].trunInfo[l].sap4[m];
                             
                             if(sample_is_SAP)
@@ -742,7 +742,7 @@ void checkSegmentStartWithSAP(int startWithSAP, MovieInfoRec *mir)
                     {
                         if(segmentStarted)
                         {
-                            bool sample_is_non_sync_sample = (mir->moofInfo[j].trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000 >> 16) != 0;
+                            bool sample_is_non_sync_sample = ((mir->moofInfo[j].trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000) >> 16) != 0;
                             int smallestSAPType = !sample_is_non_sync_sample ? 1 : mir->moofInfo[j].trafInfo[k].trunInfo[l].sap3[m] ? 3 : mir->moofInfo[j].trafInfo[k].trunInfo[l].sap4[m] ? 4 : 7;
                             if(smallestSAPType > startWithSAP)
                             {
@@ -971,7 +971,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir)
                                 {
                                     samplePresentationTime = moof->trafInfo[k].trunInfo[l].samplePresentationTime[m];
 
-                                    bool sample_is_non_sync_sample = (moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000 >> 16) != 0;
+                                    bool sample_is_non_sync_sample = ((moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000) >> 16) != 0;
                                     UInt8 SAP_type = mir->sidxInfo[i].references[j].SAP_type;
                                     bool sample_is_SAP = mir->sidxInfo[i].references[j].SAP_type > 0 ? ((SAP_type == 1 || SAP_type == 2) && !sample_is_non_sync_sample) || (SAP_type == 3 && moof->trafInfo[k].trunInfo[l].sap3[m]) || (SAP_type == 4 && moof->trafInfo[k].trunInfo[l].sap4[m]) :
                                             !sample_is_non_sync_sample || moof->trafInfo[k].trunInfo[l].sap3[m] || moof->trafInfo[k].trunInfo[l].sap4[m];   //The latter case is with starts_with_SAP > 0 and unknown SAP type (0)

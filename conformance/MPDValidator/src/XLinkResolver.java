@@ -48,6 +48,15 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Vector;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.BufferedInputStream;
+import java.io.FileOutputStream;
+import java.io.SequenceInputStream;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 /**
  * Class for providing an XLink resolver.
  * 
@@ -63,7 +72,6 @@ public class XLinkResolver {
 	public void resolveXLinks(String fileToResolve) throws SAXException, IOException, ParserConfigurationException, XPathExpressionException, XLinkException, TransformerException {
 		Document localDoc = parseXML(fileToResolve);
 		documentList_.add(localDoc); // add start document to the list
-			
 		Document newDocument = handleNodeList(localDoc);
 			
 		// output temporary XML file
@@ -78,57 +86,92 @@ public class XLinkResolver {
 				
 				if (Definitions.debug_)
 					printNode(nNode);
-				
 				String link = extractXLinkHref(nNode);
 				if (link != null) {
-					Document remoteDoc = parseXML(link);
-					
-					// check if referencing element type and referenced element type are the same
-					Element remoteRootElement = remoteDoc.getDocumentElement();
-					if (!nNode.getNodeName().equals(remoteRootElement.getNodeName())) {
-						throw new XLinkException("Referenced Document must contain same element type as referencing element!\n\n"
-								+ "Referencing element: " + nNode.getNodeName() + "\nReferenced element: " + remoteDoc.getDocumentElement().getNodeName());
-					}
-					
-					// check if we already used this document (direct or indirect circular reference)
-					for (int j = 0; j < documentList_.size(); j++) {
-						if (documentList_.get(j).isEqualNode(remoteDoc))
-							throw new XLinkException("Circular referencing detected!");
-					}
-					
-					documentList_.add(remoteDoc); // add the parsed document to the list for detecting circular referencing
-										
-					//printElement(remoteDoc.getDocumentElement());
-					
-					remoteDoc = handleNodeList(remoteDoc);
-					
-					// replace XLink included document
-					Node parent = nNode.getParentNode();
-					Node importedNode = doc.importNode(remoteRootElement, true);
-					
-					// re-add and reset original attributes
-					NamedNodeMap nodeAttributes = nNode.getAttributes();
-					if (nodeAttributes != null) {
-						for (int j = 0; j < nodeAttributes.getLength(); j++) {
-							Node attribute = nodeAttributes.item(j);							
-							String name = attribute.getNodeName();
-							String value = attribute.getNodeValue();
-							String namespace = attribute.getNamespaceURI();
-							
-							// do not re-add the XLink attributes and empty attributes
-							// also reset to original values of attributes in referenced document
-							// having different values than in original document
-							if (!Definitions.XLINK_NAMESPACE.equals(namespace) && !value.equals(""))
-								((Element)importedNode).setAttribute(name, value);
+                    Document remoteDoc = parseXML(link);
+                    // Earlier the calling xlink node can be directly replaced with the remoteDoc's root element.
+                    // But this is no longer possible, because we add a manual root element.
+					// Instead we need to extract the child nodes.
+                    // As a first step, the first child node should replace the calling parent xlink node.
+                    // As the next few steps, the nodes after the first child node should be added after the parent
+                    // xlink node. Along with this, we need to check the conformance of each of the child nodes.
+
+					// Extract the nodes from remote element.
+					Element remoteRootElementWithManualRoot = remoteDoc.getDocumentElement();
+					NodeList nList1 = remoteRootElementWithManualRoot.getChildNodes();
+
+					//	Certain parameters declared and initialized.
+                    boolean firstNode = true;
+                    Node referenceNode = nList1.item(0);
+                    Node replacedNode = nList1.item(0);
+                    Node refParent = nNode.getParentNode();
+
+					// Iterate over all the nodes.
+					for (int k = 0; k < nList1.getLength(); k++){
+						Node nodeCurr = nList1.item(k);
+						// Whitespaces are detected as node sometimes. This "if" condition will take of that.
+						if ( nodeCurr.getNodeType() == Node.ELEMENT_NODE ) {
+							// Create new document element with the current node.
+                            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                            factory.setNamespaceAware(true);
+                            DocumentBuilder builder = factory.newDocumentBuilder();
+                            Document newRemoteDoc = builder.newDocument();
+                            Node tmpNode = newRemoteDoc.importNode(nodeCurr, true);
+                            newRemoteDoc.appendChild(tmpNode);
+
+							Element remoteRootElement = newRemoteDoc.getDocumentElement();
+
+							if (remoteRootElement.getAttribute("xlink:actuate").equals("onLoad")) {
+								throw new XLinkException("URI references to remote element entities that contain another" +
+                                        " @xlink:href attribute with xlink:actuate set to onLoad are treated as invalid circular references.");
+							}
+
+                            if (!nNode.getNodeName().equals(remoteRootElement.getNodeName())) {
+                                throw new XLinkException("Referenced Document must contain same element type as referencing element!\n\n"
+                                        + "Referencing element: " + nNode.getNodeName() + "\nReferenced element: " + newRemoteDoc.getDocumentElement().getNodeName());
+                            }
+
+                            // check if we already used this document (direct or indirect circular reference)
+                            for (int j = 0; j < documentList_.size(); j++) {
+                                if (documentList_.get(j).isEqualNode(newRemoteDoc))
+                                    throw new XLinkException("Circular referencing detected!");
+                            }
+                            documentList_.add(newRemoteDoc); // add the parsed document to the list for detecting circular referencing
+                            //printElement(remoteDoc.getDocumentElement());
+                            newRemoteDoc = handleNodeList(newRemoteDoc);
+                            // replace XLink included document
+							remoteRootElement = newRemoteDoc.getDocumentElement(); // The remote remoteRootElement has to be update to ensure that it takes the current values.
+                            Node parent = nNode.getParentNode();
+                            Node importedNode = doc.importNode(remoteRootElement, true);
+                            // re-add and reset original attributes
+                            NamedNodeMap nodeAttributes = nNode.getAttributes();
+                            if (nodeAttributes != null) {
+                                for (int j = 0; j < nodeAttributes.getLength(); j++) {
+                                    Node attribute = nodeAttributes.item(j);
+                                    String name = attribute.getNodeName();
+                                    String value = attribute.getNodeValue();
+                                    String namespace = attribute.getNamespaceURI();
+                                    // do not re-add the XLink attributes and empty attributes
+                                    // also reset to original values of attributes in referenced document
+                                    // having different values than in original document
+                                    if (!Definitions.XLINK_NAMESPACE.equals(namespace) && !value.equals(""))
+                                        ((Element)importedNode).setAttribute(name, value);
+                                }
+                            }
+                            // replace node
+                            if (firstNode == true) { // Replace if it is the first node.
+                                parent.replaceChild(importedNode, nNode);
+                                firstNode = false;
+                            }
+                            else { // The following line adds the newly created node after the reference node.
+                                referenceNode.getParentNode().insertBefore(importedNode, referenceNode.getNextSibling());
+                            }
+							referenceNode = importedNode; // Reinitialize the reference node for every iteration.
 						}
 					}
-					
-					// replace node
-					parent.replaceChild(importedNode, nNode);
 				}
 			}
 		}
-		
 		return doc;
 	}
 
@@ -166,13 +209,30 @@ public class XLinkResolver {
 		Document doc;
 		try {
 			URL myURL = new URL(xmlURI);
-			doc = dBuilder.parse(myURL.openStream());
-		}
+			// Earlier problem was that when a multi period remote content is fed for parsing, it does not work because
+			// it is not a valid xml file. The reason is that there can be only one root element. We fix this by
+            // manually adding a root element around the multi period content. Note that if it is a normal .xml file,
+            // then it is being parsed as it was before (the if condition takes care of this).
+            String type = xmlURI.substring(xmlURI.lastIndexOf('.') + 1);
+            if(!type.equals("mpd")) {
+				// Add manual <root> element around the xml file.
+                List<InputStream> streams = Arrays.asList(
+                        new ByteArrayInputStream("<root>".getBytes()),
+                        new BufferedInputStream(myURL.openStream()),
+                        new ByteArrayInputStream("</root>".getBytes())
+                );
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                InputStream in = new SequenceInputStream(Collections.enumeration(streams));
+                doc = dBuilder.parse(in);
+            }
+            else {
+                doc = dBuilder.parse(myURL.openStream()); // The usual parse for a normal .mpd file.
+            }
+        }
 		catch ( MalformedURLException e ) {
 			doc = dBuilder.parse(xmlURI);
 		}
 		doc.getDocumentElement().normalize();
-		
 		return doc;
 	}
 	

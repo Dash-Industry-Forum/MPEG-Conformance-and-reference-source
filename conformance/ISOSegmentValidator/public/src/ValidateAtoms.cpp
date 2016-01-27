@@ -2464,7 +2464,12 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
         if(trunInfo->sample_flags_present)
             BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_flags[i], offset, &offset ) );
 		else
-			trunInfo->sample_flags[i] = trafInfo->default_sample_flags;
+		{
+		    if(trunInfo->first_sample_flags_present && (i == 0))
+                trunInfo->sample_flags[0] = trunInfo->first_sample_flags;
+            else
+			    trunInfo->sample_flags[i] = trafInfo->default_sample_flags;
+		}
 
         //Use it as a signed int when version is non-zero
         if(trunInfo->sample_composition_time_offsets_present)
