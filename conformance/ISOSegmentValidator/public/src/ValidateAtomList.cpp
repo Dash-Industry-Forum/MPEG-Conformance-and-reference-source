@@ -1238,7 +1238,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		if (segmentFound && (segmentNum == (vg.segmentInfoSize - 1)) && vg.dash264base && (vg.dynamic || vg.isoLive) && !lmsgFoundInCompatibleBrands) {
 			if (segmentFound && segmentNum != vg.segmentInfoSize)
-				errprint("Brand 'lmsg' not found as a compatible brand for the last segment (number %d); violates Section 3.2.3. of Interoperability Point DASH264: If the MPD@type is equal to \"dynamic\" or if it includes MPD@profile attribute in-cludes \"urn:mpeg:dash:profile:isoff-live:2011\", then: if the Media Segment is the last Media Segment in the Representation, this Me-dia Segment shall carry the 'lmsg' compatibility brand\n", segmentNum + 1);
+				warnprint("Brand 'lmsg' not found as a compatible brand for the last segment (number %d); violates Section 3.2.3. of Interoperability Point DASH264: If the MPD@type is equal to \"dynamic\" or if it includes MPD@profile attribute in-cludes \"urn:mpeg:dash:profile:isoff-live:2011\", then: if the Media Segment is the last Media Segment in the Representation, this Me-dia Segment shall carry the 'lmsg' compatibility brand\n", segmentNum + 1);
 		}
 
 		if (!msdhFound) {
@@ -1350,7 +1350,7 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 			}
 			//    need to pass info that this is a text track to ValidateAtomOfType 'trak' below (refcon arg doesn't seem to work)
 	
-// ¥¥¥¥
+// ï¿½ï¿½ï¿½ï¿½
 			++thisTrakIndex;
 		}
 	}
@@ -1370,7 +1370,7 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 				entry->aoeflags &= ~kAtomSkipThisAtom;
 			}
 
-// ¥¥¥¥
+// ï¿½ï¿½ï¿½ï¿½
 			++thisTrakIndex;
 		}
 	}
@@ -1423,7 +1423,7 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 				break;
 				
 			case 'wide':	// this guy is QuickTime specific
-			// ¥¥ if !qt, mpeg may be unfamiliar
+			// ï¿½ï¿½ if !qt, mpeg may be unfamiliar
 				break;
 				
 			default:
@@ -2176,7 +2176,7 @@ OSErr Validate_moovhnti_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {
 			default:
-			// ¥¥ should warn
+			// ï¿½ï¿½ should warn
 				break;
 		}
 		
