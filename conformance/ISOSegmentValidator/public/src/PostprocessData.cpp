@@ -460,6 +460,8 @@ void verifyLeafDurations(MovieInfoRec *mir) {
 void checkNonIndexedSamples(MovieInfoRec *mir) {
     UInt32 accessUnitDuration = 0;
     bool indexedTrackFound = false;  //if there is any indexed track
+    bool nonIndexTrackFound = false;
+    
     for (int i = 0; i < mir->numTIRs; i++) {
         TrackInfoRec *tir = &(mir->tirList[i]);
 
@@ -469,58 +471,59 @@ void checkNonIndexedSamples(MovieInfoRec *mir) {
         }
     }
 
-    if (indexedTrackFound) {
-        for (int i = 0; i < mir->numTIRs; i++) {
-            TrackInfoRec *tir = &(mir->tirList[i]);
+    for (int i = 0; i < mir->numTIRs; i++) {
+        TrackInfoRec *tir = &(mir->tirList[i]);
 
-            if (tir->leafInfo[0].segmentIndexed)
-                continue; //An indexed stream
+//            if (tir->leafInfo[0].segmentIndexed)
+//                continue; //An indexed stream
+        bool currentTrackIndexed = tir->leafInfo[0].segmentIndexed;
+        if(!currentTrackIndexed)
+            nonIndexTrackFound = true;
 
-            bool reportInequalDuration = true;
-            bool reportInequalControlDuration = true;
-            UInt64 nonSyncSamples = 0;
-            UInt64 syncSamples = 0;
+        bool reportInequalDuration = true;
+        bool reportInequalControlDuration = true;
+        UInt64 nonSyncSamples = 0;
+        UInt64 syncSamples = 0;
 
-            for (UInt32 j = 0; j < mir->numFragments; j++) {
-                MoofInfoRec *moof = &mir->moofInfo[j];
+        for (UInt32 j = 0; j < mir->numFragments; j++) {
+            MoofInfoRec *moof = &mir->moofInfo[j];
 
-                for (UInt32 k = 0; k < moof->numTrackFragments; k++) {
-                    if (moof->trafInfo[k].track_ID == tir->trackID && moof->trafInfo[k].numTrun > 0) //Assuming 'trun' cannot be empty, 14496-12 version 4 does not indicate such a possiblity.
-                    {
-                        for (UInt32 l = 0; l < moof->trafInfo[k].numTrun; l++) {
-                            for (UInt32 m = 0; m < moof->trafInfo[k].trunInfo[l].sample_count; m++) {
-                                bool sample_is_non_sync_sample = ((moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000) >> 16) != 0;
-                                bool sample_is_SAP = !sample_is_non_sync_sample || moof->trafInfo[k].trunInfo[l].sap3[m] || moof->trafInfo[k].trunInfo[l].sap4[m];
+            for (UInt32 k = 0; k < moof->numTrackFragments; k++) {
+                if (moof->trafInfo[k].track_ID == tir->trackID && moof->trafInfo[k].numTrun > 0) //Assuming 'trun' cannot be empty, 14496-12 version 4 does not indicate such a possiblity.
+                {
+                    for (UInt32 l = 0; l < moof->trafInfo[k].numTrun; l++) {
+                        for (UInt32 m = 0; m < moof->trafInfo[k].trunInfo[l].sample_count; m++) {
+                            bool sample_is_non_sync_sample = ((moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000) >> 16) != 0;
+                            bool sample_is_SAP = !sample_is_non_sync_sample || moof->trafInfo[k].trunInfo[l].sap3[m] || moof->trafInfo[k].trunInfo[l].sap4[m];
 
-                                if (sample_is_SAP)
-                                    syncSamples++;
-                                else
-                                    nonSyncSamples++;
+                            if (sample_is_SAP)
+                                syncSamples++;
+                            else
+                                nonSyncSamples++;
 
-                                if (accessUnitDuration == 0)
-                                    accessUnitDuration = moof->trafInfo[k].trunInfo[l].sample_duration[m];
+                            if (accessUnitDuration == 0)
+                                accessUnitDuration = moof->trafInfo[k].trunInfo[l].sample_duration[m];
 
-                                if (reportInequalDuration && moof->trafInfo[k].trunInfo[l].sample_duration[m] != accessUnitDuration) {
-                                    errprint("Sample duration (%lu) of at least one sample of a non-index track (%d) is inequal to a previously reported duration (%lu), violating Section 7.2.2. of ISO/IEC 23009-1:2012(E): non-indexed media streams in all Representations of an Adaptation Set shall have the same access unit duration\n", moof->trafInfo[k].trunInfo[l].sample_duration[m], mir->tirList[i].trackID, accessUnitDuration);
-                                    reportInequalDuration = false;
-                                }
+                            if (!currentTrackIndexed && indexedTrackFound && reportInequalDuration && moof->trafInfo[k].trunInfo[l].sample_duration[m] != accessUnitDuration) {
+                                errprint("Sample duration (%lu) of at least one sample of a non-index track (%d) is inequal to a previously reported duration (%lu), violating Section 7.2.2. of ISO/IEC 23009-1:2012(E): non-indexed media streams in all Representations of an Adaptation Set shall have the same access unit duration\n", moof->trafInfo[k].trunInfo[l].sample_duration[m], mir->tirList[i].trackID, accessUnitDuration);
+                                reportInequalDuration = false;
+                            }
 
-                                if (vg.accessUnitDurationNonIndexedTrack != 0 && reportInequalControlDuration && moof->trafInfo[k].trunInfo[l].sample_duration[m] != vg.accessUnitDurationNonIndexedTrack) {
-                                    errprint("Control sample duration %lu is inequal to the sample duration of this stream (%lu) for non-indexed track (%d), violating Section 7.2.2. of ISO/IEC 23009-1:2012(E): non-indexed media streams in all Representations of an Adaptation Set shall have the same access unit duration\n", vg.accessUnitDurationNonIndexedTrack, moof->trafInfo[k].trunInfo[l].sample_duration[m], mir->tirList[i].trackID);
-                                    reportInequalControlDuration = false;
-                                }
+                            if (!currentTrackIndexed && indexedTrackFound && vg.accessUnitDurationNonIndexedTrack != 0 && reportInequalControlDuration && moof->trafInfo[k].trunInfo[l].sample_duration[m] != vg.accessUnitDurationNonIndexedTrack) {
+                                errprint("Control sample duration %lu is inequal to the sample duration of this stream (%lu) for non-indexed track (%d), violating Section 7.2.2. of ISO/IEC 23009-1:2012(E): non-indexed media streams in all Representations of an Adaptation Set shall have the same access unit duration\n", vg.accessUnitDurationNonIndexedTrack, moof->trafInfo[k].trunInfo[l].sample_duration[m], mir->tirList[i].trackID);
+                                reportInequalControlDuration = false;
                             }
                         }
                     }
                 }
             }
-
-            if (nonSyncSamples > 0)
-                errprint("%lld non-sync samples found out of total %lld samples, for non-indexed track %d, violating Section 6.2.3.2. of ISO/IEC 23009-1:2012(E): every access unit of the non-indexed streams shall be a SAP of type 1.\n", nonSyncSamples, nonSyncSamples + syncSamples, mir->tirList[i].trackID);
         }
+
+        if (!currentTrackIndexed && indexedTrackFound && nonSyncSamples > 0)
+            errprint("%lld non-sync samples found out of total %lld samples, for non-indexed track %d, violating Section 6.2.3.2. of ISO/IEC 23009-1:2012(E): every access unit of the non-indexed streams shall be a SAP of type 1.\n", nonSyncSamples, nonSyncSamples + syncSamples, mir->tirList[i].trackID);
     }
 
-    vg.accessUnitDurationNonIndexedTrack = accessUnitDuration; //To store for this represntation in file
+    vg.accessUnitDurationNonIndexedTrack = nonIndexTrackFound ? accessUnitDuration : 0; //To store for this represntation in file
 
     for (int i = 0; i < mir->numTIRs; i++) {
         TrackInfoRec *tir = &(mir->tirList[i]);
