@@ -326,8 +326,6 @@ int main(void)
 		} else if ( keymatch( arg, "samplenumber", 1 ) ) {
 			getNextArgStr( &vg.samplenumberstr, "samplenumber" );
 
-
-
 		} else if ( keymatch( arg, "width", 5 ) ) {
                           getNextArgStr( &temp, "width" ); vg.width = atoi(temp);
                 } else if ( keymatch( arg, "height", 6 ) ) {
@@ -617,6 +615,9 @@ usageError:
 	fprintf( stderr, "    -bss              Make checks specific for bitstream switching\n" );
 	fprintf( stderr, "    -dash264base      Make checks specific for DASH264 Base IOP\n" );
 	fprintf( stderr, "    -dash264enc       Make checks specific for encrypted DASH264 content\n" );
+	fprintf( stderr, "    -indexrange       Byte range where sidx is expected\n");
+	fprintf( stderr, "    -width            Expected width of the video track\n");
+	fprintf( stderr, "    -height           Expected height of the video track\n");
 	fprintf( stderr, "    -s[amplenumber]   <number> - limit sample checking or printing operations to sample <number> \n" );
 	fprintf( stderr, "                      most effective in combination with -atompath (default is all samples) \n" );
 	fprintf( stderr, "    -offsetinfo       <Offset Info File> - Partial file optimization information file: if the file has several byte ranges removed, this file provides the information as offset-bytes removed pairs\n");

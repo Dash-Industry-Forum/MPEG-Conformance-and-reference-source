@@ -1322,7 +1322,7 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
     mir->fragmented = false; //unless 'mvex' is found in 'moov'
 
 	atomerr = ValidateAtomOfType( 'mvhd', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
-		Validate_mvhd_Atom, cnt, list, NULL);
+		Validate_mvhd_Atom, cnt, list, mir);
 	if (!err) err = atomerr;
 
 

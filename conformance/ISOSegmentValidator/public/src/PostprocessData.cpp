@@ -272,6 +272,8 @@ void estimatePresentationTimes(MovieInfoRec *mir) {
                 printf("Empty edits not handled. Processing unreliable.\n");
             }
 
+            SInt64 segmentDurationInMediaTimescale = (SInt64)((long double)tir->elstInfo[e].duration/(long double)mir->mvhd_timescale*(long double)tir->mediaTimeScale);
+
             for (UInt32 j = 0; j < mir->numFragments; j++) {
                 UInt64 cummulatedDuration = 0;
                 MoofInfoRec *moof = &mir->moofInfo[j];
@@ -286,7 +288,7 @@ void estimatePresentationTimes(MovieInfoRec *mir) {
                                 SInt64 sampleCompositionTime = sample_composition_time_offset + (SInt64) moof->tfdt[i] + cummulatedDuration;
 
                                 if (tir->elstInfo[e].mediaTime >= 0) {
-                                    if (sampleCompositionTime >= tir->elstInfo[e].mediaTime && (tir->elstInfo[e].duration == 0 || sampleCompositionTime < (tir->elstInfo[e].mediaTime + (SInt64) tir->elstInfo[e].duration))) {
+                                    if (sampleCompositionTime >= tir->elstInfo[e].mediaTime && (tir->elstInfo[e].duration == 0 || sampleCompositionTime < (tir->elstInfo[e].mediaTime + segmentDurationInMediaTimescale))) {
                                         moof->trafInfo[k].trunInfo[l].samplePresentationTime[m] = 0 - (tir->elstInfo[e].mediaTime - presentationTime); //Save the delta in: presentationTime = CompositionTime - (editMediaTime_i - presntationDuration)
                                         moof->trafInfo[k].trunInfo[l].sampleToBePresented[m] = true;
                                         moof->samplesToBePresented = true;
@@ -302,7 +304,7 @@ void estimatePresentationTimes(MovieInfoRec *mir) {
                 }
             }
 
-            presentationTime += (SInt64) tir->elstInfo[e].duration;
+            presentationTime += segmentDurationInMediaTimescale;
         }
     }
 

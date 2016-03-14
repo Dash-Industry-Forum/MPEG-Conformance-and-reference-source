@@ -139,13 +139,13 @@ typedef struct MovieHeaderVers1Record {
 	
 OSErr Validate_mvhd_Atom( atomOffsetEntry *aoe, void *refcon )
 {
-#pragma unused(refcon)
 	OSErr err = noErr;
 	UInt32 version;
 	UInt32 flags;
 	UInt64 offset;
 	MovieHeaderVers1Record	mvhdHead;
 	MovieHeaderCommonRecord	mvhdHeadCommon;
+	MovieInfoRec	*mir = (MovieInfoRec	*)refcon;
 	
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
@@ -197,6 +197,8 @@ OSErr Validate_mvhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprint("duration=\"%s\"\n", int64todstr(mvhdHead.duration));
 	atomprint("nextTrackID=\"%ld\"\n", mvhdHeadCommon.nextTrackID);
 	atomprint("/>\n"); 
+
+	mir->mvhd_timescale = mvhdHead.timeScale;    //Used for edit lists
 
 	// Check required field values
 	FieldMustBe( mvhdHeadCommon.preferredRate, 0x00010000, "'mhvd' preferredRate must be 0x%lx not 0x%lx" );

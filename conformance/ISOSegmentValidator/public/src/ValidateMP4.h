@@ -518,6 +518,7 @@ typedef struct {
     UInt32  processedFragments;
     UInt32  sequence_number;
     UInt64  fragment_duration;
+	UInt32  mvhd_timescale;
 
 	long			numTIRs;
 	TrackInfoRec	tirList[1];
