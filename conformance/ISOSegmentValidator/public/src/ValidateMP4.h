@@ -612,6 +612,7 @@ typedef struct {
     bool    subRepLevel;
     bool    bss;
     bool    dash264base;
+    bool    dashifbase;
     bool    dash264enc;
     unsigned int  numControlTracks;
     unsigned int  *numControlLeafs;
