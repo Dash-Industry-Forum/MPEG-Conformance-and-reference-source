@@ -614,6 +614,7 @@ typedef struct {
     bool    dash264base;
     bool    dashifbase;
     bool    dash264enc;
+    bool    RepresentationIndex;
     unsigned int  numControlTracks;
     unsigned int  *numControlLeafs;
     LeafInfo **controlLeafInfo;
