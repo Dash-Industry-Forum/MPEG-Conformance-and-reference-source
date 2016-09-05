@@ -102,7 +102,7 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                     }
                     /*JLF: this is only valid for onDemand profile (8.3.3) and live (8.4.3)*/
                     if (fragmentInSegmentFound && (list[j].type == 'sidx' || list[j].type == 'ssix')) {
-                        if (vg.isoondemand || vg.dash264base) {
+                        if (vg.isoondemand || vg.dash264base || vg.dashifbase) {
                             errprint("Indexing information (sidx/ssix) found in segment %d (at file absolute offset %lld) following a moof, violating: ", index, list[j].offset);
 
                             if (vg.isoondemand)

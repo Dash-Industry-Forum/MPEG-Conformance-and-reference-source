@@ -1236,7 +1236,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 						     ostypetostr_r(majorBrand,tempstr2));
 			}
 
-		if (segmentFound && (segmentNum == (vg.segmentInfoSize - 1)) && vg.dash264base && (vg.dynamic || vg.isoLive) && !lmsgFoundInCompatibleBrands) {
+		if (segmentFound && (segmentNum == (vg.segmentInfoSize - 1)) && (vg.dash264base || vg.dashifbase) && (vg.dynamic || vg.isoLive) && !lmsgFoundInCompatibleBrands) {
 			if (segmentFound && segmentNum != vg.segmentInfoSize)
 				warnprint("Brand 'lmsg' not found as a compatible brand for the last segment (number %d); violates Section 3.2.3. of Interoperability Point DASH264: If the MPD@type is equal to \"dynamic\" or if it includes MPD@profile attribute in-cludes \"urn:mpeg:dash:profile:isoff-live:2011\", then: if the Media Segment is the last Media Segment in the Representation, this Me-dia Segment shall carry the 'lmsg' compatibility brand\n", segmentNum + 1);
 		}
