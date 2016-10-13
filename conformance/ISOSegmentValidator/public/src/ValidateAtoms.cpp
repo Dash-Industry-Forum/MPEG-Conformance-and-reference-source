@@ -196,7 +196,7 @@ OSErr Validate_mvhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprint("timeScale=\"%s\"\n", int64todstr(mvhdHead.timeScale));
 	atomprint("duration=\"%s\"\n", int64todstr(mvhdHead.duration));
 	atomprint("nextTrackID=\"%ld\"\n", mvhdHeadCommon.nextTrackID);
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	mir->mvhd_timescale = mvhdHead.timeScale;    //Used for edit lists
 
@@ -318,7 +318,7 @@ OSErr Validate_tkhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprint("volume=\"%s\"\n", fixed16str(tkhdHeadCommon.volume));
 	atomprint("width=\"%s\"\n", fixedU32str(tkhdHeadCommon.trackWidth));
 	atomprint("height=\"%s\"\n", fixedU32str(tkhdHeadCommon.trackHeight));
-	atomprint("/>\n"); 
+	atomprint(">\n");  
 
 	// Check required field values
 	// else FieldMustBe( flags, 1, "'tkhd' flags must be 1" );
@@ -444,7 +444,7 @@ OSErr Validate_mdhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprint("language=\"%s\"\n", langtodstr(mdhdHeadCommon.language));
 	if (mdhdHeadCommon.language==0) warnprint("Warning: Media Header language code of 0 not strictly legit -- 'und' preferred\n");
 	
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	// Check required field values
 	FieldMustBe( flags, 0, "'mdvd' flags must be %d not %d" );
@@ -529,7 +529,7 @@ OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	tir->hdlrInfo = hdlrInfo;
 	// All done
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 	aoe->aoeflags |= kAtomValidated;
 
 bail:
@@ -614,7 +614,7 @@ OSErr Validate_vmhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	// Check required field values
 	FieldMustBe( version, 0, "'vmhd' version must be %d not %d" );
@@ -658,7 +658,7 @@ OSErr Validate_smhd_Atom( atomOffsetEntry *aoe, void *refcon )
 
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	// Check required field values
 	FieldMustBe( flags, 0, "'smhd' flags must be %d not 0x%lx" );
@@ -710,7 +710,7 @@ OSErr Validate_hmhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprint("maxbitrate=\"%ld\"\n", hmhdInfo.maxbitrate);
 	atomprint("avgbitrate=\"%ld\"\n", hmhdInfo.avgbitrate);
 	atomprint("slidingavgbitrate=\"%ld\"\n", hmhdInfo.slidingavgbitrate);
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	// Check required field values
 	FieldMustBe( flags, 0, "'hmdh' flags must be %d not 0x%lx" );
@@ -740,7 +740,7 @@ OSErr Validate_nmhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 //еееее need to check for underrun
 
@@ -985,7 +985,7 @@ OSErr Validate_stts_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
 	vg.tabcnt++;
 
     if(vg.dashSegment && entryCount != 0)
@@ -1073,7 +1073,7 @@ OSErr Validate_ctts_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
 	vg.tabcnt++;
 	
 	totalcount = 0;  allzero = 1;
@@ -1137,7 +1137,7 @@ OSErr Validate_stsz_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("sampleSize=\"%ld\"\n", sampleSize);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
 	if ((sampleSize == 0) && entryCount) {
 		vg.tabcnt++;
 		listP[0].sampleSize = 0;
@@ -1288,7 +1288,7 @@ OSErr Validate_stsc_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
 	vg.tabcnt++;
 	listP[0].firstChunk = listP[0].samplesPerChunk = listP[0].sampleDescriptionIndex = 0;
 	for ( i = 1; i <= entryCount; i++ ) {
@@ -1349,7 +1349,7 @@ OSErr Validate_stco_Atom( atomOffsetEntry *aoe, void *refcon )
     if(vg.dashSegment && entryCount != 0)
         errprint("stco atom, entry_count %d, violating\nSection 6.3.3. of ISO/IEC 23009-1:2012(E): The tracks in the \"moov\" box shall contain no samples \n(i.e. the entry_count in the \"stts\", \"stsc\", and \"stco\" boxes shall be set to 0)\n",entryCount);
 
-	atomprint("/>\n");
+	atomprint(">\n");
 	vg.tabcnt++;
 	list64P[0].chunkOffset = listP[0].chunkOffset = 0;
 	for ( i = 1; i <= entryCount; i++ ) {
@@ -1461,7 +1461,7 @@ OSErr Validate_stss_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
 	vg.tabcnt++;
 	for ( i = 0; i < entryCount; i++ ) {
 		atomprintdetailed("<stssEntry sampleNum=\"%d\" />\n", listP[i].sampleNum);
@@ -1801,7 +1801,7 @@ OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
 	vg.tabcnt++;
 	for ( i = 0; i < entryCount; i++ ) {
 		atomprint("<elstEntry duration=\"%s\"", int64todstr(listP[i].duration));
@@ -2049,6 +2049,8 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	vsdi.width = EndianS16_BtoN(vsdi.width);
 	vsdi.height = EndianS16_BtoN(vsdi.height);
 	
+	char vsdi_name[strlen(vsdi.name)];
+	
 	tir->sampleDescWidth = vsdi.width; tir->sampleDescHeight = vsdi.height;
 	if ((tir->trackWidth>>16) != vsdi.width) {
 		warnprint("WARNING: Sample description width %d not the same as track width %s\n",vsdi.width,fixedU32str(tir->trackWidth));
@@ -2064,6 +2066,7 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	vsdi.vRes = EndianU32_BtoN(vsdi.vRes);
 	vsdi.dataSize = EndianU32_BtoN(vsdi.dataSize);
 	vsdi.frameCount = EndianS16_BtoN(vsdi.frameCount);
+	strcpy(vsdi_name, vsdi.name);
 	// vsdi.name
 	vsdi.depth = EndianS16_BtoN(vsdi.depth);
 	vsdi.clutID = EndianS16_BtoN(vsdi.clutID);
@@ -2072,21 +2075,24 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint("dataRefIndex=\"%ld\"\n", sdh.dataRefIndex);
 	// atomprint(">\n"); //vg.tabcnt++; 
 
+	if(vsdi_name[0] == '\v')	//to make the vsdi.name be acceptable by xml
+	  vsdi_name[0] = '\\';
 	// Check required field values
 	atomprint("version=\"%hd\"\n", vsdi.version);
-	atomprint("revisionLevel =\"%hd\"\n", vsdi.revisionLevel);
-	atomprint("vendor =\"%s\"\n", ostypetostr(vsdi.vendor));
-	atomprint("temporalQuality =\"%ld\"\n", vsdi.temporalQuality);
-	atomprint("spatialQuality =\"%ld\"\n", vsdi.spatialQuality);
-	atomprint("width =\"%hd\"\n", vsdi.width);
-	atomprint("height =\"%hd\"\n", vsdi.height);
-	atomprint("hRes =\"%s\"\n", fixedU32str(vsdi.hRes));
-	atomprint("vRes =\"%s\"\n", fixedU32str(vsdi.vRes));
-	atomprint("dataSize =\"%ld\"\n", vsdi.dataSize);
-	atomprint("frameCount =\"%hd\"\n", vsdi.frameCount);
-	atomprint("name =\"%s\"\n", vsdi.name);
-	atomprint("depth =\"%hd\"\n", vsdi.depth);
-	atomprint("clutID =\"%hd\"\n", vsdi.clutID);
+	atomprint("revisionLevel=\"%hd\"\n", vsdi.revisionLevel);
+	atomprint("vendor=\"%s\"\n", ostypetostr(vsdi.vendor));
+	atomprint("temporalQuality=\"%ld\"\n", vsdi.temporalQuality);
+	atomprint("spatialQuality=\"%ld\"\n", vsdi.spatialQuality);
+	atomprint("width=\"%hd\"\n", vsdi.width);
+	atomprint("height=\"%hd\"\n", vsdi.height);
+	atomprint("hRes=\"%s\"\n", fixedU32str(vsdi.hRes));
+	atomprint("vRes=\"%s\"\n", fixedU32str(vsdi.vRes));
+	atomprint("dataSize=\"%ld\"\n", vsdi.dataSize);
+	atomprint("frameCount=\"%hd\"\n", vsdi.frameCount);
+	atomprint("name=\"%s\"\n", vsdi_name);
+	atomprint("depth=\"%hd\"\n", vsdi.depth);
+	atomprint("clutID=\"%hd\"\n", vsdi.clutID);
+	atomprint(">\n");
 		FieldMustBeOneOf4( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4v', 'avc1', 'encv', or 'hev1'", ('mp4v', 'avc1', 'encv', 'hev1') );
 		
 	FieldMustBe( sdh.resvd1, 0, "SampleDescription resvd1 must be %d not %d" );
@@ -2236,6 +2242,14 @@ OSErr Validate_trex_Atom( atomOffsetEntry *aoe, void *refcon )
     // Get data 
 	BAILIFERR( GetFileDataN32( aoe, &tir->default_sample_flags, offset, &offset ) );
 
+	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+	atomprint("trackID=\"%ld\"\n", track_ID);
+	atomprint("sampleDescriptionIndex=\"%ld\"\n", tir->default_sample_description_index);
+	atomprint("sampleDuration=\"%ld\"\n", tir->default_sample_duration);
+	atomprint("sampleSize=\"%ld\"\n", EndianU32_BtoN(tir->default_sample_size));
+	atomprint("sampleFlags=\"%ld\"\n", EndianU32_BtoN(tir->default_sample_flags));
+	atomprint(">\n");
+	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2269,6 +2283,10 @@ OSErr Validate_mehd_Atom( atomOffsetEntry *aoe, void *refcon )
         mir->fragment_duration = temp;
     }
 
+	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+	atomprint("fragmentDuration=\"%ld\"\n", EndianU64_BtoN(mir->fragment_duration));
+	atomprint(">\n");
+	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2294,6 +2312,10 @@ OSErr Validate_mfhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Get data 
 	BAILIFERR( GetFileDataN32( aoe, &moofInfo->sequence_number, offset, &offset ) );
 
+	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+	atomprint("sequenceNumber=\"%ld\"\n", moofInfo->sequence_number);
+	atomprint(">\n");
+	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2318,6 +2340,7 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     
 	// Get data 
 	BAILIFERR( GetFileDataN32( aoe, &trafInfo->track_ID, offset, &offset ) );
+	atomprint("trackID=\"%ld\"\n", trafInfo->track_ID);
 
     TrackInfoRec *tir;
 	tir = check_track(trafInfo->track_ID);
@@ -2360,6 +2383,13 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	else
 		trafInfo->default_sample_flags = tir->default_sample_flags;
     
+    atomprint("baseDataOffset=\"%ld\"\n", EndianU64_BtoN(trafInfo->base_data_offset));
+    atomprint("sampleDescriptionIndex=\"%ld\"\n", trafInfo->sample_description_index);
+    atomprint("defaultSampleDuration=\"%ld\"\n", trafInfo->default_sample_duration);
+    atomprint("defaultSampleSize=\"%ld\"\n", EndianU32_BtoN(trafInfo->default_sample_size));
+    atomprint("defaultSampleFlags=\"%ld\"\n", EndianU32_BtoN(trafInfo->default_sample_flags));
+    atomprint(">\n");
+    
     // All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2394,6 +2424,9 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
 
 	BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_count, offset, &offset ) );
 
+	atomprint("sampleCount=\"%ld\"\n", trunInfo->sample_count);
+	atomprint(">\n");
+	
     if(trunInfo->data_offset_present)
 	    BAILIFERR( GetFileDataN32( aoe, &trunInfo->data_offset, offset, &offset ) );
 
@@ -2493,6 +2526,15 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
             trafInfo->latestCompositionTimeInTrackFragment = compositionTimeInTrackFragment;
         
     }
+    
+    vg.tabcnt++;
+    for(int i=0; i<trunInfo->sample_count; i++){
+	sampleprint("<sampleInfo sampleDuration=\"%ld\"", trunInfo->sample_duration[i]);
+	sampleprintnotab(" sampleSize=\"%ld\"", trunInfo->sample_size[i]);
+	sampleprintnotab(" sampleFlags=\"%ld\"", EndianU32_BtoN(trunInfo->sample_flags[i]));
+	sampleprintnotab(" sampleCompositionTimeOffset=\"%ld\"/>\n", trunInfo->sample_composition_time_offset[i]);
+    }
+    --vg.tabcnt;
   
     trafInfo->processedTrun++;
     
@@ -2536,6 +2578,21 @@ OSErr Validate_sbgp_Atom( atomOffsetEntry *aoe, void *refcon )
     }
 
     trafInfo->processedSbgp++;
+    
+    // Print data
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", sbgpInfo->version, flags);
+    atomprint("groupingType=\"%ld\"\n", EndianU32_BtoN(sbgpInfo->grouping_type));
+    atomprint("groupingTypeParameter=\"%ld\"\n", EndianU32_BtoN(sbgpInfo->grouping_type_parameter));
+    atomprint("entryCount=\"%ld\"\n", sbgpInfo->entry_count);
+    atomprint(">\n");
+    vg.tabcnt++;
+    
+    for ( UInt32 i = 0; i < sbgpInfo->entry_count; i++ ) {
+	sampleprint("<sampleInfo sampleCount=\"%ld\"", EndianU32_BtoN(sbgpInfo->sample_count[i]));
+	sampleprintnotab(" group_description_index=\"%ld\"/>\n", EndianU32_BtoN(sbgpInfo->group_description_index[i]));
+    }
+    
+    --vg.tabcnt;
     
     // All done
 	aoe->aoeflags |= kAtomValidated;
@@ -2585,6 +2642,19 @@ OSErr Validate_sgpd_Atom( atomOffsetEntry *aoe, void *refcon )
     }
 
     trafInfo->processedSgpd++;
+    
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", sgpdInfo->version, flags);
+    atomprint("groupingType=\"%ld\"\n", EndianU32_BtoN(sgpdInfo->grouping_type));
+    atomprint("entryCount=\"%ld\"\n", sgpdInfo->entry_count);
+    atomprint(">\n");
+    vg.tabcnt++;
+    
+    for(UInt32 i=0; i<sgpdInfo->entry_count; i++){
+	sampleprint("<sgpdEntry descriptionLength=\"%ld\"", EndianU32_BtoN(sgpdInfo->description_length[i]));
+	sampleprintnotab(" sampleGroupDescriptionEntry=\"%ld\"/>\n", EndianU32_BtoN(sgpdInfo->SampleGroupDescriptionEntry[i]));
+    }
+    
+    --vg.tabcnt;
     
     // All done
 	aoe->aoeflags |= kAtomValidated;
@@ -2637,6 +2707,13 @@ OSErr Validate_emsg_Atom( atomOffsetEntry *aoe, void *refcon )
 	message_data = new UInt8[aoe->maxOffset - offset];
 	BAILIFERR( GetFileData( aoe,message_data, offset, aoe->maxOffset - offset , &offset ) );
     
+     atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+     atomprint("timeScale=\"%ld\"\n", EndianU32_BtoN(timescale));
+     atomprint("presentationTimeDelta=\"%ld\"\n", EndianU32_BtoN(presentation_time_delta));
+     atomprint("eventDuration=\"%ld\"\n", EndianU32_BtoN(event_duration));
+     atomprint("id=\"%ld\"\n", EndianU32_BtoN(id));
+     atomprint(">\n");
+	
     // All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2669,6 +2746,10 @@ OSErr Validate_tfdt_Atom( atomOffsetEntry *aoe, void *refcon )
 
     trafInfo->tfdtFound = true;
     
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+    atomprint("baseMediaDecodeTime=\"%ld\"\n", EndianU64_BtoN(trafInfo->baseMediaDecodeTime));
+    atomprint(">\n");
+    
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2699,6 +2780,11 @@ OSErr Validate_pssh_Atom( atomOffsetEntry *aoe, void *refcon )
     Data = (UInt8 *)malloc(DataSize*sizeof(UInt8)); 
     BAILIFERR( GetFileData( aoe,Data, offset, DataSize , &offset ) );
 
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+    atomprint("systemID=\"%d\"\n", SystemID);
+    atomprint("dataSize=\"%ld\"\n", EndianU32_BtoN(DataSize));
+    atomprint(">\n");
+    
     free(Data);
     
     // All done
@@ -2754,7 +2840,11 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
     if(tir == 0)
         return badAtomErr;
     
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+    atomprint("referenceID=\"%ld\"\n", sidxInfo->reference_ID);
+    
     BAILIFERR( GetFileDataN32( aoe, &sidxInfo->timescale, offset, &offset ) );
+    atomprint("timeScale=\"%ld\"\n", sidxInfo->timescale);
 
     if(tir->mediaTimeScale != sidxInfo->timescale)
         warnprint("sidx timescale %d != track timescale %d for track ID %d, Section 8.16.3.3 of ISO/IEC 14496-12 4th edition: it is recommended that this match the timescale of the reference stream or track\n",sidxInfo->timescale,tir->mediaTimeScale,sidxInfo->reference_ID);
@@ -2774,9 +2864,14 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
 	    BAILIFERR( GetFileDataN64( aoe, &sidxInfo->first_offset, offset, &offset ) );
     }
 
+    atomprint("earliestPresentationTime=\"%s\"\n", int64todstr(EndianU64_BtoN(sidxInfo->earliest_presentation_time)));
+    atomprint("firstOffset=\"%s\"\n", int64todstr(EndianU64_BtoN(sidxInfo->first_offset)));
+    
     BAILIFERR( GetFileDataN32( aoe, &temp, offset, &offset ) );
     sidxInfo->reference_count = (UInt16)(temp & 0xFFFF);
 
+    atomprint("referenceCount=\"%ld\"\n", sidxInfo->reference_count);
+    
     sidxInfo->references = (Reference *)malloc(((UInt32)sidxInfo->reference_count)*sizeof(Reference));
 
     sidxInfo->cumulatedDuration = 0;
@@ -2803,6 +2898,18 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
     }
 
     mir->processedSdixs++;
+    
+    atomprint("cumulatedDuration=\"%Lf\"\n", sidxInfo->cumulatedDuration);
+    atomprint(">\n");
+    vg.tabcnt++;
+	for ( i = 0; i < sidxInfo->reference_count; i++ ) {
+	    sampleprint("<subsegment subsegment_duration=\"%ld\"", sidxInfo->references[i].subsegment_duration);
+	    sampleprintnotab(" starts_with_SAP=\"%d\"", sidxInfo->references[i].starts_with_SAP);
+	    sampleprintnotab(" SAP_type=\"%d\"", sidxInfo->references[i].SAP_type);
+	    sampleprintnotab(" SAP_delta_time=\"%ld\" />\n", sidxInfo->references[i].SAP_delta_time);
+	}
+    --vg.tabcnt;
+    
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -3059,18 +3166,30 @@ OSErr Validate_mhaC_Atom( atomOffsetEntry *aoe, void *refcon)
 	MHADecoderConfigurationRecord mhaDecoderConfigurationRecord;
         //errprint( "offset= %d\n",offset );
 
+	atomprint("<mhaC\n"); 
+	vg.tabcnt++;
+	
 	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.configurationVersion , offset, sizeof(mhaDecoderConfigurationRecord.configurationVersion), &offset ) );	
 	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daProfileLevelIndication , offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daProfileLevelIndication), &offset ) );	
 	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.referenceChannelLayout , offset, sizeof(mhaDecoderConfigurationRecord.referenceChannelLayout) , &offset ) );
 	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daConfigLength, offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daConfigLength), &offset ) );	
         BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daConfig, offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daConfigLength*8), &offset ) );
    
+	atomprint("configurationVersion=\"%d\"\n", mhaDecoderConfigurationRecord.configurationVersion);
+	atomprint("mpegh3daProfileLevelIndication=\"%d\"\n", mhaDecoderConfigurationRecord.mpegh3daProfileLevelIndication);
+	atomprint("referenceChannelLayout=\"%d\"\n", mhaDecoderConfigurationRecord.referenceChannelLayout);
+	atomprint("mpegh3daConfigLength=\"%ld\"\n", EndianU16_BtoN(mhaDecoderConfigurationRecord.mpegh3daConfigLength));
+	atomprint("mpegh3daConfig=\"%ld\"\n", EndianU32_BtoN(mhaDecoderConfigurationRecord.mpegh3daConfig));
+	atomprint(">\n");
 	
         FieldMustBe( mhaDecoderConfigurationRecord.configurationVersion , 1, "ConfigurationVersion must be %d not %d" );
 	if(vg.audioChValue != mhaDecoderConfigurationRecord.referenceChannelLayout)
 	{
 	   errprint( "The referenceChannelLayout is not matching  with out of box AudioChannelConfiguration value\n" );
 	}
+	
+	--vg.tabcnt; 
+	atomprint("</mhaC>\n");
 	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -3250,7 +3369,7 @@ OSErr Validate_avcC_Atom( atomOffsetEntry *aoe, void *refcon, char *esname )
 	BitBuffer_Init(&bb, (UInt8 *)bsDataP, avcHeader.start.atomSize - 8);
 
 	BAILIFERR( Validate_AVCConfigRecord( &bb, refcon ) );		
-	--vg.tabcnt; atomprint("/>\n");
+	--vg.tabcnt; atomprint("</%s>\n", esname);
 
 
 	free( bsDataP );
@@ -3286,7 +3405,6 @@ OSErr Validate_btrt_Atom( atomOffsetEntry *aoe, void *refcon, char *esName )
 	
 	atomprintnotab("\tBuffzersizeDB=\"%d\"  max Bitrate=\"%d\" avg Bitrate=\"%d\"\n", 
 		bitrHeader.buffersizeDB, bitrHeader.maxBitrate, bitrHeader.avgBitrate );
-	atomprint(">\n"); 
 	
 	if( sizeof( AvcBtrtInfo ) != bitrHeader.start.atomSize ){
 		err = badAtomSize;
@@ -3294,7 +3412,7 @@ OSErr Validate_btrt_Atom( atomOffsetEntry *aoe, void *refcon, char *esName )
 		goto bail;
 	}
 		
-	--vg.tabcnt; atomprint(">\n");
+	--vg.tabcnt; atomprint("/>\n");
 
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -3421,7 +3539,7 @@ OSErr Validate_cprt_Atom( atomOffsetEntry *aoe, void *refcon )
 #endif
 	atomprint("notice=\"%s\"\n", noticeP);
 
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -3485,7 +3603,7 @@ OSErr Validate_loci_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFERR( GetFileUTFString( aoe, &noticeP, offset, aoe->maxOffset - offset, &offset ) );
 	atomprint("Notes=\"%s\"\n", noticeP);
 
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -3640,6 +3758,7 @@ OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon )
     
     // Get version/flags
     BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
     
     // Get data 
     UInt8    temp1[3];
@@ -3656,6 +3775,10 @@ OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon )
 
 	UInt8	default_KID[16]; 
     BAILIFERR( GetFileData( aoe,default_KID, offset, 16 , &offset ) );
+    
+    atomprint("default_IV_size=\"%d\"\n", default_IV_size);
+    atomprint("default_KID=\"%d\"\n", default_KID);
+    atomprint(">\n");
     
     // All done
     aoe->aoeflags |= kAtomValidated;
