@@ -41,7 +41,7 @@ void myexit(int num)
 #endif
 
 ValidateGlobals vg = {0};
-
+FILE *f;		//to print atom content to xml file (later use for xml creation)
 
 static int keymatch (const char * arg, const char * keyword, int minchars);
 
@@ -231,6 +231,7 @@ int main(void)
     vg.numOffsetEntries = 0;
     vg.lowerindexRange=-1;
     vg.higherindexRange=-1;
+    vg.atomxml=false;
     //vg.indexRange='\0'; 
     
     char ** arrayArgc;
@@ -338,6 +339,8 @@ int main(void)
 	        } else if ( keymatch( arg, "audiochvalue", 12 ) ) {
                          getNextArgStr( &temp, "audiochvalue" ); vg.audioChValue = atoi(temp);
                  		  			  
+		} else if ( keymatch( arg, "atomxml", 1)) {
+			 vg.atomxml = true;
 		} else {
 			fprintf( stderr, "Unexpected option \"%s\"\n", arg);
 			err = -1;
@@ -457,6 +460,10 @@ int main(void)
 
 	fprintf(stdout,"\n\n\n<!-- Source file is '%s' -->\n", gInputFileFullPath);
 
+	if(vg.atomxml){
+		f = fopen("atominfo.xml", "w");
+	}
+	
 	if (gotOffsetFile)
 		loadOffsetInfo(offsetsFileName);
 
@@ -584,7 +591,7 @@ int main(void)
 
 usageError:
 	fprintf( stderr, "Usage: %s [-filetype <type>] "
-								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap TYPE] [-level] [-bss] [-isolive] [-isoondemand] [-isomain] [-dynamic] [-dash264base] [-dashifbase] [-dash264enc]", "ValidateMP4" );
+								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap TYPE] [-level] [-bss] [-isolive] [-isoondemand] [-isomain] [-dynamic] [-dash264base] [-dashifbase] [-dash264enc] [-atomxml]", "ValidateMP4" );
 	fprintf( stderr, " [-samplenumber <number>] [-verbose <options>] [-offsetinfo <Offset Info File>] [-logconsole ] [-help] inputfile\n" );
 	fprintf( stderr, "    -a[tompath]      <atompath> - limit certain operations to <atompath> (e.g. moov-1:trak-2)\n" );
 	fprintf( stderr, "                     this effects -checklevel and -printtype (default is everything) \n" );
@@ -626,7 +633,7 @@ usageError:
 	fprintf( stderr, "                      most effective in combination with -atompath (default is all samples) \n" );
 	fprintf( stderr, "    -offsetinfo       <Offset Info File> - Partial file optimization information file: if the file has several byte ranges removed, this file provides the information as offset-bytes removed pairs\n");
 	fprintf( stderr, "    -logconsole       Redirect stdout and stderr to stdout.txt and stderr.txt, respectively \n");
-	
+	fprintf( stderr, "    -atomxml          Output the contents of each atom into an xml \n" );
 	fprintf( stderr, "    -h[elp] - print this usage message \n" );
 
 
@@ -640,6 +647,9 @@ bail:
 	{
 		fclose(stdout);
 		fclose(stderr);
+	}
+	if(vg.atomxml){
+		fclose(f);
 	}
 
 	return err;
@@ -781,6 +791,10 @@ void toggleprintsample( Boolean onOff )
 
 }
 
+void atomprinttofile(const char* formatStr, va_list ap)
+{
+	vfprintf (f, formatStr, ap);
+}
 
 void atomprintnotab(const char *formatStr, ...)
 {
@@ -789,6 +803,12 @@ void atomprintnotab(const char *formatStr, ...)
 	
 	if (vg.printatom) {
 		vfprintf( _stdout, formatStr, ap );
+	}
+	
+	if(vg.atomxml){
+		va_start(ap, formatStr);
+		atomprinttofile(formatStr, ap);
+		va_end(ap);
 	}
 	
 	va_end(ap);
@@ -805,6 +825,16 @@ void atomprint(const char *formatStr, ...)
 			fprintf(_stdout,myTAB);
 		}
 		vfprintf( _stdout, formatStr, ap );
+	}
+	
+	if(vg.atomxml){
+		long tabcnt = vg.tabcnt;
+ 		while (tabcnt--) {
+ 			fprintf(f,myTAB);
+ 		}
+		va_start(ap, formatStr);
+		atomprinttofile(formatStr, ap);
+		va_end(ap);
 	}
 	
 	va_end(ap);

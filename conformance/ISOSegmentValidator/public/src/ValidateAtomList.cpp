@@ -57,6 +57,8 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 	
 	BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
     	
+	atomprint("<atomlist>\n"); vg.tabcnt++;
+	
 	// Process 'ftyp' atom
 
 	atomerr = ValidateAtomOfType( 'ftyp', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne | kTypeAtomFlagMustBeFirst, 
@@ -213,6 +215,8 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
             processBuffering(cnt,list,vg.mir);
         logLeafInfo(vg.mir);
    }
+	
+   --vg.tabcnt; atomprint("</atomlist>\n");
 	
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -1061,7 +1065,7 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFERR( GetFileDataN32( aoe, &majorBrand, offset, &offset ) );
 	BAILIFERR( GetFileDataN32( aoe, &version, offset, &offset ) );
 
-	atomprintnotab(" majorbrand=\"%.4s\" version=\"%s\", compatible_brands=[\n", ostypetostr_r(majorBrand, tempstr1), 
+	atomprintnotab("\tmajorbrand=\"%.4s\" version=\"%s\" compatible_brands='[\n", ostypetostr_r(majorBrand, tempstr1), 
 						int64toxstr((UInt64) version));
 
 	vg.majorBrand = majorBrand;
@@ -1089,8 +1093,8 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
         		
 		for (ix=0; ix < numCompatibleBrands; ix++) {
 			BAILIFERR( GetFileDataN32( aoe, &currentBrand, offset, &offset ) );
-			if (ix<(numCompatibleBrands-1)) atomprint("\"%s\",\n", ostypetostr_r(currentBrand, tempstr1));
-			      else atomprint("\"%s\"\n",  ostypetostr_r(currentBrand, tempstr1));
+			if (ix<(numCompatibleBrands-1)) atomprint(" \"%s\" \n", ostypetostr_r(currentBrand, tempstr1));
+			      else atomprint(" \"%s\"\n",  ostypetostr_r(currentBrand, tempstr1));
 			
 			if (majorBrand == currentBrand) {
 				majorBrandFoundAmongCompatibleBrands = true;
@@ -1123,7 +1127,7 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 			
  	}
  	
- 	atomprint("]>\n"); 
+ 	atomprint("]'>\n"); 
 	
 	aoe->aoeflags |= kAtomValidated;
 
@@ -1147,7 +1151,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFERR( GetFileDataN32( aoe, &majorBrand, offset, &offset ) );
 	BAILIFERR( GetFileDataN32( aoe, &version, offset, &offset ) );
 
-	atomprintnotab(" majorbrand=\"%.4s\" version=\"%s\", compatible_brands=[\n", ostypetostr_r(majorBrand, tempstr1), 
+	atomprintnotab(" majorbrand=\"%.4s\" version=\"%s\" compatible_brands='[\n", ostypetostr_r(majorBrand, tempstr1), 
 						int64toxstr((UInt64) version));
 
 	vg.majorBrand = majorBrand;
@@ -1259,7 +1263,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 */	
  	}
  	
- 	atomprint("]>\n"); 
+ 	atomprint("]'>\n"); 
 	
 	aoe->aoeflags |= kAtomValidated;
 
