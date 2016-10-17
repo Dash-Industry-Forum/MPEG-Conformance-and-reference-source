@@ -333,7 +333,7 @@ OSErr Validate_tkhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	FieldMustBe( tkhdHeadCommon.alternateGroup, 0, "'tkhd' alternateGroup must be %d not %d" );
 	FieldMustBe( tkhdHeadCommon.reserved, 0, "'tkhd' reserved must be %d not %d" );
 	
-	// ¥¥¥¥ CHECK for audio/video
+	// ï¿½ï¿½ï¿½ï¿½ CHECK for audio/video
 	{
 		FieldMustBeOneOf2( tkhdHeadCommon.volume, SInt16, "'tkhd' volume must be set to one of ", (0, 0x0100) );
 		if( vg.majorBrand == brandtype_mp41 ){
@@ -742,7 +742,7 @@ OSErr Validate_nmhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("/>\n"); 
 
-//¥¥¥¥¥ need to check for underrun
+//ï¿½ï¿½ï¿½ï¿½ï¿½ need to check for underrun
 
 	// Check required field values
 	FieldMustBe( flags, 0, "'nmhd' flags must be %d not 0x%lx" );
@@ -819,8 +819,8 @@ OSErr Validate_url_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint("/>\n"); 
 
 	// Check required field values
-//¥¥¥	FieldMustBe( flags, 0, "'mp4s' flags must be 0" );
-//¥¥¥   need to check that the atom has ended.
+//ï¿½ï¿½ï¿½	FieldMustBe( flags, 0, "'mp4s' flags must be 0" );
+//ï¿½ï¿½ï¿½   need to check that the atom has ended.
 
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -863,8 +863,8 @@ OSErr Validate_urn_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint("/>\n"); 
 
 	// Check required field values
-//¥¥¥	FieldMustBe( flags, 0, "'mp4s' flags must be 0" );
-//¥¥¥   need to check that the atom has ended.
+//ï¿½ï¿½ï¿½	FieldMustBe( flags, 0, "'mp4s' flags must be 0" );
+//ï¿½ï¿½ï¿½   need to check that the atom has ended.
 
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -928,7 +928,7 @@ OSErr Validate_dref_Atom( atomOffsetEntry *aoe, void *refcon )
 					break;
 					
 				default:
-				// ¥¥ should warn
+				// ï¿½ï¿½ should warn
 					warnprint("WARNING: unknown/unexpected dref entry '%s'\n",ostypetostr(entry->type));
 					atomprint("???? />\n");
 					break;
@@ -2739,8 +2739,11 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
       //fprintf(stdout,"%d  %d\n",vg.lowerindexRange,vg.higherindexRange);
       errprint("sidx offset %d is less than starting of indexRange %d, OR sum of sidx offset %d and sidx size %d minus 1 is greater than ending of indexRange %d\n",offs,vg.lowerindexRange,offs,siz,vg.higherindexRange);
   
-  } 
-  
+  }else
+  {   //indexRange missing, check if it's a IOP test vector without @RepresentationIndex
+      if (vg.dash264base && !vg.RepresentationIndex)
+        errprint("sidx present without indexRange and @RepresentationIndex for IOP test vector\n");
+  }
     
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
@@ -2822,7 +2825,7 @@ typedef struct SoundSampleDescriptionInfo {
 	SInt16		sampleSize;                 /* number of bits per sample */
 	SInt16		compressionID;              /* unused. set to zero. */
 	SInt16		packetSize;                 /* unused. set to zero. */
-	UInt32		sampleRate;					/*¥¥¥ UnsignedFixed ¥¥¥*/ /* sample rate sound is captured at */
+	UInt32		sampleRate;					/*ï¿½ï¿½ï¿½ UnsignedFixed ï¿½ï¿½ï¿½*/ /* sample rate sound is captured at */
 } SoundSampleDescriptionInfo;
 
 OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
@@ -2952,7 +2955,7 @@ OSErr Validate_hint_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	// Get data 
 	BAILIFERR( GetFileData( aoe, &sdh, offset, sizeof(sdh), &offset ) );
 	EndianSampleDescriptionHead_BtoN( &sdh );
-//¥¥¥Êhow to cope with hint data
+//ï¿½ï¿½ï¿½ï¿½how to cope with hint data
 	
 	// Print atom contents non-required fields
 	atomprint("sdType=\"%s\"\n", ostypetostr(sdh.sdType));
@@ -2963,7 +2966,7 @@ OSErr Validate_hint_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	FieldMustBe( sdh.resvd1, 0, "SampleDescription resvd1 must be %d not 0x%lx" );
 	FieldMustBe( sdh.resvdA, 0, "SampleDescription resvd1 must be %d not 0x%lx" );
 	
-//¥¥¥ hint data
+//ï¿½ï¿½ï¿½ hint data
 	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -2985,7 +2988,7 @@ OSErr Validate_mp4_SD_Entry( atomOffsetEntry *aoe, void *refcon, ValidateBitstre
 	// Get data 
 	BAILIFERR( GetFileData( aoe, &sdh, offset, sizeof(sdh), &offset ) );
 	EndianSampleDescriptionHead_BtoN( &sdh );
-//¥¥¥Êhow to cope with hint data
+//ï¿½ï¿½ï¿½ï¿½how to cope with hint data
 	
 	// Print atom contents non-required fields
 	atomprint("sdType=\"%s\"\n", ostypetostr(sdh.sdType));
@@ -3397,7 +3400,7 @@ OSErr Validate_cprt_Atom( atomOffsetEntry *aoe, void *refcon )
 		else {
 			int ix;
 			
-			// ¥¥ clf -- The right solution is probably to generate "\uNNNN" for Unicode characters not in the range 0-0x7f. That
+			// ï¿½ï¿½ clf -- The right solution is probably to generate "\uNNNN" for Unicode characters not in the range 0-0x7f. That
 			// will require the array be 5 times as large in the worst case.
 			utf8noticeP = (char *)calloc(numChars, 1);
 			pASCII= utf8noticeP;
