@@ -101,9 +101,9 @@ bail:
 //==========================================================================================
 
 typedef struct MovieHeaderCommonRecord {
-    Fixed                           preferredRate;              // must be 1.0 for mp4
+    Fixed                           rate;              // must be 1.0 for mp4
 
-    SInt16                          preferredVolume;           	// must be 1.0 for mp4
+    SInt16                          volume;           	// must be 1.0 for mp4
     short                           reserved1;					// must be 0
 
     long                            preferredLong1;				// must be 0 for mp4
@@ -175,8 +175,8 @@ OSErr Validate_mvhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
 	
 	BAILIFERR( GetFileData( aoe, &mvhdHeadCommon, offset, sizeof(mvhdHeadCommon), &offset ) );
-    mvhdHeadCommon.preferredRate = EndianU32_BtoN(mvhdHeadCommon.preferredRate);
-    mvhdHeadCommon.preferredVolume = EndianS16_BtoN(mvhdHeadCommon.preferredVolume);
+    mvhdHeadCommon.rate = EndianU32_BtoN(mvhdHeadCommon.rate);
+    mvhdHeadCommon.volume = EndianS16_BtoN(mvhdHeadCommon.volume);
     mvhdHeadCommon.reserved1 = EndianS16_BtoN(mvhdHeadCommon.reserved1);
     mvhdHeadCommon.preferredLong1 = EndianS32_BtoN(mvhdHeadCommon.preferredLong1);
     mvhdHeadCommon.preferredLong2 = EndianS32_BtoN(mvhdHeadCommon.preferredLong2);
@@ -201,18 +201,18 @@ OSErr Validate_mvhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	mir->mvhd_timescale = mvhdHead.timeScale;    //Used for edit lists
 
 	// Check required field values
-	FieldMustBe( mvhdHeadCommon.preferredRate, 0x00010000, "'mhvd' preferredRate must be 0x%lx not 0x%lx" );
-	FieldMustBe( mvhdHeadCommon.preferredVolume, 0x0100, "'mhvd' preferredVolume must be 0x%lx not 0x%lx" );
-	FieldMustBe( mvhdHeadCommon.reserved1, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.reserved1, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.preferredLong1, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.preferredLong2, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.previewTime, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.previewDuration, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.posterTime, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.selectionTime, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.selectionDuration, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.currentTime, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.rate, 0x00010000, "'mvhd' rate must be 0x%lx not 0x%lx" );
+	FieldMustBe( mvhdHeadCommon.volume, 0x0100, "'mvhd' volume must be 0x%lx not 0x%lx" );
+	FieldMustBe( mvhdHeadCommon.reserved1, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.reserved1, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.preferredLong1, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.preferredLong2, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.previewTime, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.previewDuration, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.posterTime, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.selectionTime, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.selectionDuration, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.currentTime, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
 		
 	BAILIFERR( CheckMatrixForUnity( mvhdHeadCommon.matrix ) );
 
