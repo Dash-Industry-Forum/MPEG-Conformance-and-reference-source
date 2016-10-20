@@ -615,6 +615,7 @@ typedef struct {
     bool    dashifbase;
     bool    dash264enc;
     bool    RepresentationIndex;
+    bool    atomxml;
     unsigned int  numControlTracks;
     unsigned int  *numControlLeafs;
     LeafInfo **controlLeafInfo;
@@ -679,6 +680,7 @@ typedef struct ValidateAtomDispatch {
 
 void warnprint(const char *formatStr, ...);
 void errprint(const char *formatStr, ...);
+void atomprinttofile(const char* formatStr, va_list ap);
 void atomprint(const char *formatStr, ...);
 void atomprintnotab(const char *formatStr, ...);
 void atomprintdetailed(const char *formatStr, ...);
