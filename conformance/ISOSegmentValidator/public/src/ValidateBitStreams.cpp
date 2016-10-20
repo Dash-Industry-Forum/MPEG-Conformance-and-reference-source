@@ -209,7 +209,7 @@ OSErr Validate_iods_OD_Bits( Ptr odDataP, unsigned long odSize, Boolean fileForm
 			(audioProfileLevelIndication!=0x2a) && (audioProfileLevelIndication!=0x2c))
 			warnprint("Validate_IODS: ISMA expects no-capability(0xFF) or Hi-Quality@L1/L2 (0x0E, 0x0F) or AAC@L4 (0x2a) or HE-AAC@L2 (0x2c) for audioProfileLevelIndication\n");
 		if (audioProfileLevelIndication<(sizeof(audio_profiles)/sizeof(char*))) 
-			atomprint("  Comment=\"audio profile/level is %s\"\n",audio_profiles[audioProfileLevelIndication]);
+			atomprint("Comment=\"audio profile/level is %s\"\n",audio_profiles[audioProfileLevelIndication]);
 	
 		VALIDATE_FIELD  ("%2.2x",  visualProfileLevelIndication, 8 );
 		if ((visualProfileLevelIndication!=0xFF) && 
@@ -849,20 +849,21 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 	static char* configs[] = {
 		" ", "mono", "stereo", "stereo+center", "stereo+center+rearmono", "stereo+center+rearstereo",
 		"5+1", "7+1" };
-		
+	int counter = 0;
+	
 	VALIDATE_FIELD("0x%02x",  audioObjectType, 5);
 	if (audioObjectType<28) {
-		atomprint("  comment=\"audio is %s\"\n", audiotype[audioObjectType]);
+		atomprint("comment%ld=\"audio is %s\"\n", counter++, audiotype[audioObjectType]);
 	}
 	VALIDATE_FIELD("0x%1x",  samplingFreqIndex, 4);
 	if (samplingFreqIndex==0x0f) {
 		VALIDATE_FIELD("%d",  samplingFreq, 24);
 	}
-	else atomprint("  comment=\"freq is %s\"\n", freqs[samplingFreqIndex]);
+	else atomprint("comment%ld=\"freq is %s\"\n", counter++, freqs[samplingFreqIndex]);
 	
 	VALIDATE_FIELD("0x%1x",  channelConfig, 4);
 	if ((channelConfig>0) && (channelConfig<8)) {
-		atomprint("  comment=\"config is %s\"\n", configs[channelConfig]);
+		atomprint("comment%ld=\"config is %s\"\n", counter++, configs[channelConfig]);
 	}
 	
 	if (audioObjectType == 5) {
@@ -872,10 +873,10 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 		if (ext_samplingFreqIndex==0x0f) {
 			VALIDATE_FIELD("%d",  ext_samplingFreq, 24);
 		}
-		else atomprint("  comment=\"freq is %s\"\n", freqs[ext_samplingFreqIndex]);
+		else atomprint("comment%ld=\"freq is %s\"\n", counter++, freqs[ext_samplingFreqIndex]);
 		VALIDATE_FIELD("0x%02x",  audioObjectType, 5);
 		if (audioObjectType<28) {
-			atomprint("  comment=\"audio is %s\"\n", audiotype[audioObjectType]);
+			atomprint("comment%ld=\"audio is %s\"\n", counter++, audiotype[audioObjectType]);
 		}
 	}
 
@@ -889,7 +890,7 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 				UInt32 codeCoderdelay;
 				UInt8 extFlag;
 				VALIDATE_FIELD("%d",  frameLengthFlag, 1);
-				atomprint("  comment=\"length is %d\"\n", (frameLengthFlag==0 ? 1024 : 960) ); /* !dws check with audio guys */
+				atomprint("comment%ld=\"length is %d\"\n", counter++, (frameLengthFlag==0 ? 1024 : 960) ); /* !dws check with audio guys */
 				VALIDATE_FIELD("%d",  dependsOnCoreCoder, 1);
 				if (dependsOnCoreCoder==1) {
 					VALIDATE_FIELD("%d",  codeCoderdelay, 14);
@@ -912,9 +913,9 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 					/* atomprint("  comment=\"GA custom config here\"\n"); */
 					VALIDATE_FIELD("%d",  element_instance_tag, 4);
 					VALIDATE_FIELD("%d",  object_type, 2);
-						atomprint("  comment=\"object is %s\"\n", aactypes[object_type]);
+						atomprint("comment%ld=\"object is %s\"\n", counter++, aactypes[object_type]);
 					VALIDATE_FIELD("0x%1x",  samplingFreqIndex, 4);
-						atomprint("  comment=\"freq is %s\"\n", freqs[samplingFreqIndex]);
+						atomprint("comment%ld=\"freq is %s\"\n", counter++, freqs[samplingFreqIndex]);
 
 					VALIDATE_FIELD("%d",  num_front_channel_elements, 4);
 					VALIDATE_FIELD("%d",  num_side_channel_elements, 4);
@@ -959,7 +960,7 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 					if (comment_field_bytes>0) {
 						BAILIFERR( GetBytes(bb, comment_field_bytes, (unsigned char*)commentString) );
 						commentString[comment_field_bytes] = 0;
-						atomprint("commentString =\"%s\"\n", commentString);
+						atomprint("commentString=\"%s\"\n", commentString);
 					}
 				}
 				if ((audioObjectType==6) | (audioObjectType==20)) {
@@ -1003,9 +1004,9 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 				VALIDATE_FIELD("%d",  is_base_layer, 1);
 				if (is_base_layer == 1) {
 					VALIDATE_FIELD("%d",  excit_Mode, 1);
-					atomprint("  comment=\"mode is %s\"\n", (excit_Mode==0 ? "MPE" : "RPE") ); 
+					atomprint("comment%ld=\"mode is %s\"\n", counter++, (excit_Mode==0 ? "MPE" : "RPE") ); 
 					VALIDATE_FIELD("%d",  sampleRateMode, 1);
-					atomprint("  comment=\"mode is %s\"\n", (sampleRateMode==0 ? "8kHz" : "16kHz") );
+					atomprint("comment%ld=\"mode is %s\"\n", counter++, (sampleRateMode==0 ? "8kHz" : "16kHz") );
 					VALIDATE_FIELD("%d",  fineRateControl, 1);
 					if (excit_Mode==1) /* RPE */ {
 						VALIDATE_FIELD("%d",  rpe_conf, 3);
@@ -1123,7 +1124,7 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 		if (syncExtensionType == 0x2b7) {
 			VALIDATE_FIELD("0x%02x",  ext_audioObjectType, 5);
 			if (ext_audioObjectType<28) {
-				atomprint("  comment=\"audio is %s\"\n", audiotype[ext_audioObjectType]);
+				atomprint("comment%ld=\"audio is %s\"\n", counter++, audiotype[ext_audioObjectType]);
 			}
 			if ( ext_audioObjectType == 5 ) {
 				VALIDATE_FIELD("%d",  sbr_present, 1);
@@ -1132,7 +1133,7 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 					if (ext_samplingFreqIndex==0x0f) {
 						VALIDATE_FIELD("%d",  ext_samplingFreq, 24);
 					}
-					else atomprint("  comment=\"freq is %s\"\n", freqs[ext_samplingFreqIndex]);
+					else atomprint("comment%ld=\"freq is %s\"\n", counter++, freqs[ext_samplingFreqIndex]);
 				}
 			}
 		}
@@ -1255,6 +1256,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 	PartialVideoSC *p_vsc = (PartialVideoSC *)p_sc;
 	
 	voVerID = default_voVerID;
+	int counter = 0;
 	
 	VALIDATE_FIELD("0x%04x",  startcode, 32);
 	if ((expect_startcode!=0) && (startcode!=expect_startcode))
@@ -1318,7 +1320,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 					"MAC", "Unspecified", "Reserved", "Reserved" };
 
 				VALIDATE_FIELD("%d",  vFormat, 3);
-				atomprint("  comment=\"format is %s\"\n",formats[vFormat]);
+				atomprint("comment%ld=\"format is %s\"\n", counter++, formats[vFormat]);
 				VALIDATE_FIELD("%d",  vRange, 1);
 				VALIDATE_FIELD("%d",  colourDesc, 1);
 				if (colourDesc==1) {
@@ -1327,9 +1329,9 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 						"Log 100:1", "Log 316.22777:1"};
 						
 					VALIDATE_FIELD("%d",  colourPrimaries, 8);
-					if (colourPrimaries<9) atomprint("  comment=\"primaries are %s\"\n",primaries[colourPrimaries]);
+					if (colourPrimaries<9) atomprint("comment%ld=\"primaries are %s\"\n", counter++, primaries[colourPrimaries]);
 					VALIDATE_FIELD("%d",  transferChars, 8);
-					if (transferChars<11) atomprint("  comment=\"transfer chars are %s\"\n",primaries[transferChars]);
+					if (transferChars<11) atomprint("comment%ld=\"transfer chars are %s\"\n", counter++, primaries[transferChars]);
 					VALIDATE_FIELD("%d",  matrixCoeffs, 8);
 				}
 			}
@@ -1344,7 +1346,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 				OSErr err = noErr;
 				startcode = PeekBits(bb,32,&err);
 				if (err == outOfDataErr) {
-					atomprint("  comment=\"short headers\"\n");
+					atomprint("comment%ld=\"short headers\"\n", counter++);
 				}
 				else if ((startcode >= 0x120) && (startcode <=  0x12F)) 
 					{ err = Validate_VideoSpecificInfo(bb,0,voVerID, p_sc); }
@@ -1381,7 +1383,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 		
 		VALIDATE_FIELD("%d",  randomAccessibleVol, 1);
 		VALIDATE_FIELD("0x%02x",  voTypeIndic, 8);
-		if (voTypeIndic<10) atomprint("  comment=\"type is %s\"\n",vol_types[voTypeIndic] );
+		if (voTypeIndic<10) atomprint("comment%ld=\"type is %s\"\n", counter++, vol_types[voTypeIndic] );
 		if (voTypeIndic == 0x12) {	/* "Fine Granularity Scalable" */
 			UInt8 fgs_layer_type, vol_prio, fgs_ref_layer_id, quarter_sample, fgs_rs_mk_dis, interlaced;
 			UInt16 volWidth, volHeight;
@@ -1395,7 +1397,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 				VALIDATE_FIELD("%d",  parWidth, 8);
 				VALIDATE_FIELD("%d",  parHeight, 8);
 			}
-			else if (aspectRatioInfo<6) atomprint("  comment=\"aspect ratio is %s\"\n",ratios[aspectRatioInfo]);
+			else if (aspectRatioInfo<6) atomprint("comment%ld=\"aspect ratio is %s\"\n", counter++, ratios[aspectRatioInfo]);
 			VALIDATE_FIELD("%d",  volControlParams, 1);
 			if (volControlParams==1) {
 				UInt8 chromaFormat;
@@ -1479,7 +1481,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 				VALIDATE_FIELD("%d",  parWidth, 8);
 				VALIDATE_FIELD("%d",  parHeight, 8);
 			}
-			else if (aspectRatioInfo<6) atomprint("  comment=\"aspect ratio is %s\"\n",ratios[aspectRatioInfo]);
+			else if (aspectRatioInfo<6) atomprint("comment%ld=\"aspect ratio is %s\"\n", counter++, ratios[aspectRatioInfo]);
 			VALIDATE_FIELD("%d",  volControlParams, 1);
 			if (volControlParams==1) {
 				UInt8 chromaFormat;
@@ -1501,7 +1503,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 				}
 			}
 			VALIDATE_FIELD("%d",  volShape, 2); 
-			atomprint("  comment=\"shape is %s\"\n",shapes[volShape]);
+			atomprint("comment%ld=\"shape is %s\"\n", counter++, shapes[volShape]);
 			if (volShape == 3 /* "grayscale" */
 			    && voVerID != 1)
 				VALIDATE_FIELD("%d",  volShapeExt, 4);
@@ -1706,29 +1708,30 @@ static UInt32 field_size(UInt32 x)
 
 OSErr Validate_level_IDC( UInt8 profile, UInt8 level, UInt8 constraint_set3_flag)
 {
+	int counter = 0;
 	if ( ((profile == 66) || (profile == 77) || (profile == 88)) && 
 		 (level==11) && 
 		 (constraint_set3_flag==1)) 
-	{ atomprint("  <Comment level 1b>\n"); } 
+	{ atomprint("Comment%ld=\"level 1b\"\n", counter++); } 
 	else 
 	{
 		if (level>9) { 
 			float x;
 			x = level;
 			x = x/10;
-			atomprint("  <Comment level %3.1f>\n",x);
+			atomprint("Comment%ld=\"level %3.1f\"\n", counter++, x);
 		}
-		else { atomprint("  <Comment unknown level>\n"); }
+		else { atomprint("Comment%ld=\"unknown level\"\n", counter++); }
 	
 		if ( ((profile == 100) || (profile == 110)  ) && (constraint_set3_flag==1))
-		{ atomprint("  <Comment High 10 Intra profile compatible>\n"); }
+		{ atomprint("Comment%ld=\"High 10 Intra profile compatible\"\n", counter++); }
 		else if ( (profile == 122) && (constraint_set3_flag==1))
-		{ atomprint("  <Comment High 4:2:2 Intra profile compatible>\n"); }
+		{ atomprint("Comment%ld=\"High 4:2:2 Intra profile compatible\"\n", counter++); }
 		else if (profile == 44) {
 			if (constraint_set3_flag != 1) errprint("Error: constraint_set3_flag must be 1 when profile_idc is 44\n");
 		}
 		else if ( (profile == 244) && (constraint_set3_flag==1))
-		{ atomprint("  <Comment High 4:4:4 Intra profile compatible>\n"); }
+		{ atomprint("Comment%ld=\"High 4:4:4 Intra profile compatible\"\n", counter++); }
 
 		else if (constraint_set3_flag == 1) 
 				  warnprint("Warning: constraint_set3_flag==1 when it seems to be reserved to zero\n");
@@ -1747,6 +1750,7 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 	AvcConfigInfo avcHeader;
 	UInt8 reserved, constraint_set0_flag, constraint_set1_flag, constraint_set2_flag, constraint_set3_flag;
 	UInt32* codec_specific;
+	int counter = 0;
 
 	codec_specific = &((tir->validatedSampleDescriptionRefCons)[tir->currentSampleDescriptionIndex - 1]);
 
@@ -1755,14 +1759,15 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 
 	atomprint("config=\"%d\"\n",avcHeader.config_ver);
 	atomprint("profile=\"%d\"\n", avcHeader.profile);
+	atomprint(">\n");
 	switch (avcHeader.profile) {
-		case 66: atomprint("  <Comment %s profile>\n","baseline"); break;
-		case 77: atomprint("  <Comment %s profile>\n","main"); break;
-		case 88: atomprint("  <Comment %s profile>\n","extended"); break;
-		case 100: atomprint("  <Comment %s profile>\n","high"); break;
-		case 110: atomprint("  <Comment %s profile>\n","high 10"); break;
-		case 122: atomprint("  <Comment %s profile>\n","high 4:2:2"); break;
-		case 144: atomprint("  <Comment %s profile>\n","high 4:4:4"); break;
+		case 66: atomprint("<Comment profile=\"%s\"\n","baseline"); break;
+		case 77: atomprint("<Comment profile=\"%s\"\n","main"); break;
+		case 88: atomprint("<Comment profile=\"%s\"\n","extended"); break;
+		case 100: atomprint("<Comment profile=\"%s\"\n","high"); break;
+		case 110: atomprint("<Comment profile=\"%s\"\n","high 10"); break;
+		case 122: atomprint("<Comment profile=\"%s\"\n","high 4:2:2"); break;
+		case 144: atomprint("<Comment profile=\"%s\"\n","high 4:4:4"); break;
 	}
 	
 	VALIDATE_FIELD  ("%d", constraint_set0_flag, 1);
@@ -1789,19 +1794,48 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 	codec_specific[0] = avcHeader.lengthsize + 1;
 	
 	atomprint("lengthsizeminusone=\"%d\"\n", avcHeader.lengthsize);
-	atomprint("  <COMMENT \"length fields are %d bytes\"/>\n",avcHeader.lengthsize+1);
+	atomprint("COMMENT=\"length fields are %d bytes\"\n",avcHeader.lengthsize+1);
 	if (avcHeader.lengthsize==2) errprint("AVC NALU lengths must be 1,2 or 4, not 3 bytes\n");
 	
 	avcHeader.sps_count = GetBits(bb, 8, &err); if (err) goto bail;
 	if ((avcHeader.sps_count & 0xE0) != 0xE0) {
 		errprint( "reserved 1 bits are not 1 %x", avcHeader.sps_count && 0xE0 );
 	}
+	
+	if ( (avcHeader.profile  ==  100)  ||  (avcHeader.profile  ==  110)  ||
+		 (avcHeader.profile  ==  122)  ||  (avcHeader.profile  ==  144) ) {
+		UInt8 reserved1, reserved2, reserved3;
+		VALIDATE_FIELD_V("%d", reserved1, 6, 0x3F, "AVCConfigRecord");
+		VALIDATE_FIELD("%d", avcHeader.chroma_format, 2);
+
+		VALIDATE_FIELD_V("%d", reserved2, 5, 0x1F, "AVCConfigRecord");
+		VALIDATE_FIELD("%d", avcHeader.bit_depth_luma_minus8, 3);
+		
+		VALIDATE_FIELD_V("%d", reserved3, 5, 0x1F, "AVCConfigRecord");
+		VALIDATE_FIELD("%d", avcHeader.bit_depth_chroma_minus8, 3);
+
+		avcHeader.sps_ext_count = GetBits(bb, 8, &err); if (err) goto bail;
+		atomprint("sps_ext_count=\"%d\"\n", avcHeader.sps_ext_count );
+		atomprint(">\n");
+		
+		for (i=0; i< avcHeader.sps_ext_count;  i++) {
+			nal_length = GetBits(bb, 16, &err); if (err) goto bail;
+			//atomprint("nal_length=\"%d\"\n", nal_length  );
+			
+			/* then call the NALU validate proc */
+			BAILIFERR( Validate_NAL_Unit( bb, nal_SPS_Ext, nal_length) );
+			GetBits( bb, nal_length*8, & err);
+		}
+	}
+	else
+		atomprint(">\n");
+	
 	avcHeader.sps_count = avcHeader.sps_count & 0x1F;
-	atomprint("sps_count=\"%d\"\n", avcHeader.sps_count  );
+	//atomprint("sps_count=\"%d\"\n", avcHeader.sps_count  );
 	
 	for (i=0; i< avcHeader.sps_count;  i++) {
 		nal_length = GetBits(bb, 16, &err); if (err) goto bail;
-		atomprint("nal_length=\"%d\"\n", nal_length  );
+		//atomprint("nal_length=\"%d\"\n", nal_length  );
 
 		/* then call the NALU validate proc */
 		BAILIFERR( Validate_NAL_Unit( bb, nal_SPS, nal_length) );
@@ -1809,43 +1843,19 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 	}    
 	
 	avcHeader.pps_count = GetBits(bb, 8, &err); if (err) goto bail;
-	atomprint("pps_count=\"%d\"\n", avcHeader.pps_count );
+	//atomprint("pps_count=\"%d\"\n", avcHeader.pps_count );
 	
 	for (i=0; i< avcHeader.pps_count;  i++) {
 		nal_length = GetBits(bb, 16, &err); if (err) goto bail;
-		atomprint("nal_length=\"%d\"\n", nal_length  );
+		//atomprint("nal_length=\"%d\"\n", nal_length  );
 		
 		/* then call the NALU validate proc */
 		BAILIFERR( Validate_NAL_Unit( bb, nal_PPS, nal_length) );
 		GetBits( bb, nal_length*8, & err);
 	}  
-
-	if ( (avcHeader.profile  ==  100)  ||  (avcHeader.profile  ==  110)  ||
-		 (avcHeader.profile  ==  122)  ||  (avcHeader.profile  ==  144) ) {		
-		VALIDATE_FIELD_V("%d", reserved, 6, 0x3F, "AVCConfigRecord");
-		VALIDATE_FIELD("%d", avcHeader.chroma_format, 2);
-
-		VALIDATE_FIELD_V("%d", reserved, 5, 0x1F, "AVCConfigRecord");
-		VALIDATE_FIELD("%d", avcHeader.bit_depth_luma_minus8, 3);
-		
-		VALIDATE_FIELD_V("%d", reserved, 5, 0x1F, "AVCConfigRecord");
-		VALIDATE_FIELD("%d", avcHeader.bit_depth_chroma_minus8, 3);
-
-		avcHeader.sps_ext_count = GetBits(bb, 8, &err); if (err) goto bail;
-		atomprint("sps_ext_count=\"%d\"\n", avcHeader.sps_ext_count );
-
-		for (i=0; i< avcHeader.sps_ext_count;  i++) {
-			nal_length = GetBits(bb, 16, &err); if (err) goto bail;
-			atomprint("nal_length=\"%d\"\n", nal_length  );
-			
-			/* then call the NALU validate proc */
-			BAILIFERR( Validate_NAL_Unit( bb, nal_SPS_Ext, nal_length) );
-			GetBits( bb, nal_length*8, & err);
-		}
-	} 
 	
 	if (bb->bits_left != 0) errprint("Validate AVC Config record didn't use %ld bits\n", bb->bits_left);
-
+	atomprint("</Comment>\n");
 
 
 bail:
@@ -1920,7 +1930,8 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 		 };
 	
 	err = noErr;
-	atomprint("<NALUnit length=%d (0x%x)\n",nal_length,nal_length); vg.tabcnt++;
+	int counter = 0;
+	atomprint("<NALUnit length=\"%d (0x%x)\"\n",nal_length,nal_length); vg.tabcnt++;
 	
 	mybb = *inbb;
 	mybb.bits_left = nal_length * 8;
@@ -1940,7 +1951,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 	} else {
 		VALIDATE_FIELD  ("0x%02x", nal_type, 5);
 	}
-	atomprint("   <comment \"%s\"\\>\n",naltypes[nal_type]);
+	atomprint("comment%ld=\"%s\"\n",counter++,naltypes[nal_type]);
 	
 	switch (nal_type) {
 		case nal_SPS:
@@ -1956,14 +1967,15 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			/* seq param set */
 			
 			VALIDATE_FIELD  ("%d", profile_idc, 8);
+			atomprint(">\n");
 			switch (profile_idc) {
-				case 66: atomprint("  <Comment %s profile>\n","baseline"); break;
-				case 77: atomprint("  <Comment %s profile>\n","main"); break;
-				case 88: atomprint("  <Comment %s profile>\n","extended"); break;
-				case 100: atomprint("  <Comment %s profile>\n","high"); break;
-				case 110: atomprint("  <Comment %s profile>\n","high 10"); break;
-				case 122: atomprint("  <Comment %s profile>\n","high 4:2:2"); break;
-				case 144: atomprint("  <Comment %s profile>\n","high 4:4:4"); break;
+				case 66: atomprint("<comment profile=\"%s\"\n","baseline"); break;
+				case 77: atomprint("<comment profile=\"%s\"\n","main"); break;
+				case 88: atomprint("<comment profile=\"%s\"\n","extended"); break;
+				case 100: atomprint("<comment profile=\"%s\"\n","high"); break;
+				case 110: atomprint("<comment profile=\"%s\"\n","high 10"); break;
+				case 122: atomprint("<comment profile=\"%s\"\n","high 4:2:2"); break;
+				case 144: atomprint("<comment profile=\"%s\"\n","high 4:4:4"); break;
 				default: warnprint("Warning: Validate_NAL_Unit (SPS): Unknown profile %d\n",profile_idc);
 			}
 			VALIDATE_FIELD  ("%d", constraint_set0_flag, 1);
@@ -2040,9 +2052,9 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			VALIDATE_UEV    ( "%d", num_ref_frames);
 			VALIDATE_FIELD  ("0x%01x", gaps_in_frame_num_value_allowed_flag, 1);
 			VALIDATE_UEV    ( "%d", pic_width_in_mbs_minus1);
-				atomprint("  <Comment \"width (PW + 1)*16 = %d\" \\>\n",(pic_width_in_mbs_minus1+1)*16);
+				atomprint("Comment%ld=\"width (PW + 1)*16 = %d\"\n", counter++,(pic_width_in_mbs_minus1+1)*16);
 			VALIDATE_UEV    ( "%d", pic_height_in_map_units_minus1);
-				atomprint("  <Comment \"height (PH + 1)*16 = %d\" \\>\n",(pic_height_in_map_units_minus1+1)*16);
+				atomprint("Comment%ld=\"height (PH + 1)*16 = %d\"\n",counter++,(pic_height_in_map_units_minus1+1)*16);
 			
 			VALIDATE_FIELD  ("%d", frame_mbs_only_flag, 1);
 			
@@ -2081,7 +2093,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 						VALIDATE_FIELD  ("%d", sar_height, 16);
 					} else if (aspect_ratio_idc<=13)
 					{
-						atomprint("<Comment aspect ratio is %s>\n",aspect_types[aspect_ratio_idc]);
+						atomprint("Comment%ld=\"aspect ratio is %s\"\n",counter++,aspect_types[aspect_ratio_idc]);
 					}
 				}
 				VALIDATE_FIELD  ("0x%01x", overscan_info_present_flag, 1);
@@ -2102,20 +2114,20 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 						"BT.470-2 System B,G", "SMPTE 170M", "SMPTE 240M" };
 
 					VALIDATE_FIELD  ("0x%01x", video_format, 3);
-					if (video_format<6) atomprint("<COMMENT \"video format is %s\"/>\n",video_types[video_format]);
+					if (video_format<6) atomprint("COMMENT%ld=\"video format is %s\"\n",counter++,video_types[video_format]);
 					
 					VALIDATE_FIELD  ("0x%01x", video_full_range_flag, 1);
 					VALIDATE_FIELD  ("0x%01x", colour_description_present_flag, 1);
 					if( colour_description_present_flag ) {
 						VALIDATE_FIELD  ("0x%01x", colour_primaries, 8);
 						if (colour_primaries<9) 
-							atomprint("<COMMENT \"primaries are %s\"/>\n",primaries[colour_primaries]);
+							atomprint("COMMENT%ld=\"primaries are %s\"\n",counter++,primaries[colour_primaries]);
 						VALIDATE_FIELD  ("0x%01x", transfer_characteristics, 8);
 						if (transfer_characteristics<11) 
-							atomprint("<COMMENT \"transfer characteristics are %s\"/>\n",primaries[transfer_characteristics]);
+							atomprint("COMMENT%ld=\"transfer characteristics are %s\"\n",counter++,primaries[transfer_characteristics]);
 						VALIDATE_FIELD  ("0x%01x", matrix_coefficients, 8);
 						if (matrix_coefficients<8) 
-							atomprint("<COMMENT \"matrix coefficients are %s\"/>\n",matrices[matrix_coefficients]);
+							atomprint("COMMENT%ld=\"matrix coefficients are %s\"\n",counter++,matrices[matrix_coefficients]);
 					}
 				}
 				VALIDATE_FIELD  ("0x%01x", chroma_loc_info_present_flag, 1);
@@ -2163,7 +2175,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			VALIDATE_FIELD_V("0x%01x",  one_bit, 1, 1, "NALUnit");
 			zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
 			if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d",zero_bit);
-
+			atomprint("/>\n");
 			}		
 
 			break;
@@ -2269,7 +2281,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			VALIDATE_FIELD_V("0x%01x",  one_bit, 1, 1, "NALUnit");
 			zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
 			if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d",zero_bit);
-
+			atomprint(">\n");
 		}
 			break;
 
@@ -2294,6 +2306,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			VALIDATE_FIELD_V("0x%01x",  one_bit, 1, 1, "NALUnit");
 			zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
 			if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d",zero_bit);
+			atomprint(">\n");
 		}
 		break;
 		
@@ -2310,7 +2323,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			
 			VALIDATE_UEV( "%d", first_mb_in_slice);
 			VALIDATE_UEV( "%d", slice_type);
-				if (slice_type<10) atomprint("<COMMENT \"slice type is %s\"/>\n",slice_types[slice_type]);
+				if (slice_type<10) atomprint("COMMENT%ld=\"slice type is %s\"\n",counter++,slice_types[slice_type]);
 			VALIDATE_UEV( "%d", pic_parameter_set_id);
 			/* now we have to find log2_max_frame_num_minus4, and frame_mbs only from the SPS linked to the PPS of this ID.  ugh */
 			VALIDATE_FIELD( "%d", frame_num, 7);		/* 7 == #bits from SPS log2_max_frame_num_minus4 + 4 */
@@ -2324,6 +2337,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 				UInt32 idr_pic_id;
 				VALIDATE_UEV( "%d", idr_pic_id);
 			}
+			atomprint(">\n");
 		}
 		break;
 		
@@ -2338,6 +2352,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 					if (err) break;
 				}
 				if (i>0) GetBits(bb, i, &err);
+				atomprint(">\n");
 			}
 			// errprint("\tUnknown NAL Unit %d",nal_type);
 			break;
@@ -2345,7 +2360,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 	if (bb->bits_left != 0) errprint("Validate NAL Unit didn't use %ld bits\n", bb->bits_left);
 
 bail:
-	--vg.tabcnt; atomprint("/>\n");
+	--vg.tabcnt; atomprint("</NALUnit>\n");
 
 	if (err) {
 		errprint("Validate_NalUnit: %d\n",err);
@@ -2511,7 +2526,7 @@ OSErr Validate_Random_Descriptor(BitBuffer *bb, char* dname)
 			else tagname = "Forbidden";
 			
 			atomprintnotab("\ttag=\"0x%2.2x\" size=\"%d\">\n", tag, size);
-			atomprint("<comment descriptor tag is %s />\n",tagname);
+			atomprint("comment=\"descriptor tag is %s\"\n",tagname);
 			
 			atomprinthexdata((char *)((void*)bb->cptr), size);
 			atomprint("/>\n");
