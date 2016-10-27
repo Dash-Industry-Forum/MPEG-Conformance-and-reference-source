@@ -11,7 +11,7 @@ NAME=  ValidateMP4
 ### include debug information: 1=yes, 0=no
 DBG= 1
 
-compatibility= -m32
+compatibility= -m32 -static-libstdc++
 
 DEPEND= dependencies
 
@@ -78,7 +78,6 @@ $(OBJDIR)/%.o$(SUFFIX): $(SRCDIR)/%.cpp
 $(OBJDIR)/%.o$(SUFFIX): $(ADDSRCDIR)/%.c
 	@echo 'compiling object file "$@" ...'
 	@$(CC) $(compatibility) -c -o $@ $(FLAGS) $<
-
 
 include $(DEPEND)
 
