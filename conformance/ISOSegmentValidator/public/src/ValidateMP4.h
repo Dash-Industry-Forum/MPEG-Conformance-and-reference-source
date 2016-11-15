@@ -604,7 +604,7 @@ typedef struct {
     int lowerindexRange;
     int higherindexRange;
     unsigned int audioChValue;
-	bool	suggestBandwidth;
+    bool    suggestBandwidth;
     bool    isoLive;
     bool    isoondemand;
     bool    isomain;
