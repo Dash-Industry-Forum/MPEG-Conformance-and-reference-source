@@ -2729,24 +2729,26 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
   sidxInfo->offset > starting of index range && 
   sidxInfo->offset + sidxInfo->size - 1 < ending of index range */
     
-  int offs=sidxInfo->offset;       //convert to int value and store it in a variable
-  int siz=sidxInfo->size;
+    int offs=sidxInfo->offset;       //convert to int value and store it in a variable
+    int siz=sidxInfo->size;
   
-  
-  if (vg.lowerindexRange!=-1 && vg.higherindexRange!=-1)
-  {
-    if (offs < vg.lowerindexRange || (offs + siz - 1 ) > vg.higherindexRange)
-      //fprintf(stdout,"%d  %d\n",vg.lowerindexRange,vg.higherindexRange);
-      errprint("sidx offset %d is less than starting of indexRange %d, OR sum of sidx offset %d and sidx size %d minus 1 is greater than ending of indexRange %d\n",offs,vg.lowerindexRange,offs,siz,vg.higherindexRange);
-  
-  }else
-  {   //indexRange missing, check if it's a IOP test vector without @RepresentationIndex
-      if (vg.dash264base && !vg.RepresentationIndex)
-        errprint("sidx present without indexRange and @RepresentationIndex for IOP test vector\n");
-  }
+    if (vg.isoondemand) //only check for ondemand profile
+    {
+        if (vg.lowerindexRange!=-1 && vg.higherindexRange!=-1)
+        {
+          if (offs < vg.lowerindexRange || (offs + siz - 1 ) > vg.higherindexRange)
+            //fprintf(stdout,"%d  %d\n",vg.lowerindexRange,vg.higherindexRange);
+            errprint("sidx offset %d is less than starting of @indexRange %d, OR sum of sidx offset %d and sidx size %d minus 1 is greater than ending of @indexRange %d\n",offs,vg.lowerindexRange,offs,siz,vg.higherindexRange);
+
+        }else
+        {   //indexRange missing, check if it's a IOP test vector without @RepresentationIndex
+            if (vg.dash264base && !vg.RepresentationIndex)
+              errprint("sidx present without @indexRange and RepresentationIndex for DASH-IF IOP content\n");
+        }
+    }
     
-	// Get version/flags
-	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+    // Get version/flags
+    BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
     
     BAILIFERR( GetFileDataN32( aoe, &sidxInfo->reference_ID, offset, &offset ) );
 
