@@ -675,7 +675,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir) {
     UInt32 leafsProcessed = 0;
 
     //General checks
-    UInt64 segmentOffset = 0;
+    UInt64 segmentOffset = vg.initializationSegment ? vg.segmentSizes[0] : 0;
 
     int firstMediaSegment = vg.initializationSegment ? 1 : 0;
 
@@ -710,7 +710,6 @@ OSErr processIndexingInfo(MovieInfoRec *mir) {
                 if (mir->moofInfo[j].offset >= segmentOffset && mir->moofInfo[j].offset < firstSidxOfSegment->offset)
                     errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box shall be placed before any 'moof' box. Violated for fragment number %d\n", j + 1);
 
-
                 if (mir->moofInfo[j].samplesToBePresented && mir->moofInfo[j].offset >= segmentOffset && mir->moofInfo[j].offset < (segmentOffset + vg.segmentSizes[i])) {
                     segmentDurationSec += (mir->moofInfo[j].moofPresentationEndTimePerTrack[trackIndex] - mir->moofInfo[j].moofEarliestPresentationTimePerTrack[trackIndex]);
                 }
@@ -719,7 +718,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir) {
             long double diff = ABS(segmentDurationSec - firstSidxOfSegment->cumulatedDuration);
 
             if (diff > (long double) 1.0 / (long double) mir->tirList[trackIndex].mediaTimeScale)
-                errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n", i - firstMediaSegment + 1, segmentDurationSec, firstSidxOfSegment->cumulatedDuration, mir->tirList[trackIndex].trackID, diff);
+                errprint("numFragments %d Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",mir->numFragments, i - firstMediaSegment + 1, segmentDurationSec, firstSidxOfSegment->cumulatedDuration, mir->tirList[trackIndex].trackID, diff);
 
             segmentOffset += vg.segmentSizes[i];
         }
