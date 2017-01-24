@@ -2699,6 +2699,51 @@ OSErr Validate_pssh_Atom( atomOffsetEntry *aoe, void *refcon )
     Data = (UInt8 *)malloc(DataSize*sizeof(UInt8)); 
     BAILIFERR( GetFileData( aoe,Data, offset, DataSize , &offset ) );
 
+    //Compare pssh box contents with the cenc:pssh element of MPD
+    
+    char *pssh_contents;
+    if(vg.pssh_count > 0)
+    {
+      sprintf(pssh_contents, "%lu %lu %s %lu %s",version, flags, SystemID, DataSize, Data);
+    
+      //Get pssh mentioned in MPD from a saved file
+      char *pssh_file_contents;
+      long pssh_file_size;
+    
+      for(int i=0; i<vg.pssh_count; i++)
+      {
+	char pssh_file_name[300];
+	strcpy(pssh_file_name,vg.psshfile[i]);
+	
+	if(pssh_file_name != '\0'){
+	FILE *pssh_file = fopen(vg.psshfile[i], "rb");
+	
+	  fseek(pssh_file, 0, SEEK_END);
+	  pssh_file_size = ftell(pssh_file);
+	  rewind(pssh_file);
+	  pssh_file_contents = (char *)malloc(pssh_file_size * (sizeof(char)));
+	  fread(pssh_file_contents, sizeof(char), pssh_file_size, pssh_file);
+	
+	  fclose(pssh_file);
+	     
+	  int rc = 0;
+	  int bufferlen = 128;
+	  char encodedoutput[] = "";
+	  //Convert box contents to base64
+	  rc = Base64Encode(pssh_contents, encodedoutput, bufferlen);
+	  
+	  if(strcmp(encodedoutput, pssh_file_contents)!=0)
+	  {
+	    if(i<(vg.pssh_count-1))
+	      continue;
+	    else
+	      errprint("pssh box including header is not equivalent to a cenc:pssh element of MPD");
+	  }
+       }
+      
+      }
+    }
+ 
     free(Data);
     
     // All done
@@ -3662,6 +3707,37 @@ OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon )
 	UInt8	default_KID[16]; 
     BAILIFERR( GetFileData( aoe,default_KID, offset, 16 , &offset ) );
     
+    vg.tencInInit=true;// As the 'tenc' box is present in moov box (initialization segment).
+    
+    //Check the default_KID is matching with the one mentioned in the MPD
+    
+     char *st;
+     //st[0]={'\0'};
+     char mpd_kid[50],tenc_kid[50],buf;
+     mpd_kid[0]={'\0'};
+     st= vg.default_KID;
+     if(st[0]!= '\0'){
+	remove_all_chars(st, '-'); //
+	int length,i,j;
+	length= strlen(st);
+	    
+	j=0;
+	buf= 0;
+	for(i = 0; i < length; i++){
+		if(i % 2 != 0){
+		    mpd_kid[j++]= char(hex_to_ascii(buf, st[i]));
+		}else{
+		    buf = st[i];
+		}
+	}
+	    
+	mpd_kid[j]='\0';
+	    
+	sprintf(tenc_kid,"%s",default_KID);
+
+	if(strcmp(tenc_kid, mpd_kid)!=0)
+	    errprint("default_KID in 'tenc' is not matching with cenc:default_KID attribute of MPD\n");
+     }
     // All done
     aoe->aoeflags |= kAtomValidated;
 bail:

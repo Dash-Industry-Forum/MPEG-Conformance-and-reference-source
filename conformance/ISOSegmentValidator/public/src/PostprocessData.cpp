@@ -120,11 +120,14 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                 if (vg.dsms[index] && !moovInSegmentFound)
                     errprint("Segment %d has dsms compatible brand (Self-initializing media segment), however, moov box not found in this segment as expected.\n", index + 1);
 
-                if (vg.dash264enc && !vg.psshInInit && !vg.psshFoundInSegment[index])
-                    errprint("DASH264 DRM checks: No pssh found in initialization segment and also missing in media Segment %d.\n", index);
+                //if (vg.dash264enc && !vg.psshInInit && !vg.psshFoundInSegment[index])
+                  //  errprint("DASH264 DRM checks: No pssh found in initialization segment and also missing in media Segment %d.\n", index); //This check is removed as 'pssh' is not a mandatory box.
 
                 if (vg.dash264enc && !vg.tencInInit && !vg.tencFoundInSegment[index])
                     errprint("DASH264 DRM checks: No tenc found in initialization segment and also missing in media Segment %d.\n", index);
+		    
+		if(vg.tencInInit && !vg.dash264enc)
+		    errprint("For an encrypted content, ContentProtection Descriptor shall always be present and DASH264 profile shall also be present");
             }
 
             if (boxAtSegmentStartFound == true) {
