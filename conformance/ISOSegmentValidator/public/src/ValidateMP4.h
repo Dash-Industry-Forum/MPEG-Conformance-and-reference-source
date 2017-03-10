@@ -649,8 +649,10 @@ typedef struct {
 	Boolean	print_hintpayload;
 	
 	UInt32  visualProfileLevelIndication;// to validate if IOD corresponds to VSC
-
-
+	 argstr default_KID;
+         char *psshfile[10];
+	 int pssh_count;
+	 
 } ValidateGlobals;
 
 extern ValidateGlobals vg;
@@ -693,8 +695,11 @@ void loadOffsetInfo(char *offsetsFileName);
 void toggleprintatomdetailed( Boolean onOff );
 void toggleprintsample( Boolean onOff );
 void copyCharsToStr( char *chars, char *str, UInt16 count );
-
-
+int hex_to_ascii(char c, char d);
+int hex_to_int(char c);
+void remove_all_chars(char* str, char c);
+int Base64Encode(char *input, char *output, int oplen);
+int encodeblock(char *input, char *output, int oplen);
 
 //==========================================================================================
 

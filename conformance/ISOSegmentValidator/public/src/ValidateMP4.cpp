@@ -232,8 +232,10 @@ int main(void)
     vg.numOffsetEntries = 0;
     vg.lowerindexRange=-1;
     vg.higherindexRange=-1;
-    //vg.indexRange='\0'; 
+    //vg.indexRange='\0';
+    vg.pssh_count = 0;
     
+    int boxCount = 0;
     char ** arrayArgc;
     int uArgc;
     expandArgv(argc,argv,uArgc,arrayArgc);   
@@ -341,12 +343,24 @@ int main(void)
 	        } else if ( keymatch( arg, "audiochvalue", 12 ) ) {
                          getNextArgStr( &temp, "audiochvalue" ); vg.audioChValue = atoi(temp);
                  		  			  
-		} else {
+		} else if ( keymatch( arg, "default_kid", 11 ) ) { //Related to the case of encrypted content.
+                         getNextArgStr( &vg.default_KID, "default_kid" );
+                 		  			  
+		}else if ( keymatch( arg, "pssh_count", 10 ) ) { //Related to the case of encrypted content.
+                         getNextArgStr( &temp, "pssh_count" ); vg.pssh_count=atoi(temp);
+			
+                 		  			  
+		}else if ( keymatch( arg, "psshbox", 7 ) ) { //Related to the case of encrypted content.
+                         getNextArgStr( &temp, "psshbox" );
+			 vg.psshfile[boxCount++]=temp;
+                 		  			  
+		}else {
 			fprintf( stderr, "Unexpected option \"%s\"\n", arg);
 			err = -1;
 			goto usageError;
 		}
 	}
+	
 	
 	for(int i = 0; i < uArgc; i++)		
 	{
@@ -626,6 +640,7 @@ usageError:
 	fprintf( stderr, "    -indexrange       Byte range where sidx is expected\n");
 	fprintf( stderr, "    -width            Expected width of the video track\n");
 	fprintf( stderr, "    -height           Expected height of the video track\n");
+	fprintf( stderr, "    -default_kid      Expected default_KID for the mp4 content protection\n");
 	fprintf( stderr, "    -s[amplenumber]   <number> - limit sample checking or printing operations to sample <number> \n" );
 	fprintf( stderr, "                      most effective in combination with -atompath (default is all samples) \n" );
 	fprintf( stderr, "    -offsetinfo       <Offset Info File> - Partial file optimization information file: if the file has several byte ranges removed, this file provides the information as offset-bytes removed pairs\n");
@@ -1228,7 +1243,84 @@ void copyCharsToStr( char *chars, char *str, UInt16 count ){
     str[ count ] = 0;
 
 }
+  //To remove all occurences of the specified character.
+void remove_all_chars(char* str, char c) {
+        char *pr = str, *pw = str;
+        while (*pr) {
+            *pw = *pr++;
+            pw += (*pw != c);
+        }
+        *pw = '\0';
+}
+  //Convert hexadecimal to integer
+int hex_to_int(char c){
+        int first,second,result ;
+	if (c >= 97)
+          c = c - 32;
+	first= c / 16 - 3;
+	second= c % 16;
+        result = first*10 + second;
+        if(result > 9) result--;
+        return result;
+}
+  //Convert hexadecimal to ASCII
+int hex_to_ascii(char c, char d){
+        int high,low;
+        high= hex_to_int(c) * 16;
+        low = hex_to_int(d);
+        return high+low;
+}
 
+  //Convert base64 string to ASCII
+#define TABLELEN        64
+//#define BUFFFERLEN      128
+
+#define ENCODERLEN      4
+#define ENCODEROPLEN    0
+#define ENCODERBLOCKLEN 3
+
+#define PADDINGCHAR     '='
+#define BASE64CHARSET   "ABCDEFGHIJKLMNOPQRSTUVWXYZ"\
+                        "abcdefghijklmnopqrstuvwxyz"\
+                        "0123456789"\
+                        "+/";
+int encodeblock(char *input, char *output, int oplen){
+   int rc = 0, iplen = 0;
+   char encodedstr[ENCODERLEN + 1] = "";
+   char encodingtabe[TABLELEN + 1] = BASE64CHARSET;
+
+   iplen = strlen(input);
+   encodedstr[0] = encodingtabe[ input[0] >> 2 ];
+   encodedstr[1] = encodingtabe[ ((input[0] & 0x03) << 4) |
+                                 ((input[1] & 0xf0) >> 4) ];
+   encodedstr[2] = (iplen > 1 ? encodingtabe[ ((input[1] & 0x0f) << 2) |
+                                              ((input[2] & 0xc0) >> 6) ] : PADDINGCHAR);
+   encodedstr[3] = (iplen > 2 ? encodingtabe[ input[2] & 0x3f ] : PADDINGCHAR);
+   strncat(output, encodedstr, oplen-strlen(output));
+
+   return rc;
+}
+
+int Base64Encode(char *input, char *output, int oplen){
+   int rc = 0;
+   int index = 0, ipindex = 0, iplen = 0;
+   char encoderinput[ENCODERBLOCKLEN + 1] = "";
+
+   iplen = strlen(input);
+   while(ipindex < iplen){
+      for(index = 0; index < 3; index++){
+         if(ipindex < iplen){
+            encoderinput[index] = input[ipindex];
+         }else{
+            encoderinput[index] = 0;
+         }
+         ipindex++;
+      }
+      rc = encodeblock(encoderinput, output, oplen);
+   }
+
+   return rc;
+}
 //==========================================================================================
 
 void addEscapedChar( char *str, char c );
