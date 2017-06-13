@@ -3268,8 +3268,8 @@ OSErr Validate_colr_Atom( atomOffsetEntry *aoe, void *refcon )
 		atomprint(">\n"); 
 	}
 	else if(colrHeader.colrtype == 'nclx'){ //errprint( "colr atom size or type not as expected; size %d, should be %d; or type %s not nclc\n", 
-	     //	colrHeader.start.atomSize, 18, ostypetostr(colrHeader.colrtype) );
-            warnprint("WARNING: colr atom of type nclx found, the software does not handle colr atoms of this type. \n");
+	     	//colrHeader.start.atomSize, 18, ostypetostr(colrHeader.colrtype) );
+           warnprint("WARNING: colr atom of type nclx found, the software does not handle colr atoms of this type. \n");
         }
         
 	// All done
@@ -3709,13 +3709,22 @@ OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon )
 	UInt8	default_KID[16]; 
     BAILIFERR( GetFileData( aoe,default_KID, offset, 16 , &offset ) );
     
+    //Adjust KID before printing, ascii to integer.
+    char tenc_KID[50], KID_char[20];
+    tenc_KID[0]={'\0'};
+    KID_char[0]={'\0'};
+    for(int z=0;z<16;z++)
+    {
+        sprintf(KID_char,"%d",default_KID[z]);
+        strcat(tenc_KID, KID_char);
+    }
     vg.tencInInit=true;// As the 'tenc' box is present in moov box (initialization segment).
     
     //Check the default_KID is matching with the one mentioned in the MPD
     
      char *st;
      //st[0]={'\0'};
-     char mpd_kid[50],tenc_kid[50],buf;
+     char mpd_kid[50],buf;
      mpd_kid[0]={'\0'};
      st= vg.default_KID;
      if(st[0]!= '\0'){
@@ -3723,21 +3732,22 @@ OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon )
 	int length,i,j;
 	length= strlen(st);
 	    
-	j=0;
+	//j=0;
 	buf= 0;
 	for(i = 0; i < length; i++){
 		if(i % 2 != 0){
-		    mpd_kid[j++]= char(hex_to_ascii(buf, st[i]));
+                    sprintf(KID_char,"%d",hex_to_ascii(buf, st[i]));
+                    strcat(mpd_kid, KID_char);
 		}else{
 		    buf = st[i];
 		}
 	}
 	    
-	mpd_kid[j]='\0';
+	//mpd_kid[j]='\0';
 	    
-	sprintf(tenc_kid,"%s",default_KID);
+	//sprintf(tenc_kid,"%s",default_KID);
 
-	if(strcmp(tenc_kid, mpd_kid)!=0)
+	if(strcmp(tenc_KID, mpd_kid)!=0)
 	    errprint("default_KID in 'tenc' is not matching with cenc:default_KID attribute of MPD\n");
      }
     // All done
