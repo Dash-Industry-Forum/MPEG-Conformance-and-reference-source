@@ -3267,9 +3267,11 @@ OSErr Validate_colr_Atom( atomOffsetEntry *aoe, void *refcon )
 			
 		atomprint(">\n"); 
 	}
-	else errprint( "colr atom size or type not as expected; size %d, should be %d; or type %s not nclc\n", 
-		colrHeader.start.atomSize, 18, ostypetostr(colrHeader.colrtype) );
-			
+	else if(colrHeader.colrtype == 'nclx'){ //errprint( "colr atom size or type not as expected; size %d, should be %d; or type %s not nclc\n", 
+	     //	colrHeader.start.atomSize, 18, ostypetostr(colrHeader.colrtype) );
+            warnprint("WARNING: colr atom of type nclx found, the software does not handle colr atoms of this type. \n");
+        }
+        
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 	
