@@ -569,7 +569,6 @@ typedef struct {
 	FILE *inFile;
 	long inOffset;
 	long inMaxOffset;
-	
 	atompathType curatompath;
 	Boolean printatom; 
 	Boolean printsample;
@@ -604,7 +603,7 @@ typedef struct {
     int lowerindexRange;
     int higherindexRange;
     unsigned int audioChValue;
-    bool    suggestBandwidth;
+	bool	suggestBandwidth;
     bool    isoLive;
     bool    isoondemand;
     bool    isomain;
@@ -615,6 +614,8 @@ typedef struct {
     bool    dashifbase;
     bool    dash264enc;
     bool    RepresentationIndex;
+    bool    atomxml;
+    bool    cmaf;
     unsigned int  numControlTracks;
     unsigned int  *numControlLeafs;
     LeafInfo **controlLeafInfo;
@@ -652,6 +653,11 @@ typedef struct {
 	 argstr default_KID;
          char *psshfile[10];
 	 int pssh_count;
+        UInt32 mediaHeaderTimescale;
+         //To validate CMAF segment and chunk level checks.
+         Boolean cmafSegment;
+         Boolean cmafChunk;
+         Boolean sencFound;
 	 
 } ValidateGlobals;
 
@@ -681,6 +687,7 @@ typedef struct ValidateAtomDispatch {
 
 void warnprint(const char *formatStr, ...);
 void errprint(const char *formatStr, ...);
+void atomprinttofile(const char* formatStr, va_list ap);
 void atomprint(const char *formatStr, ...);
 void atomprintnotab(const char *formatStr, ...);
 void atomprintdetailed(const char *formatStr, ...);
@@ -729,6 +736,29 @@ typedef struct AvcConfigInfo {
 	UInt8			bit_depth_chroma_minus8;
 	UInt8			sps_ext_count;
 } AvcConfigInfo;
+
+// HEVC ConfigRecord structure.
+typedef struct HevcConfigInfo{
+        AtomSizeType 	start;
+	UInt8			config_ver;
+        UInt8                   profile_space;
+        UInt8                   tier_flag;
+        UInt8                   profile_idc;
+        UInt8                   compatibility_flag[32];
+        UInt64                   constraint_indicator_flags;
+        UInt8                   level_idc;
+        UInt16                   min_spatial_segmentation_idc;
+        UInt8                   parallelismType;
+        UInt8                   chroma_format_idc;
+        UInt8                   bit_depth_luma_minus8;
+        UInt8                   bit_depth_chroma_minus8;
+        UInt16                   avgFrameRate;
+        UInt8                   constantFrameRate;
+        UInt8                   numTemporalLayers;
+        UInt8                   temporalIdNested;
+        UInt8                   lengthSizeMinusOne;
+        UInt8                   numOfArrays;
+}HevcConfigInfo;
 
 typedef struct AvcBtrtInfo {
 	AtomSizeType 	start;
@@ -994,6 +1024,8 @@ OSErr Validate_sbgp_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_sgpd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_emsg_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_tfdt_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_senc_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_saio_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_edts_Atom( atomOffsetEntry *aoe, void *refcon );
@@ -1132,6 +1164,7 @@ OSErr Validate_mp4_SD_Entry( atomOffsetEntry *aoe, void *refcon, ValidateBitstre
 OSErr Validate_mhaC_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_avcC_Atom( atomOffsetEntry *aoe, void *refcon, char *esname );
+OSErr Validate_hvcC_Atom( atomOffsetEntry *aoe, void *refcon, char *esname );
 OSErr Validate_btrt_Atom( atomOffsetEntry *aoe, void *refcon, char *esname );
 OSErr Validate_m4ds_Atom( atomOffsetEntry *aoe, void *refcon, char *esname );
 
@@ -1155,7 +1188,10 @@ OSErr Validate_iinf_Atom( atomOffsetEntry *aoe, void *refcon );
 
 
 OSErr Validate_NAL_Unit(  BitBuffer *bb, UInt8 expect_type, UInt32 nal_length );
+OSErr Validate_NAL_Unit_HEVC(  BitBuffer *bb, UInt8 expect_type, UInt32 nal_length );
 OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon );
+OSErr Validate_HEVCConfigRecord( BitBuffer *bb, void *refcon );
+OSErr Validate_colour_mapping_octants(BitBuffer *bb, UInt32 ,UInt32 ,UInt32 ,UInt32 , UInt32 ,UInt8 ,UInt8 ,UInt8 );
 
 #include "EndianMP4.h"
 

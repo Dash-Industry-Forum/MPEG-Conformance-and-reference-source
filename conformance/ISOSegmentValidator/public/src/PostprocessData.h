@@ -42,5 +42,16 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
 void checkSegmentStartWithSAP(int startWithSAP, MovieInfoRec *mir);
 void estimatePresentationTimes(MovieInfoRec*mir);
 void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir);
+//CMAF box order checks' function definitions.
+void checkCMAFBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bool CMAFHeader, UInt64 *segmentSizes);
+void checkCMAFBoxOrder_moov(long cnt,atomOffsetEntry *list);
+void checkCMAFBoxOrder_trak(long cnt,atomOffsetEntry *list);
+void checkCMAFBoxOrder_mdia(long cnt,atomOffsetEntry *list);
+void checkCMAFBoxOrder_minf(long cnt,atomOffsetEntry *list);
+void checkCMAFBoxOrder_stbl(long cnt,atomOffsetEntry *list);
+void checkCMAFBoxOrder_sinf(long cnt,atomOffsetEntry *list);
+void checkCMAFBoxOrder_moof(long cnt,atomOffsetEntry *list);
+void checkCMAFBoxOrder_traf(long cnt,atomOffsetEntry *list);
+
 
 #endif //#define _SRC_POST_PROCESS_DATA_H_
