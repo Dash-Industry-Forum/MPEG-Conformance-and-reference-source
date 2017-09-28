@@ -24,7 +24,7 @@ OBJDIR= ./obj
 CC=     $(shell which g++)
 
 LIBS= #-lcurl
-FLAGS= -ffloat-store -Wall -I$(INCDIR) -DLITTLEENDIAN -Wno-multichar -Wno-unknown-pragmas -fno-permissive -Wno-write-strings
+FLAGS= -ffloat-store -Wall -I$(INCDIR) -DLITTLEENDIAN -Wno-multichar -Wno-unknown-pragmas -fpermissive -Wno-write-strings -fno-stack-protector
 
 ifdef DBG
 SUFFIX= #.dbg

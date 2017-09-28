@@ -1,0 +1,5 @@
+ISO Segment Validator: Apple Public Source License Version 2.0,
+details in source files under conformance/ISOSegmentValidator/public/src/
+
+MPD Validator: Mozilla  Public License Version 1.1,
+details in source files under conformance/MPDValidator/src/

@@ -19,6 +19,7 @@ limitations under the License.
 
  
 #include "ValidateMP4.h"
+#include "math.h"
 
 	// JRM
 extern ValidateGlobals vg;
@@ -48,7 +49,7 @@ OSErr CheckValuesInContext( UInt32 bufferSize, UInt32 maxBitrate, UInt32 avgBitr
 	
 #define VALIDATE_INDEX_FIELD(fmt, var, bits, nam, idx) do { \
 	var = GetBits(bb, bits, &err); if (err) goto bail; \
-	atomprint(nam "_%s[%d]=\"" fmt "\"\n", #var, idx, var); \
+	atomprint(nam "_%s_%d=\"" fmt "\"\n", #var, idx, var); \
 	} while (false)
 
 #define VALIDATE_INDEX_FIELD1(fmt, var, bits, idx) do { \
@@ -209,7 +210,7 @@ OSErr Validate_iods_OD_Bits( Ptr odDataP, unsigned long odSize, Boolean fileForm
 			(audioProfileLevelIndication!=0x2a) && (audioProfileLevelIndication!=0x2c))
 			warnprint("Validate_IODS: ISMA expects no-capability(0xFF) or Hi-Quality@L1/L2 (0x0E, 0x0F) or AAC@L4 (0x2a) or HE-AAC@L2 (0x2c) for audioProfileLevelIndication\n");
 		if (audioProfileLevelIndication<(sizeof(audio_profiles)/sizeof(char*))) 
-			atomprint("  Comment=\"audio profile/level is %s\"\n",audio_profiles[audioProfileLevelIndication]);
+			atomprint("Comment=\"audio profile/level is %s\"\n",audio_profiles[audioProfileLevelIndication]);
 	
 		VALIDATE_FIELD  ("%2.2x",  visualProfileLevelIndication, 8 );
 		if ((visualProfileLevelIndication!=0xFF) && 
@@ -849,20 +850,22 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 	static char* configs[] = {
 		" ", "mono", "stereo", "stereo+center", "stereo+center+rearmono", "stereo+center+rearstereo",
 		"5+1", "7+1" };
-		
+	int counter = 0;
+	
 	VALIDATE_FIELD("0x%02x",  audioObjectType, 5);
+	
 	if (audioObjectType<28) {
-		atomprint("  comment=\"audio is %s\"\n", audiotype[audioObjectType]);
+		atomprint("comment%ld=\"audio is %s\"\n", counter++, audiotype[audioObjectType]);
 	}
 	VALIDATE_FIELD("0x%1x",  samplingFreqIndex, 4);
 	if (samplingFreqIndex==0x0f) {
 		VALIDATE_FIELD("%d",  samplingFreq, 24);
 	}
-	else atomprint("  comment=\"freq is %s\"\n", freqs[samplingFreqIndex]);
+	else atomprint("comment%ld=\"freq is %s\"\n", counter++, freqs[samplingFreqIndex]);
 	
 	VALIDATE_FIELD("0x%1x",  channelConfig, 4);
 	if ((channelConfig>0) && (channelConfig<8)) {
-		atomprint("  comment=\"config is %s\"\n", configs[channelConfig]);
+		atomprint("comment%ld=\"config is %s\"\n", counter++, configs[channelConfig]);
 	}
 	
 	if (audioObjectType == 5) {
@@ -872,10 +875,10 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 		if (ext_samplingFreqIndex==0x0f) {
 			VALIDATE_FIELD("%d",  ext_samplingFreq, 24);
 		}
-		else atomprint("  comment=\"freq is %s\"\n", freqs[ext_samplingFreqIndex]);
+		else atomprint("comment%ld=\"freq is %s\"\n", counter++, freqs[ext_samplingFreqIndex]);
 		VALIDATE_FIELD("0x%02x",  audioObjectType, 5);
 		if (audioObjectType<28) {
-			atomprint("  comment=\"audio is %s\"\n", audiotype[audioObjectType]);
+			atomprint("comment%ld=\"audio is %s\"\n", counter++, audiotype[audioObjectType]);
 		}
 	}
 
@@ -889,14 +892,14 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 				UInt32 codeCoderdelay;
 				UInt8 extFlag;
 				VALIDATE_FIELD("%d",  frameLengthFlag, 1);
-				atomprint("  comment=\"length is %d\"\n", (frameLengthFlag==0 ? 1024 : 960) ); /* !dws check with audio guys */
+				atomprint("comment%ld=\"length is %d\"\n", counter++, (frameLengthFlag==0 ? 1024 : 960) ); /* !dws check with audio guys */
 				VALIDATE_FIELD("%d",  dependsOnCoreCoder, 1);
 				if (dependsOnCoreCoder==1) {
 					VALIDATE_FIELD("%d",  codeCoderdelay, 14);
 				}
 				VALIDATE_FIELD("%d",  extFlag, 1);
 				if (channelConfig==0) {
-					UInt8 element_instance_tag, object_type;
+					UInt8 element_instance_tag, object_type, samplingFreqIndex_progConfigElement;
 					UInt8 num_front_channel_elements, num_side_channel_elements, num_back_channel_elements;
 					UInt8 num_lfe_channel_elements, num_assoc_channel_elements, num_valid_cc_elements;
 					UInt8 mono_mix_present, stereo_mix_present, matrix_mix_present;
@@ -907,14 +910,14 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 					
 					static char* aactypes[] = { "AAC Main", "AAC LC", "AAC SSR", "AAC LTP" };
 					
-					atomprint("<ProgramConfigElement\n"); vg.tabcnt++;
+					//atomprint("<ProgramConfigElement\n"); vg.tabcnt++;
 					
 					/* atomprint("  comment=\"GA custom config here\"\n"); */
 					VALIDATE_FIELD("%d",  element_instance_tag, 4);
 					VALIDATE_FIELD("%d",  object_type, 2);
-						atomprint("  comment=\"object is %s\"\n", aactypes[object_type]);
-					VALIDATE_FIELD("0x%1x",  samplingFreqIndex, 4);
-						atomprint("  comment=\"freq is %s\"\n", freqs[samplingFreqIndex]);
+						atomprint("comment%ld=\"object is %s\"\n", counter++, aactypes[object_type]);
+					VALIDATE_FIELD("0x%1x",  samplingFreqIndex_progConfigElement, 4);
+						atomprint("comment%ld=\"freq is %s\"\n", counter++, freqs[samplingFreqIndex_progConfigElement]);
 
 					VALIDATE_FIELD("%d",  num_front_channel_elements, 4);
 					VALIDATE_FIELD("%d",  num_side_channel_elements, 4);
@@ -959,7 +962,7 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 					if (comment_field_bytes>0) {
 						BAILIFERR( GetBytes(bb, comment_field_bytes, (unsigned char*)commentString) );
 						commentString[comment_field_bytes] = 0;
-						atomprint("commentString =\"%s\"\n", commentString);
+						atomprint("commentString=\"%s\"\n", commentString);
 					}
 				}
 				if ((audioObjectType==6) | (audioObjectType==20)) {
@@ -1003,9 +1006,9 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 				VALIDATE_FIELD("%d",  is_base_layer, 1);
 				if (is_base_layer == 1) {
 					VALIDATE_FIELD("%d",  excit_Mode, 1);
-					atomprint("  comment=\"mode is %s\"\n", (excit_Mode==0 ? "MPE" : "RPE") ); 
+					atomprint("comment%ld=\"mode is %s\"\n", counter++, (excit_Mode==0 ? "MPE" : "RPE") ); 
 					VALIDATE_FIELD("%d",  sampleRateMode, 1);
-					atomprint("  comment=\"mode is %s\"\n", (sampleRateMode==0 ? "8kHz" : "16kHz") );
+					atomprint("comment%ld=\"mode is %s\"\n", counter++, (sampleRateMode==0 ? "8kHz" : "16kHz") );
 					VALIDATE_FIELD("%d",  fineRateControl, 1);
 					if (excit_Mode==1) /* RPE */ {
 						VALIDATE_FIELD("%d",  rpe_conf, 3);
@@ -1123,7 +1126,7 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 		if (syncExtensionType == 0x2b7) {
 			VALIDATE_FIELD("0x%02x",  ext_audioObjectType, 5);
 			if (ext_audioObjectType<28) {
-				atomprint("  comment=\"audio is %s\"\n", audiotype[ext_audioObjectType]);
+				atomprint("comment%ld=\"audio is %s\"\n", counter++, audiotype[ext_audioObjectType]);
 			}
 			if ( ext_audioObjectType == 5 ) {
 				VALIDATE_FIELD("%d",  sbr_present, 1);
@@ -1132,7 +1135,7 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 					if (ext_samplingFreqIndex==0x0f) {
 						VALIDATE_FIELD("%d",  ext_samplingFreq, 24);
 					}
-					else atomprint("  comment=\"freq is %s\"\n", freqs[ext_samplingFreqIndex]);
+					else atomprint("comment%ld=\"freq is %s\"\n", counter++, freqs[ext_samplingFreqIndex]);
 				}
 			}
 		}
@@ -1255,6 +1258,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 	PartialVideoSC *p_vsc = (PartialVideoSC *)p_sc;
 	
 	voVerID = default_voVerID;
+	int counter = 0;
 	
 	VALIDATE_FIELD("0x%04x",  startcode, 32);
 	if ((expect_startcode!=0) && (startcode!=expect_startcode))
@@ -1318,7 +1322,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 					"MAC", "Unspecified", "Reserved", "Reserved" };
 
 				VALIDATE_FIELD("%d",  vFormat, 3);
-				atomprint("  comment=\"format is %s\"\n",formats[vFormat]);
+				atomprint("comment%ld=\"format is %s\"\n", counter++, formats[vFormat]);
 				VALIDATE_FIELD("%d",  vRange, 1);
 				VALIDATE_FIELD("%d",  colourDesc, 1);
 				if (colourDesc==1) {
@@ -1327,9 +1331,9 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 						"Log 100:1", "Log 316.22777:1"};
 						
 					VALIDATE_FIELD("%d",  colourPrimaries, 8);
-					if (colourPrimaries<9) atomprint("  comment=\"primaries are %s\"\n",primaries[colourPrimaries]);
+					if (colourPrimaries<9) atomprint("comment%ld=\"primaries are %s\"\n", counter++, primaries[colourPrimaries]);
 					VALIDATE_FIELD("%d",  transferChars, 8);
-					if (transferChars<11) atomprint("  comment=\"transfer chars are %s\"\n",primaries[transferChars]);
+					if (transferChars<11) atomprint("comment%ld=\"transfer chars are %s\"\n", counter++, primaries[transferChars]);
 					VALIDATE_FIELD("%d",  matrixCoeffs, 8);
 				}
 			}
@@ -1344,7 +1348,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 				OSErr err = noErr;
 				startcode = PeekBits(bb,32,&err);
 				if (err == outOfDataErr) {
-					atomprint("  comment=\"short headers\"\n");
+					atomprint("comment%ld=\"short headers\"\n", counter++);
 				}
 				else if ((startcode >= 0x120) && (startcode <=  0x12F)) 
 					{ err = Validate_VideoSpecificInfo(bb,0,voVerID, p_sc); }
@@ -1381,7 +1385,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 		
 		VALIDATE_FIELD("%d",  randomAccessibleVol, 1);
 		VALIDATE_FIELD("0x%02x",  voTypeIndic, 8);
-		if (voTypeIndic<10) atomprint("  comment=\"type is %s\"\n",vol_types[voTypeIndic] );
+		if (voTypeIndic<10) atomprint("comment%ld=\"type is %s\"\n", counter++, vol_types[voTypeIndic] );
 		if (voTypeIndic == 0x12) {	/* "Fine Granularity Scalable" */
 			UInt8 fgs_layer_type, vol_prio, fgs_ref_layer_id, quarter_sample, fgs_rs_mk_dis, interlaced;
 			UInt16 volWidth, volHeight;
@@ -1395,7 +1399,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 				VALIDATE_FIELD("%d",  parWidth, 8);
 				VALIDATE_FIELD("%d",  parHeight, 8);
 			}
-			else if (aspectRatioInfo<6) atomprint("  comment=\"aspect ratio is %s\"\n",ratios[aspectRatioInfo]);
+			else if (aspectRatioInfo<6) atomprint("comment%ld=\"aspect ratio is %s\"\n", counter++, ratios[aspectRatioInfo]);
 			VALIDATE_FIELD("%d",  volControlParams, 1);
 			if (volControlParams==1) {
 				UInt8 chromaFormat;
@@ -1479,7 +1483,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 				VALIDATE_FIELD("%d",  parWidth, 8);
 				VALIDATE_FIELD("%d",  parHeight, 8);
 			}
-			else if (aspectRatioInfo<6) atomprint("  comment=\"aspect ratio is %s\"\n",ratios[aspectRatioInfo]);
+			else if (aspectRatioInfo<6) atomprint("comment%ld=\"aspect ratio is %s\"\n", counter++, ratios[aspectRatioInfo]);
 			VALIDATE_FIELD("%d",  volControlParams, 1);
 			if (volControlParams==1) {
 				UInt8 chromaFormat;
@@ -1501,7 +1505,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 				}
 			}
 			VALIDATE_FIELD("%d",  volShape, 2); 
-			atomprint("  comment=\"shape is %s\"\n",shapes[volShape]);
+			atomprint("comment%ld=\"shape is %s\"\n", counter++, shapes[volShape]);
 			if (volShape == 3 /* "grayscale" */
 			    && voVerID != 1)
 				VALIDATE_FIELD("%d",  volShapeExt, 4);
@@ -1706,29 +1710,30 @@ static UInt32 field_size(UInt32 x)
 
 OSErr Validate_level_IDC( UInt8 profile, UInt8 level, UInt8 constraint_set3_flag)
 {
+	int counter = 0;
 	if ( ((profile == 66) || (profile == 77) || (profile == 88)) && 
 		 (level==11) && 
 		 (constraint_set3_flag==1)) 
-	{ atomprint("  <Comment level 1b>\n"); } 
+	{ atomprint("Comment%ld=\"level 1b\"\n", counter++); } 
 	else 
 	{
 		if (level>9) { 
 			float x;
 			x = level;
 			x = x/10;
-			atomprint("  <Comment level %3.1f>\n",x);
+			atomprint("Comment%ld=\"level %3.1f\"\n", counter++, x);
 		}
-		else { atomprint("  <Comment unknown level>\n"); }
+		else { atomprint("Comment%ld=\"unknown level\"\n", counter++); }
 	
 		if ( ((profile == 100) || (profile == 110)  ) && (constraint_set3_flag==1))
-		{ atomprint("  <Comment High 10 Intra profile compatible>\n"); }
+		{ atomprint("Comment%ld=\"High 10 Intra profile compatible\"\n", counter++); }
 		else if ( (profile == 122) && (constraint_set3_flag==1))
-		{ atomprint("  <Comment High 4:2:2 Intra profile compatible>\n"); }
+		{ atomprint("Comment%ld=\"High 4:2:2 Intra profile compatible\"\n", counter++); }
 		else if (profile == 44) {
 			if (constraint_set3_flag != 1) errprint("Error: constraint_set3_flag must be 1 when profile_idc is 44\n");
 		}
 		else if ( (profile == 244) && (constraint_set3_flag==1))
-		{ atomprint("  <Comment High 4:4:4 Intra profile compatible>\n"); }
+		{ atomprint("Comment%ld=\"High 4:4:4 Intra profile compatible\"\n", counter++); }
 
 		else if (constraint_set3_flag == 1) 
 				  warnprint("Warning: constraint_set3_flag==1 when it seems to be reserved to zero\n");
@@ -1747,6 +1752,7 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 	AvcConfigInfo avcHeader;
 	UInt8 reserved, constraint_set0_flag, constraint_set1_flag, constraint_set2_flag, constraint_set3_flag;
 	UInt32* codec_specific;
+	//int counter = 0;
 
 	codec_specific = &((tir->validatedSampleDescriptionRefCons)[tir->currentSampleDescriptionIndex - 1]);
 
@@ -1755,14 +1761,15 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 
 	atomprint("config=\"%d\"\n",avcHeader.config_ver);
 	atomprint("profile=\"%d\"\n", avcHeader.profile);
+	atomprint(">\n");
 	switch (avcHeader.profile) {
-		case 66: atomprint("  <Comment %s profile>\n","baseline"); break;
-		case 77: atomprint("  <Comment %s profile>\n","main"); break;
-		case 88: atomprint("  <Comment %s profile>\n","extended"); break;
-		case 100: atomprint("  <Comment %s profile>\n","high"); break;
-		case 110: atomprint("  <Comment %s profile>\n","high 10"); break;
-		case 122: atomprint("  <Comment %s profile>\n","high 4:2:2"); break;
-		case 144: atomprint("  <Comment %s profile>\n","high 4:4:4"); break;
+		case 66: atomprint("<Comment profile=\"%s\"\n","baseline"); break;
+		case 77: atomprint("<Comment profile=\"%s\"\n","main"); break;
+		case 88: atomprint("<Comment profile=\"%s\"\n","extended"); break;
+		case 100: atomprint("<Comment profile=\"%s\"\n","high"); break;
+		case 110: atomprint("<Comment profile=\"%s\"\n","high 10"); break;
+		case 122: atomprint("<Comment profile=\"%s\"\n","high 4:2:2"); break;
+		case 144: atomprint("<Comment profile=\"%s\"\n","high 4:4:4"); break;
 	}
 	
 	VALIDATE_FIELD  ("%d", constraint_set0_flag, 1);
@@ -1789,7 +1796,8 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 	codec_specific[0] = avcHeader.lengthsize + 1;
 	
 	atomprint("lengthsizeminusone=\"%d\"\n", avcHeader.lengthsize);
-	atomprint("  <COMMENT \"length fields are %d bytes\"/>\n",avcHeader.lengthsize+1);
+	atomprint("COMMENT=\"length fields are %d bytes\"\n",avcHeader.lengthsize+1);
+	
 	if (avcHeader.lengthsize==2) errprint("AVC NALU lengths must be 1,2 or 4, not 3 bytes\n");
 	
 	avcHeader.sps_count = GetBits(bb, 8, &err); if (err) goto bail;
@@ -1797,58 +1805,89 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 		errprint( "reserved 1 bits are not 1 %x", avcHeader.sps_count && 0xE0 );
 	}
 	avcHeader.sps_count = avcHeader.sps_count & 0x1F;
-	atomprint("sps_count=\"%d\"\n", avcHeader.sps_count  );
-	
+//	atomprint("sps_count=\"%d\"\n", avcHeader.sps_count  );
+//	
 	for (i=0; i< avcHeader.sps_count;  i++) {
 		nal_length = GetBits(bb, 16, &err); if (err) goto bail;
-		atomprint("nal_length=\"%d\"\n", nal_length  );
-
-		/* then call the NALU validate proc */
+//		atomprint("nal_length=\"%d\"\n", nal_length  );
+                atomprint(">\n");//atomprint("/>\n");
+//		/* then call the NALU validate proc */
 		BAILIFERR( Validate_NAL_Unit( bb, nal_SPS, nal_length) );
 		GetBits( bb, nal_length*8, & err);
 	}    
-	
+//	
 	avcHeader.pps_count = GetBits(bb, 8, &err); if (err) goto bail;
-	atomprint("pps_count=\"%d\"\n", avcHeader.pps_count );
-	
+//	atomprint("pps_count=\"%d\"\n", avcHeader.pps_count );
+//	
 	for (i=0; i< avcHeader.pps_count;  i++) {
 		nal_length = GetBits(bb, 16, &err); if (err) goto bail;
-		atomprint("nal_length=\"%d\"\n", nal_length  );
-		
-		/* then call the NALU validate proc */
+//		atomprint("nal_length=\"%d\"\n", nal_length  );
+//		
+//		/* then call the NALU validate proc */
 		BAILIFERR( Validate_NAL_Unit( bb, nal_PPS, nal_length) );
 		GetBits( bb, nal_length*8, & err);
 	}  
-
+	
 	if ( (avcHeader.profile  ==  100)  ||  (avcHeader.profile  ==  110)  ||
-		 (avcHeader.profile  ==  122)  ||  (avcHeader.profile  ==  144) ) {		
-		VALIDATE_FIELD_V("%d", reserved, 6, 0x3F, "AVCConfigRecord");
+		 (avcHeader.profile  ==  122)  ||  (avcHeader.profile  ==  144) ) {
+		UInt8 reserved1, reserved2, reserved3;
+                //atomprint("<Comment\n");
+		VALIDATE_FIELD_V("%d", reserved1, 6, 0x3F, "AVCConfigRecord");
 		VALIDATE_FIELD("%d", avcHeader.chroma_format, 2);
 
-		VALIDATE_FIELD_V("%d", reserved, 5, 0x1F, "AVCConfigRecord");
+		VALIDATE_FIELD_V("%d", reserved2, 5, 0x1F, "AVCConfigRecord");
 		VALIDATE_FIELD("%d", avcHeader.bit_depth_luma_minus8, 3);
 		
-		VALIDATE_FIELD_V("%d", reserved, 5, 0x1F, "AVCConfigRecord");
+		VALIDATE_FIELD_V("%d", reserved3, 5, 0x1F, "AVCConfigRecord");
 		VALIDATE_FIELD("%d", avcHeader.bit_depth_chroma_minus8, 3);
 
 		avcHeader.sps_ext_count = GetBits(bb, 8, &err); if (err) goto bail;
-		atomprint("sps_ext_count=\"%d\"\n", avcHeader.sps_ext_count );
-
+		//atomprint("sps_ext_count=\"%d\"\n", avcHeader.sps_ext_count );
+		//atomprint(">\n");
+		
 		for (i=0; i< avcHeader.sps_ext_count;  i++) {
 			nal_length = GetBits(bb, 16, &err); if (err) goto bail;
-			atomprint("nal_length=\"%d\"\n", nal_length  );
+			//atomprint("nal_length=\"%d\"\n", nal_length  );
 			
 			/* then call the NALU validate proc */
 			BAILIFERR( Validate_NAL_Unit( bb, nal_SPS_Ext, nal_length) );
 			GetBits( bb, nal_length*8, & err);
 		}
-	} 
+	}
+	//else
+	//	atomprint("<Comment>\n");
+	
+//	avcHeader.sps_count = avcHeader.sps_count & 0x1F;
+//	//atomprint("sps_count=\"%d\"\n", avcHeader.sps_count  );
+//	
+//	for (i=0; i< avcHeader.sps_count;  i++) {
+//		nal_length = GetBits(bb, 16, &err); if (err) goto bail;
+//		//atomprint("nal_length=\"%d\"\n", nal_length  );
+//
+//		/* then call the NALU validate proc */
+//		BAILIFERR( Validate_NAL_Unit( bb, nal_SPS, nal_length) );
+//		GetBits( bb, nal_length*8, & err);
+///	}    
+//	
+//	avcHeader.pps_count = GetBits(bb, 8, &err); if (err) goto bail;
+//	//atomprint("pps_count=\"%d\"\n", avcHeader.pps_count );
+//	
+//	for (i=0; i< avcHeader.pps_count;  i++) {
+//		nal_length = GetBits(bb, 16, &err); if (err) goto bail;
+//		//atomprint("nal_length=\"%d\"\n", nal_length  );
+//		
+//		/* then call the NALU validate proc */
+//		BAILIFERR( Validate_NAL_Unit( bb, nal_PPS, nal_length) );
+//		GetBits( bb, nal_length*8, & err);
+//	}  
 	
 	if (bb->bits_left != 0) errprint("Validate AVC Config record didn't use %ld bits\n", bb->bits_left);
+	//atomprint("</Comment>\n");
 
 
 
 bail:
+	atomprint("</Comment>\n");
 	if (err) {
 		errprint("Validate_AVCConfigRecord: %d\n",err);
 	}
@@ -1865,18 +1904,21 @@ static OSErr Validate_HRD( BitBuffer *bb )
 	OSErr err;
 	
 	VALIDATE_UEV( "0x%04x", cpb_cnt_minus1);
-	
+        
 	VALIDATE_FIELD  ("0x%02x", bit_rate_scale, 4);
 	VALIDATE_FIELD  ("0x%02x", cpb_size_scale, 4);
+        atomprint("/>\n");
 	for( SchedSelIdx = 0; SchedSelIdx <= cpb_cnt_minus1; SchedSelIdx++ ) {
-		atomprint("<Schedule %d>\n",SchedSelIdx);
-		
+		atomprint("<Schedule_%d \n",SchedSelIdx);
+                
 		VALIDATE_UEV(  "    0x%04x", bit_rate_value_minus1);
 		VALIDATE_UEV(  "    0x%04x", cpb_size_value_minus1);
 		VALIDATE_FIELD("    0x%02x", cbr_flag, 1);
 		
-		atomprint("</Schedule>\n",SchedSelIdx);
+		//atomprint("</Schedule_%d>\n",SchedSelIdx);
+                atomprint("/>\n");
 	}
+        atomprint("<comment \n");
 	VALIDATE_FIELD("0x%02x", initial_cpb_removal_delay_length_minus1, 5);
 	VALIDATE_FIELD("0x%02x", cpb_removal_delay_length_minus1, 5);
 	VALIDATE_FIELD("0x%02x", dpb_output_delay_length_minus1, 5);
@@ -1885,6 +1927,76 @@ static OSErr Validate_HRD( BitBuffer *bb )
 bail:
 	if (err) {
 		errprint("Validate_HRD: %d\n",err);
+	}
+	return err;
+}
+
+static OSErr Validate_HEVC_hrd_parameters( BitBuffer *bb, UInt32 commonInfPresentFlag, UInt8 maxNumSubLayersMinus1)
+{
+	UInt8 nal_hrd_parameters_present_flag,vcl_hrd_parameters_present_flag,sub_pic_hrd_params_present_flag,tick_divisor_minus2,du_cpb_removal_delay_increment_length_minus1,sub_pic_cpb_params_in_pic_timing_sei_flag,dpb_output_delay_du_length_minus1,bit_rate_scale,cpb_size_scale,cpb_size_du_scale
+        ,initial_cpb_removal_delay_length_minus1,au_cpb_removal_delay_length_minus1,dbp_output_delay_length_minus1,fixed_pic_rate_general_flag[8],fixed_pic_rate_within_cvs_flag[8],low_delay_hrd_flag[8];
+        
+        UInt32 elemental_duration_in_tc_minus1[8],cpb_cnt_minus1[8],bit_rate_value_minus1[32],cpb_size_value_minus1[32],cpb_size_du_value_minus1[32],bit_rate_du_value_minus1[32],cbr_flag[32];
+	OSErr err;
+	if(commonInfPresentFlag){
+            VALIDATE_FIELD("%d", nal_hrd_parameters_present_flag, 1);
+            VALIDATE_FIELD("%d", vcl_hrd_parameters_present_flag, 1);
+            if(nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag){
+                VALIDATE_FIELD("%d", sub_pic_hrd_params_present_flag, 1);
+                if(sub_pic_hrd_params_present_flag){
+                    VALIDATE_FIELD("%d", tick_divisor_minus2, 8);
+                    VALIDATE_FIELD("%d", du_cpb_removal_delay_increment_length_minus1, 5);
+                    VALIDATE_FIELD("%d", sub_pic_cpb_params_in_pic_timing_sei_flag, 1);
+                    VALIDATE_FIELD("%d", dpb_output_delay_du_length_minus1, 5);
+                }
+                VALIDATE_FIELD("%d", bit_rate_scale, 4);
+                VALIDATE_FIELD("%d", cpb_size_scale, 4);
+                if(sub_pic_hrd_params_present_flag)
+                    VALIDATE_FIELD("%d", cpb_size_du_scale, 4);
+                VALIDATE_FIELD("%d", initial_cpb_removal_delay_length_minus1, 5);
+                VALIDATE_FIELD("%d", au_cpb_removal_delay_length_minus1, 5);
+                VALIDATE_FIELD("%d", dbp_output_delay_length_minus1, 5);
+            }
+        }
+        for(int i=0;i<=maxNumSubLayersMinus1;i++){
+            fixed_pic_rate_general_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+            if(!fixed_pic_rate_general_flag[i])
+                fixed_pic_rate_within_cvs_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+            if(fixed_pic_rate_within_cvs_flag[i])
+                elemental_duration_in_tc_minus1[i]= read_golomb_uev(bb, &err); if (err) goto bail; 
+            else
+                low_delay_hrd_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+            if(!low_delay_hrd_flag[i])
+                cpb_cnt_minus1[i]=read_golomb_uev(bb, &err); if (err) goto bail; 
+            if(nal_hrd_parameters_present_flag){
+                for(int j=0;j<=cpb_cnt_minus1[i];j++){
+                    bit_rate_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
+                    cpb_size_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
+                    if(sub_pic_hrd_params_present_flag){
+                        cpb_size_du_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
+                        bit_rate_du_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
+                    }
+                    cbr_flag[j]=GetBits(bb, 1, &err); if (err) goto bail;
+                }
+                    
+            }
+            if(vcl_hrd_parameters_present_flag){
+                for(int j=0;j<=cpb_cnt_minus1[i];j++){
+                    bit_rate_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
+                    cpb_size_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
+                    if(sub_pic_hrd_params_present_flag){
+                        cpb_size_du_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
+                        bit_rate_du_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
+                    }
+                    cbr_flag[j]=GetBits(bb, 1, &err); if (err) goto bail;
+                }
+            }
+        }
+	
+
+bail:
+	if (err) {
+		errprint("Validate_HEVC_hrd_parameters: %d\n",err);
 	}
 	return err;
 }
@@ -1920,7 +2032,8 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 		 };
 	
 	err = noErr;
-	atomprint("<NALUnit length=%d (0x%x)\n",nal_length,nal_length); vg.tabcnt++;
+	int counter = 0;
+	atomprint("<NALUnit length=\"%d (0x%x)\"\n",nal_length,nal_length); vg.tabcnt++;
 	
 	mybb = *inbb;
 	mybb.bits_left = nal_length * 8;
@@ -1940,7 +2053,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 	} else {
 		VALIDATE_FIELD  ("0x%02x", nal_type, 5);
 	}
-	atomprint("   <comment \"%s\"\\>\n",naltypes[nal_type]);
+	atomprint("comment%ld=\"%s\"\n",counter++,naltypes[nal_type]);
 	
 	switch (nal_type) {
 		case nal_SPS:
@@ -1956,14 +2069,15 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			/* seq param set */
 			
 			VALIDATE_FIELD  ("%d", profile_idc, 8);
+			atomprint(">\n");
 			switch (profile_idc) {
-				case 66: atomprint("  <Comment %s profile>\n","baseline"); break;
-				case 77: atomprint("  <Comment %s profile>\n","main"); break;
-				case 88: atomprint("  <Comment %s profile>\n","extended"); break;
-				case 100: atomprint("  <Comment %s profile>\n","high"); break;
-				case 110: atomprint("  <Comment %s profile>\n","high 10"); break;
-				case 122: atomprint("  <Comment %s profile>\n","high 4:2:2"); break;
-				case 144: atomprint("  <Comment %s profile>\n","high 4:4:4"); break;
+				case 66: atomprint("<comment profile=\"%s\"\n","baseline"); break;
+				case 77: atomprint("<comment profile=\"%s\"\n","main"); break;
+				case 88: atomprint("<comment profile=\"%s\"\n","extended"); break;
+				case 100: atomprint("<comment profile=\"%s\"\n","high"); break;
+				case 110: atomprint("<comment profile=\"%s\"\n","high 10"); break;
+				case 122: atomprint("<comment profile=\"%s\"\n","high 4:2:2"); break;
+				case 144: atomprint("<comment profile=\"%s\"\n","high 4:4:4"); break;
 				default: warnprint("Warning: Validate_NAL_Unit (SPS): Unknown profile %d\n",profile_idc);
 			}
 			VALIDATE_FIELD  ("%d", constraint_set0_flag, 1);
@@ -2040,9 +2154,9 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			VALIDATE_UEV    ( "%d", num_ref_frames);
 			VALIDATE_FIELD  ("0x%01x", gaps_in_frame_num_value_allowed_flag, 1);
 			VALIDATE_UEV    ( "%d", pic_width_in_mbs_minus1);
-				atomprint("  <Comment \"width (PW + 1)*16 = %d\" \\>\n",(pic_width_in_mbs_minus1+1)*16);
+				atomprint("Comment%ld=\"width (PW + 1)*16 = %d\"\n", counter++,(pic_width_in_mbs_minus1+1)*16);
 			VALIDATE_UEV    ( "%d", pic_height_in_map_units_minus1);
-				atomprint("  <Comment \"height (PH + 1)*16 = %d\" \\>\n",(pic_height_in_map_units_minus1+1)*16);
+				atomprint("Comment%ld=\"height (PH + 1)*16 = %d\"\n",counter++,(pic_height_in_map_units_minus1+1)*16);
 			
 			VALIDATE_FIELD  ("%d", frame_mbs_only_flag, 1);
 			
@@ -2081,7 +2195,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 						VALIDATE_FIELD  ("%d", sar_height, 16);
 					} else if (aspect_ratio_idc<=13)
 					{
-						atomprint("<Comment aspect ratio is %s>\n",aspect_types[aspect_ratio_idc]);
+						atomprint("Comment%ld=\"aspect ratio is %s\"\n",counter++,aspect_types[aspect_ratio_idc]);
 					}
 				}
 				VALIDATE_FIELD  ("0x%01x", overscan_info_present_flag, 1);
@@ -2102,20 +2216,20 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 						"BT.470-2 System B,G", "SMPTE 170M", "SMPTE 240M" };
 
 					VALIDATE_FIELD  ("0x%01x", video_format, 3);
-					if (video_format<6) atomprint("<COMMENT \"video format is %s\"/>\n",video_types[video_format]);
+					if (video_format<6) atomprint("COMMENT%ld=\"video format is %s\"\n",counter++,video_types[video_format]);
 					
 					VALIDATE_FIELD  ("0x%01x", video_full_range_flag, 1);
 					VALIDATE_FIELD  ("0x%01x", colour_description_present_flag, 1);
 					if( colour_description_present_flag ) {
 						VALIDATE_FIELD  ("0x%01x", colour_primaries, 8);
 						if (colour_primaries<9) 
-							atomprint("<COMMENT \"primaries are %s\"/>\n",primaries[colour_primaries]);
+							atomprint("COMMENT%ld=\"primaries are %s\"\n",counter++,primaries[colour_primaries]);
 						VALIDATE_FIELD  ("0x%01x", transfer_characteristics, 8);
 						if (transfer_characteristics<11) 
-							atomprint("<COMMENT \"transfer characteristics are %s\"/>\n",primaries[transfer_characteristics]);
+							atomprint("COMMENT%ld=\"transfer characteristics are %s\"\n",counter++,primaries[transfer_characteristics]);
 						VALIDATE_FIELD  ("0x%01x", matrix_coefficients, 8);
 						if (matrix_coefficients<8) 
-							atomprint("<COMMENT \"matrix coefficients are %s\"/>\n",matrices[matrix_coefficients]);
+							atomprint("COMMENT%ld=\"matrix coefficients are %s\"\n",counter++,matrices[matrix_coefficients]);
 					}
 				}
 				VALIDATE_FIELD  ("0x%01x", chroma_loc_info_present_flag, 1);
@@ -2163,7 +2277,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			VALIDATE_FIELD_V("0x%01x",  one_bit, 1, 1, "NALUnit");
 			zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
 			if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d",zero_bit);
-
+			atomprint("/>\n");
 			}		
 
 			break;
@@ -2269,6 +2383,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			VALIDATE_FIELD_V("0x%01x",  one_bit, 1, 1, "NALUnit");
 			zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
 			if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d",zero_bit);
+			atomprint(">\n");
 
 		}
 			break;
@@ -2294,6 +2409,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			VALIDATE_FIELD_V("0x%01x",  one_bit, 1, 1, "NALUnit");
 			zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
 			if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d",zero_bit);
+			atomprint(">\n");
 		}
 		break;
 		
@@ -2310,7 +2426,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			
 			VALIDATE_UEV( "%d", first_mb_in_slice);
 			VALIDATE_UEV( "%d", slice_type);
-				if (slice_type<10) atomprint("<COMMENT \"slice type is %s\"/>\n",slice_types[slice_type]);
+				if (slice_type<10) atomprint("COMMENT%ld=\"slice type is %s\"\n",counter++,slice_types[slice_type]);
 			VALIDATE_UEV( "%d", pic_parameter_set_id);
 			/* now we have to find log2_max_frame_num_minus4, and frame_mbs only from the SPS linked to the PPS of this ID.  ugh */
 			VALIDATE_FIELD( "%d", frame_num, 7);		/* 7 == #bits from SPS log2_max_frame_num_minus4 + 4 */
@@ -2324,6 +2440,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 				UInt32 idr_pic_id;
 				VALIDATE_UEV( "%d", idr_pic_id);
 			}
+			atomprint(">\n");
 		}
 		break;
 		
@@ -2338,6 +2455,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 					if (err) break;
 				}
 				if (i>0) GetBits(bb, i, &err);
+				atomprint(">\n");
 			}
 			// errprint("\tUnknown NAL Unit %d",nal_type);
 			break;
@@ -2345,7 +2463,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 	if (bb->bits_left != 0) errprint("Validate NAL Unit didn't use %ld bits\n", bb->bits_left);
 
 bail:
-	--vg.tabcnt; atomprint("/>\n");
+	--vg.tabcnt; atomprint("</NALUnit>\n");
 
 	if (err) {
 		errprint("Validate_NalUnit: %d\n",err);
@@ -2353,7 +2471,805 @@ bail:
 	return err;
 }
 
+OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length )
+{
+	OSErr err;
+	UInt8 zero_bit, nal_unit_type, nuh_layer_id, nuh_temporal_id_plus1, one_bit;
+	UInt32 trailing,i,j,k;
+        char tempStr[100];
+	BitBuffer mybb;
+	BitBuffer *bb;
+		static char* naltypes[] = {
+		"TRAIL_N","TRAIL_R",      //0-1
+                "TSA_N", "TSA_R",        //2-3 
+                "STSA_N","STSA_R",  //4-5
+                "RADL_N","RADL_R",  //6-7
+                "RASL_N", "RASL_R",  //8-9
+                "RSV_VCL_N10", "RSV_VCL_R11", "RSV_VCL_N12","RSV_VCL_R13", "RSV_VCL_N14","RSV_VCL_R15", // 10-15
+                "BLA_W_LP", "BLA_W_RADL", "BLA_N_LP", //16-18
+                "IDR_W_RADL", "IDR_N_LP", // 19-20
+                "CRA_NUT",  //21
+                "RSV_IRAP_VCL22", "RSV_IRAP_VCL23", // 22-23
+                "RSV_VCL24", "RSV_VCL25","RSV_VCL26","RSV_VCL27","RSV_VCL28","RSV_VCL29","RSV_VCL30","RSV_VCL31", // 24-31
+                "VPS_NUT", // 32
+                "SPS_NUT", //33
+                "PPS_NUT", //34
+                "AUD_NUT", //35
+                "EOS_NUT", //36
+                "EOB_NUT", //37
+                "FD_NUT", //38
+                "PREFIX_SEI_NUT","SUFFIX_SEI_NUT", //39-40
+                "RSV_NVCL41","RSV_NVCL42","RSV_NVCL43","RSV_NVCL44","RSV_NVCL45","RSV_NVCL46","RSV_NVCL47", //41-47
+                "UNSPEC48","UNSPEC49","UNSPEC50","UNSPEC51","UNSPEC52","UNSPEC53","UNSPEC54","UNSPEC55", //48-63
+                "UNSPEC56","UNSPEC57","UNSPEC58","UNSPEC59","UNSPEC60","UNSPEC61","UNSPEC62","UNSPEC63"
+                };
+	
+	err = noErr;
+	int counter = 0;
+	atomprint("<NALUnit length=\"%d (0x%x)\"\n",nal_length,nal_length); vg.tabcnt++;
+	
+	mybb = *inbb;
+	mybb.bits_left = nal_length * 8;
+	mybb.prevent_emulation = 1;
+	bb = &mybb;
 
+	/* strip the trailing bits so we can check for more_data at the end of PPSs, sigh */
+	trailing = strip_trailing_zero_bits(bb, &err);
+
+	if (trailing > 8) warnprint("Warning: Validate_NAL_Unit_HEVC: more than 8 (%d) trailing bits\n", trailing);
+	
+	
+	VALIDATE_FIELD_V("0x%01x", zero_bit, 1, 0, "NALUnit");
+	//VALIDATE_FIELD  ("0x%02x", nal_ref_idc, 2);
+	if (expect_type) {
+		VALIDATE_FIELD_V("%d", nal_unit_type, 6, expect_type, "NALUnit");
+	} else {
+		VALIDATE_FIELD  ("%d", nal_unit_type, 6);
+	}
+	atomprint("comment%ld=\"%s\"\n",counter++,naltypes[nal_unit_type]);
+	
+        VALIDATE_FIELD  ("%d", nuh_layer_id, 6);
+        VALIDATE_FIELD  ("%d", nuh_temporal_id_plus1, 3);
+        
+	switch (nal_unit_type) {
+		case 33: //Corresponds to SPS. //Implemented as per ISO/IEC FDIS 23008-2
+                        {
+                            UInt8 sps_video_parameter_set_id, sps_max_sub_layers_minus1, sps_temporal_id_nesting_flag, 
+                            separate_colour_plane_flag, conformance_window_flag, sps_sub_layer_ordering_info_present_flag,
+                            scaling_list_enabled_flag,
+                            gen_profile_space,gen_tier_flag,gen_profile_idc,gen_level_idc,gen_profile_compatibility_flag[32],zero_bit;
+                            
+                            UInt32 sps_seq_parameter_set_id, chroma_format_idc, pic_width_in_luma_samples, pic_height_in_luma_samples,
+                            conf_win_left_offset, conf_win_right_offset, conf_win_top_offset, conf_win_bottom_offset, bit_depth_luma_minus8,
+                            bit_depth_chroma_minus8, log2_max_pic_order_cnt_lsb_minus4, sps_max_dec_pic_buffering_minus1[8],
+                            sps_max_num_reorder_pics[8], sps_max_latency_increase_plus1[8],log2_min_luma_coding_block_size_minus3,
+                            log2_diff_max_min_luma_coding_block_size, log2_min_luma_transform_block_size_minus2,
+                            log2_diff_max_min_luma_transform_block_size, max_transform_hierarchy_depth_inter, 
+                            max_transform_hierarchy_depth_intra ;
+                            
+                            VALIDATE_FIELD  ("%d", sps_video_parameter_set_id, 4);
+                            VALIDATE_FIELD  ("%d", sps_max_sub_layers_minus1, 3);
+                            VALIDATE_FIELD  ("%d", sps_temporal_id_nesting_flag, 1);
+                            
+                            {
+                                UInt8 general_progressive_source_flag, general_interlaced_source_flag, general_non_packet_constraint_flag, 
+                            general_frame_only_constraint_flag, general_max_12bit_constraint_flag, general_max_10bit_constraint_flag, 
+                            general_max_8bit_constraint_flag, general_max_422chroma_constraint_flag, general_max_420chroma_constraint_flag, 
+                            general_max_monochrome_constraint_flag, general_intra_constraint_flag, general_one_picture_only_constraint_flag,
+                            general_lower_bit_rate_constraint_flag, general_max_14bit_constraint_flag, general_inbld_flag, general_reserved_zero_bit, sub_layer_profile_present_flag[8], sub_layer_level_present_flag[8], reserved_zero_2bits[8], sub_layer_profile_space[8], sub_layer_tier_flag[8], sub_layer_profile_idc[8], sub_layer_profile_compatibility_flag[8][33], sub_layer_progressive_source_flag[8], sub_layer_interlace_source_flag[8], sub_layer_non_packed_constraint_flag[8], sub_layer_frame_only_constraint_flag[8], sub_layer_max_12bit_constraint_flag[8], sub_layer_max_10bit_constraint_flag[8], sub_layer_max_8bit_constraint_flag[8], sub_layer_max_422chroma_constraint_flag[8], sub_layer_max_420chroma_constraint_flag[8], sub_layer_max_monochrome_constraint_flag[8], sub_layer_intra_constraint_flag[8], sub_layer_one_picture_only_constraint_flag[8], sub_layer_lower_bit_rate_constraint_flag[8], sub_layer_max_14bit_constraint_flag[8], sub_layer_inbld_flag[8], sub_layer_reserved_zero_bit[8], sub_layer_level_idc[8] ;
+                            
+                            UInt64 general_reserved_zero_33bits,general_reserved_zero_34bits,general_reserved_zero_43bits,sub_layer_reserved_zero_34bits[8],sub_layer_reserved_zero_33bits[8], sub_layer_reserved_zero_43bits[8];
+                            
+                            VALIDATE_FIELD  ("%d", gen_profile_space, 2);
+                            VALIDATE_FIELD  ("%d", gen_tier_flag, 1);
+                            VALIDATE_FIELD  ("%d", gen_profile_idc, 5);
+                            for(j=0;j<32;j++){
+                                gen_profile_compatibility_flag[j]= GetBits(bb, 1, &err); if (err) goto bail;
+                            }
+                            
+                            VALIDATE_FIELD  ("%d", general_progressive_source_flag, 1);
+                            VALIDATE_FIELD  ("%d", general_interlaced_source_flag, 1);
+                            VALIDATE_FIELD  ("%d", general_non_packet_constraint_flag, 1);
+                            VALIDATE_FIELD  ("%d", general_frame_only_constraint_flag, 1);
+
+                            if( gen_profile_idc == 4 || gen_profile_compatibility_flag[4] ||
+                                gen_profile_idc == 5 || gen_profile_compatibility_flag[5] ||
+                                gen_profile_idc == 6 || gen_profile_compatibility_flag[6] ||
+                                gen_profile_idc == 7 || gen_profile_compatibility_flag[7] ||
+                                gen_profile_idc == 8 || gen_profile_compatibility_flag[8] ||
+                                gen_profile_idc == 9 || gen_profile_compatibility_flag[9] ||
+                                gen_profile_idc == 10 || gen_profile_compatibility_flag[10] ){
+                                
+                                VALIDATE_FIELD  ("%d", general_max_12bit_constraint_flag, 1);
+                                VALIDATE_FIELD  ("%d", general_max_10bit_constraint_flag, 1);
+                                VALIDATE_FIELD  ("%d", general_max_8bit_constraint_flag, 1);
+                                VALIDATE_FIELD  ("%d", general_max_422chroma_constraint_flag, 1);
+                                VALIDATE_FIELD  ("%d", general_max_420chroma_constraint_flag, 1);
+                                VALIDATE_FIELD  ("%d", general_max_monochrome_constraint_flag, 1);
+                                VALIDATE_FIELD  ("%d", general_intra_constraint_flag, 1);
+                                VALIDATE_FIELD  ("%d", general_one_picture_only_constraint_flag, 1);
+                                VALIDATE_FIELD  ("%d", general_lower_bit_rate_constraint_flag, 1);
+                                
+                                if( gen_profile_idc == 5 || gen_profile_compatibility_flag[5] ||
+                                    gen_profile_idc == 9 || gen_profile_compatibility_flag[9] ||
+                                    gen_profile_idc == 10 || gen_profile_compatibility_flag[10]){
+                                        
+                                    VALIDATE_FIELD  ("%d", general_max_14bit_constraint_flag, 1);
+                                    VALIDATE_FIELD  ("%d", general_reserved_zero_33bits, 33);
+                                }else{
+                                    VALIDATE_FIELD  ("%d", general_reserved_zero_34bits, 34);
+                                }
+                            }else{
+                                VALIDATE_FIELD  ("%d", general_reserved_zero_43bits, 43);
+                            }
+                            
+                            if((gen_profile_idc >= 1 && gen_profile_idc <=5)|| gen_profile_idc ==9 ||
+                                gen_profile_compatibility_flag[1] || gen_profile_compatibility_flag[2] ||
+                                gen_profile_compatibility_flag[3] || gen_profile_compatibility_flag[4] ||
+                                gen_profile_compatibility_flag[5] || gen_profile_compatibility_flag[9] )
+                                
+                                VALIDATE_FIELD  ("%d", general_inbld_flag, 1);
+                            else
+                                VALIDATE_FIELD  ("%d", general_reserved_zero_bit, 1);
+                        
+                            
+                           //// GetBits( bb, 80, & err);
+                              VALIDATE_FIELD  ("%d", gen_level_idc, 8);
+                              for(i=0;i<sps_max_sub_layers_minus1;i++)
+                              {
+                                  sub_layer_profile_present_flag[i]= GetBits(bb, 1, &err); if (err) goto bail;
+                                  sub_layer_level_present_flag[i]= GetBits(bb, 1, &err); if (err) goto bail;
+                              }
+                              if(sps_max_sub_layers_minus1>0)
+                              {
+                                 for(k=sps_max_sub_layers_minus1;k<8;k++)
+                                 {
+                                    reserved_zero_2bits[k]= GetBits(bb, 2, &err); if (err) goto bail;
+                                 }
+                              }
+                              for(i=0;i<sps_max_sub_layers_minus1;i++)
+                              {
+                                 if(sub_layer_profile_present_flag[i])
+                                 {
+                                     sub_layer_profile_space[i]=GetBits(bb, 2, &err); if (err) goto bail;
+                                     sub_layer_tier_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                     sub_layer_profile_idc[i]=GetBits(bb, 5, &err); if (err) goto bail;
+                                     for(j=0;j<32;j++){
+                                       sub_layer_profile_compatibility_flag[i][j]= GetBits(bb, 1, &err); if (err) goto bail; 
+                                     }
+                                     sub_layer_progressive_source_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                     sub_layer_interlace_source_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                     sub_layer_non_packed_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                     sub_layer_frame_only_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                     if(sub_layer_profile_idc[i] == 4 || sub_layer_profile_compatibility_flag[i][4] ||
+                                        sub_layer_profile_idc[i] == 5 || sub_layer_profile_compatibility_flag[i][5] ||
+                                        sub_layer_profile_idc[i] == 6 || sub_layer_profile_compatibility_flag[i][6] ||
+                                        sub_layer_profile_idc[i] == 7 || sub_layer_profile_compatibility_flag[i][7] ||
+                                        sub_layer_profile_idc[i] == 8 || sub_layer_profile_compatibility_flag[i][8] ||
+                                        sub_layer_profile_idc[i] == 9 || sub_layer_profile_compatibility_flag[i][9] ||
+                                        sub_layer_profile_idc[i] == 10 || sub_layer_profile_compatibility_flag[i][10] ){
+                                            sub_layer_max_12bit_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            sub_layer_max_10bit_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            sub_layer_max_8bit_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            sub_layer_max_422chroma_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            sub_layer_max_420chroma_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            sub_layer_max_monochrome_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            sub_layer_intra_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            sub_layer_one_picture_only_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            sub_layer_lower_bit_rate_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            if(sub_layer_profile_idc[i] == 5 || sub_layer_profile_compatibility_flag[i][5]){
+                                                sub_layer_max_14bit_constraint_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                                sub_layer_reserved_zero_33bits[i]=GetBits(bb, 33, &err); if (err) goto bail;
+                                            }
+                                            else{
+                                                sub_layer_reserved_zero_34bits[i]=GetBits(bb, 34, &err); if (err) goto bail;
+
+                                            }
+                                        }
+                                        else{
+                                            sub_layer_reserved_zero_43bits[i]=GetBits(bb, 43, &err); if (err) goto bail;
+                                        }
+                                    if((sub_layer_profile_idc[i] >= 1 && sub_layer_profile_idc[i] <=5)|| sub_layer_profile_idc[i] ==9 ||
+                                        sub_layer_profile_compatibility_flag[i][1] || sub_layer_profile_compatibility_flag[i][2] ||
+                                        sub_layer_profile_compatibility_flag[i][3] || sub_layer_profile_compatibility_flag[i][4] ||
+                                        sub_layer_profile_compatibility_flag[i][5] || sub_layer_profile_compatibility_flag[i][9])
+                                            sub_layer_inbld_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    else
+                                            sub_layer_reserved_zero_bit[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    
+                                 }
+                                 if(sub_layer_level_present_flag[i])
+                                    sub_layer_level_idc[i]=GetBits(bb, 8, &err); if (err) goto bail;
+                              }
+                            }
+                            
+                            VALIDATE_UEV( "%d", sps_seq_parameter_set_id);
+                            VALIDATE_UEV( "%d", chroma_format_idc);
+                            if( chroma_format_idc  ==  3 )		
+                                VALIDATE_FIELD  ("%d", separate_colour_plane_flag, 1);
+                            
+                            VALIDATE_UEV( "%d", pic_width_in_luma_samples);
+                            VALIDATE_UEV( "%d", pic_height_in_luma_samples);
+                    
+                            VALIDATE_FIELD  ("%d", conformance_window_flag, 1);
+                            if(conformance_window_flag)
+                            {
+                                VALIDATE_UEV( "%d", conf_win_left_offset);
+                                VALIDATE_UEV( "%d", conf_win_right_offset);
+                                VALIDATE_UEV( "%d", conf_win_top_offset);
+                                VALIDATE_UEV( "%d", conf_win_bottom_offset);
+                            }
+                            
+                            VALIDATE_UEV( "%d", bit_depth_luma_minus8);
+                            VALIDATE_UEV( "%d", bit_depth_chroma_minus8);
+                            VALIDATE_UEV( "%d", log2_max_pic_order_cnt_lsb_minus4);
+                            VALIDATE_FIELD  ("%d", sps_sub_layer_ordering_info_present_flag, 1);
+                            for(i=(sps_sub_layer_ordering_info_present_flag ? 0:sps_max_sub_layers_minus1);i<=sps_max_sub_layers_minus1;i++)
+                            {
+                                sps_max_dec_pic_buffering_minus1[i]=read_golomb_uev(bb, &err); if (err) goto bail;
+                                sps_max_num_reorder_pics[i]=read_golomb_uev(bb, &err); if (err) goto bail;
+                                sps_max_latency_increase_plus1[i]=read_golomb_uev(bb, &err); if (err) goto bail;
+                            }
+                            VALIDATE_UEV( "%d", log2_min_luma_coding_block_size_minus3);
+                            VALIDATE_UEV( "%d", log2_diff_max_min_luma_coding_block_size);
+                            VALIDATE_UEV( "%d", log2_min_luma_transform_block_size_minus2);
+                            VALIDATE_UEV( "%d", log2_diff_max_min_luma_transform_block_size);
+                            VALIDATE_UEV( "%d", max_transform_hierarchy_depth_inter);
+                            VALIDATE_UEV( "%d", max_transform_hierarchy_depth_intra);
+                            VALIDATE_FIELD  ("%d", scaling_list_enabled_flag, 1);
+                            if(scaling_list_enabled_flag)
+                            {
+                                UInt8 sps_scaling_list_data_present_flag, scaling_list_pred_mode_flag[4][6];
+                                UInt32 scaling_list_pred_matrix_id_delta[4][6], nextCoef, coefNum, sizeId, matrixId;
+                                
+                                SInt32  scaling_list_dc_coef_minus8[4][6], scaling_list_delta_coef,ScalingList[4][6][64];
+                                
+                                VALIDATE_FIELD  ("%d", sps_scaling_list_data_present_flag, 1);
+                                if(sps_scaling_list_data_present_flag){
+                                    //scaling_list_data() function is expanded here.
+                                    for(sizeId=0;sizeId<4;sizeId++){
+                                        for(matrixId=0;matrixId<6;matrixId+=(sizeId==3)?3:1){
+                                            scaling_list_pred_mode_flag[sizeId][matrixId]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            if(!scaling_list_pred_mode_flag[sizeId][matrixId]){
+                                                //sprintf(tempStr,"scaling_list_pred_matrix_id_delta_%d_%d",sizeId,matrixId);
+                                                //VALIDATE_UEV("%d",puts(tempStr));
+                                                scaling_list_pred_matrix_id_delta[sizeId][matrixId]=read_golomb_uev(bb, &err); if (err) goto bail; 
+                                            }
+                                            else{
+                                                nextCoef=8;
+                                                coefNum=64;
+                                                if(coefNum >(1<<(4+(sizeId<<1))))
+                                                    coefNum=(1<<(4+(sizeId<<1)));
+                                                //coefNum=min(64,(1<<(4+(sizeId<<1))));
+                                                if(sizeId>1){
+                                                   scaling_list_dc_coef_minus8[sizeId-2][matrixId]=read_golomb_sev(bb, &err); if (err) goto bail;
+                                                   nextCoef=scaling_list_dc_coef_minus8[sizeId-2][matrixId]+8;
+                                                }
+                                                for(k=0;k<coefNum;k++){
+                                                    scaling_list_delta_coef=read_golomb_sev(bb, &err); if (err) goto bail;
+                                                    nextCoef=(nextCoef+scaling_list_delta_coef+256)%256;
+                                                    ScalingList[sizeId][matrixId][k]=nextCoef;
+                                                }
+                                            }
+                                                
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            UInt8 amp_enabled_flag, sample_adaptive_offset_enabled_flag, pcm_enabled_flag, pcm_sample_bit_depth_luma_minus1, pcm_sample_bit_depth_chroma_minus1, pcm_loop_filter_disabled_flag,inter_ref_pic_set_prediction_flag[65],delta_rps_sign[65],used_by_curr_pic_flag[33], use_delta_flag[33], used_by_curr_pic_s0_flag[17],used_by_curr_pic_s1_flag[17], long_term_ref_pics_present_flag,used_by_curr_pic_lt_sps_flag[33],sps_temporal_mvp_enabled_flag,strong_intra_smoothing_enabled_flag,vui_parameters_present_flag,aspect_ratio_info_present_flag,aspect_ratio_idc,overscan_info_present_flag,overscan_appropriate_flag,video_signal_type_present_flag,video_format,video_full_range_flag,colour_description_present_flag,colour_primaries,transfer_characteristics,matrix_coeffs,chroma_loc_info_present_flag,neutral_chroma_indication_flag,field_seq_flag,frame_field_info_present_flag,default_display_window_flag,vui_timing_info_present_flag,vui_poc_proportional_to_timing_flag,vui_hrd_parameters_present_flag,bitstream_restriction_flag,tiles_fixed_structure_flag,motion_vectors_over_pic_boundaries_flag,restricted_ref_pic_lists_flag,sps_extension_present_flag,sps_range_extension_flag=0,sps_multilayer_extension_flag=0,sps_3d_extension_flag=0,sps_scc_extension_flag=0,sps_extension_4bits=0,transform_skip_rotation_enabled_flag,transform_skip_context_enabled_flag,implicit_rdpcm_enabled_flag,explicit_rdpcm_enabled_flag,extended_precision_processing_flag,intra_smoothing_disabled_flag,high_precision_offsets_enabled_flag,persistent_rice_adaption_enabled_flag,cabac_bypass_alignment_enabled_flag,inter_view_mv_vert_constraint_flag,iv_di_mc_enabled_flag[2],iv_mv_scal_enabled_flag[2],iv_res_pred_enabled_flag[2],depth_ref_enabled_flag[2],vsp_mc_enabled_flag[2],dbbp_enabled_flag[2],tex_mc_enabled_flag[2],intra_contour_enabled_flag[2],intra_dc_only_wedge_enabled_flag[2],cqt_cu_part_pred_enabled_flag[2],inter_dc_only_enabled_flag[2],skip_intra_enabled_flag[2],sps_curr_pic_ref_enabled_flag,palette_mode_enabled_flag,sps_palette_predictor_initializer_present_flag,sps_palette_predictor_initializers[4][129],motion_vector_resolution_control_idc,intra_boundary_filtering_disabled_flag,sps_extension_data_flag;
+                            
+                            UInt32 log2_min_pcm_luma_coding_block_size_minus3, log2_diff_max_min_pcm_luma_coding_block_size, num_short_term_ref_pic_sets,delta_idx_minus1, abs_delta_rps_minus1[65],RefRpsIdx,NumDeltaPocs, num_negative_pics[65], num_positive_pics[65],delta_poc_s0_minus1[17], delta_poc_s1_minus1[17],num_long_term_ref_pics_sps,lt_ref_pic_poc_lsb_sps[33],chroma_sample_loc_type_top_field,chroma_sample_loc_type_bottom_field,def_disp_win_left_offset,def_disp_win_right_offset,def_disp_win_top_offset,def_disp_win_bottom_offset,vui_num_ticks_poc_diff_one_minus1,min_spatial_segmentation_idc,max_bytes_per_pic_denom,max_bits_per_min_cu_denom,log2_max_mv_length_horizontal,log2_max_mv_length_vertical,log2_ivmc_sub_pb_size_minus3[2],log2_texmc_sub_pb_size_minus3[2],palette_max_size,delta_palette_max_prdictor_size,sps_num_palette_predictor_initializer_minus1,numComps,vui_num_units_in_tick,vui_time_scale;
+                            
+                            UInt16 sar_width,sar_height;
+                            
+                            VALIDATE_FIELD  ("%d", amp_enabled_flag, 1);
+                            VALIDATE_FIELD  ("%d", sample_adaptive_offset_enabled_flag, 1);
+                            VALIDATE_FIELD  ("%d", pcm_enabled_flag, 1);
+                            if(pcm_enabled_flag){
+                                 VALIDATE_FIELD  ("%d", pcm_sample_bit_depth_luma_minus1, 4);
+                                 VALIDATE_FIELD  ("%d", pcm_sample_bit_depth_chroma_minus1, 4);
+                                 VALIDATE_UEV  ("%d", log2_min_pcm_luma_coding_block_size_minus3);
+                                 VALIDATE_UEV  ("%d", log2_diff_max_min_pcm_luma_coding_block_size);
+                                 VALIDATE_FIELD  ("%d", pcm_loop_filter_disabled_flag, 1);
+                                
+                            }
+                            VALIDATE_UEV  ("%d", num_short_term_ref_pic_sets);
+                            for(i=0;i<num_short_term_ref_pic_sets;i++)
+                            {
+                                if(i!=0)
+                                    inter_ref_pic_set_prediction_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                if(i!=0 && inter_ref_pic_set_prediction_flag[i]){
+                                    if(i==num_short_term_ref_pic_sets)
+                                        VALIDATE_UEV  ("%d", delta_idx_minus1);
+                                    delta_rps_sign[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    abs_delta_rps_minus1[i]=read_golomb_uev(bb, &err); if (err) goto bail;
+                                    if(i==num_short_term_ref_pic_sets){ // Because it depends on delta_idx_minus1.
+                                        RefRpsIdx=i-(delta_idx_minus1+1);
+                                        NumDeltaPocs=num_negative_pics[RefRpsIdx]+num_positive_pics[RefRpsIdx];
+                                        for(j=0;j<=  NumDeltaPocs;j++){
+                                            used_by_curr_pic_flag[j]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            if(!used_by_curr_pic_flag[j])
+                                                use_delta_flag[j]=GetBits(bb, 1, &err); if (err) goto bail;
+                                        }
+                                    }
+                                }
+                                else{
+                                    num_negative_pics[i]=read_golomb_uev(bb, &err); if (err) goto bail;
+                                    num_positive_pics[i]=read_golomb_uev(bb, &err); if (err) goto bail;
+                                    for(k=0;k<num_negative_pics[i];k++){
+                                        delta_poc_s0_minus1[i]=read_golomb_uev(bb, &err); if (err) goto bail;
+                                        used_by_curr_pic_s0_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    }
+                                    for(k=0;k<num_positive_pics[i];k++){
+                                        delta_poc_s1_minus1[i]=read_golomb_uev(bb, &err); if (err) goto bail;
+                                        used_by_curr_pic_s1_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    }
+                                }
+                            }
+                            VALIDATE_FIELD  ("%d", long_term_ref_pics_present_flag, 1);
+                            if(long_term_ref_pics_present_flag){
+                                VALIDATE_UEV  ("%d", num_long_term_ref_pics_sps);
+                                for(i=0;i<num_long_term_ref_pics_sps;i++){
+                                    lt_ref_pic_poc_lsb_sps[i]=GetBits(bb, field_size(num_long_term_ref_pics_sps), &err); if (err) goto bail;
+                                    used_by_curr_pic_lt_sps_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                }
+                            }
+                            VALIDATE_FIELD  ("%d", sps_temporal_mvp_enabled_flag, 1);
+                            VALIDATE_FIELD  ("%d", strong_intra_smoothing_enabled_flag, 1);
+                            VALIDATE_FIELD  ("%d", vui_parameters_present_flag, 1);
+                            if(vui_parameters_present_flag){
+                                VALIDATE_FIELD  ("%d", aspect_ratio_info_present_flag, 1);
+                                if(aspect_ratio_info_present_flag){
+                                    VALIDATE_FIELD  ("%d", aspect_ratio_idc, 8);
+                                    if(aspect_ratio_idc== 255){// 255= Extended_SAR
+                                        VALIDATE_FIELD  ("%d", sar_width, 16);
+                                        VALIDATE_FIELD  ("%d", sar_height, 16);
+                                    } 
+                                }
+                                VALIDATE_FIELD  ("%d", overscan_info_present_flag, 1);
+                                if(overscan_info_present_flag)
+                                    VALIDATE_FIELD  ("%d", overscan_appropriate_flag, 1);
+                                VALIDATE_FIELD  ("%d", video_signal_type_present_flag, 1);
+                                if(video_signal_type_present_flag){
+                                    VALIDATE_FIELD  ("%d", video_format, 3);
+                                    VALIDATE_FIELD  ("%d", video_full_range_flag, 1);
+                                    VALIDATE_FIELD  ("%d", colour_description_present_flag, 1);
+                                    if(colour_description_present_flag){
+                                         VALIDATE_FIELD  ("%d", colour_primaries, 8);
+                                         VALIDATE_FIELD  ("%d", transfer_characteristics, 8);
+                                         VALIDATE_FIELD  ("%d", matrix_coeffs, 8);
+                                    }
+                                }
+                                VALIDATE_FIELD  ("%d", chroma_loc_info_present_flag, 1);
+                                if(chroma_loc_info_present_flag){
+                                    VALIDATE_UEV  ("%d", chroma_sample_loc_type_top_field);
+                                    VALIDATE_UEV  ("%d", chroma_sample_loc_type_bottom_field);
+                                }
+                                VALIDATE_FIELD  ("%d", neutral_chroma_indication_flag, 1);
+                                VALIDATE_FIELD  ("%d", field_seq_flag, 1);
+                                VALIDATE_FIELD  ("%d", frame_field_info_present_flag, 1);
+                                VALIDATE_FIELD  ("%d", default_display_window_flag, 1);
+                                if(default_display_window_flag){
+                                    VALIDATE_UEV  ("%d", def_disp_win_left_offset);
+                                    VALIDATE_UEV  ("%d", def_disp_win_right_offset);
+                                    VALIDATE_UEV  ("%d", def_disp_win_top_offset);
+                                    VALIDATE_UEV  ("%d", def_disp_win_bottom_offset);
+                                }
+                                VALIDATE_FIELD  ("%d", vui_timing_info_present_flag, 1);
+                                if(vui_timing_info_present_flag){
+                                    VALIDATE_FIELD  ("%d", vui_num_units_in_tick, 32);
+                                    VALIDATE_FIELD  ("%d", vui_time_scale, 32);
+                                    VALIDATE_FIELD  ("%d", vui_poc_proportional_to_timing_flag, 1);
+                                    if(vui_poc_proportional_to_timing_flag)
+                                        VALIDATE_UEV  ("%d", vui_num_ticks_poc_diff_one_minus1);
+                                    VALIDATE_FIELD  ("%d", vui_hrd_parameters_present_flag, 1);
+                                    if(vui_hrd_parameters_present_flag)
+                                        BAILIFERR(Validate_HEVC_hrd_parameters(bb,1,sps_max_sub_layers_minus1));
+                                    
+                                }
+                                VALIDATE_FIELD  ("%d", bitstream_restriction_flag, 1);
+                                if(bitstream_restriction_flag){
+                                    VALIDATE_FIELD  ("%d", tiles_fixed_structure_flag, 1);
+                                    VALIDATE_FIELD  ("%d", motion_vectors_over_pic_boundaries_flag, 1);
+                                    VALIDATE_FIELD  ("%d", restricted_ref_pic_lists_flag, 1);
+                                    VALIDATE_UEV  ("%d", min_spatial_segmentation_idc);
+                                    VALIDATE_UEV  ("%d", max_bytes_per_pic_denom);
+                                    VALIDATE_UEV  ("%d", max_bits_per_min_cu_denom);
+                                    VALIDATE_UEV  ("%d", log2_max_mv_length_horizontal);
+                                    VALIDATE_UEV  ("%d", log2_max_mv_length_vertical);
+                                }
+                            }
+                            VALIDATE_FIELD  ("%d", sps_extension_present_flag, 1);    
+                            if(sps_extension_present_flag){
+                                VALIDATE_FIELD  ("%d", sps_range_extension_flag, 1);
+                                VALIDATE_FIELD  ("%d", sps_multilayer_extension_flag, 1);
+                                VALIDATE_FIELD  ("%d", sps_3d_extension_flag, 1);
+                                VALIDATE_FIELD  ("%d", sps_scc_extension_flag, 1);
+                                VALIDATE_FIELD  ("%d", sps_extension_4bits, 4);
+                            }
+                            if(sps_range_extension_flag){
+                                VALIDATE_FIELD  ("%d", transform_skip_rotation_enabled_flag, 1);
+                                VALIDATE_FIELD  ("%d", transform_skip_context_enabled_flag, 1);
+                                VALIDATE_FIELD  ("%d", implicit_rdpcm_enabled_flag, 1);
+                                VALIDATE_FIELD  ("%d", explicit_rdpcm_enabled_flag, 1);
+                                VALIDATE_FIELD  ("%d", extended_precision_processing_flag, 1);
+                                VALIDATE_FIELD  ("%d", intra_smoothing_disabled_flag, 1);
+                                VALIDATE_FIELD  ("%d", high_precision_offsets_enabled_flag, 1);
+                                VALIDATE_FIELD  ("%d", persistent_rice_adaption_enabled_flag, 1);
+                                VALIDATE_FIELD  ("%d", cabac_bypass_alignment_enabled_flag, 1);
+                            }
+                            if(sps_multilayer_extension_flag)  
+                                VALIDATE_FIELD  ("%d", inter_view_mv_vert_constraint_flag, 1);
+                            if(sps_3d_extension_flag){
+                                for(int d=0;d<=1;d++){
+                                    iv_di_mc_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    iv_mv_scal_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    if(d==0){
+                                        log2_ivmc_sub_pb_size_minus3[d]=read_golomb_uev(bb, &err); if (err) goto bail;
+                                        iv_res_pred_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                        depth_ref_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                        vsp_mc_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                        dbbp_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    }
+                                    else{
+                                        tex_mc_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                        log2_texmc_sub_pb_size_minus3[d]=read_golomb_uev(bb, &err); if (err) goto bail;
+                                        intra_contour_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                        intra_dc_only_wedge_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                        cqt_cu_part_pred_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                        inter_dc_only_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                        skip_intra_enabled_flag[d]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    }
+                                }
+                            } 
+                            if(sps_scc_extension_flag){
+                                VALIDATE_FIELD  ("%d", sps_curr_pic_ref_enabled_flag, 1);
+                               palette_mode_enabled_flag=GetBits(bb, 1, &err); if (err) goto bail;// VALIDATE_FIELD  ("%d", palette_mode_enabled_flag, 1);
+                                if(palette_mode_enabled_flag){
+                                    VALIDATE_UEV  ("%d", palette_max_size);
+                                    VALIDATE_UEV  ("%d", delta_palette_max_prdictor_size);
+                                    VALIDATE_FIELD  ("%d", sps_palette_predictor_initializer_present_flag, 1);
+                                    if(sps_palette_predictor_initializer_present_flag){
+                                        VALIDATE_UEV  ("%d", sps_num_palette_predictor_initializer_minus1);
+                                        numComps=(chroma_format_idc ==0)?1:3;
+                                        for(int comp=0;comp<numComps;comp++)
+                                            for(int z=0;z<=sps_num_palette_predictor_initializer_minus1;z++)
+                                                sps_palette_predictor_initializers[comp][z]=GetBits(bb, field_size(sps_num_palette_predictor_initializer_minus1), &err); if (err) goto bail;
+                                    }
+                                }
+                                VALIDATE_FIELD  ("%d", motion_vector_resolution_control_idc, 2);
+                                VALIDATE_FIELD  ("%d", intra_boundary_filtering_disabled_flag, 1);
+                            }
+                                
+                            if(sps_extension_4bits){
+                                while(mybb.bits_left > 1)
+                                    sps_extension_data_flag=GetBits(bb, 1, &err); if (err) goto bail;
+                            }
+                            
+                            zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
+                            if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d \n",zero_bit);
+                            atomprint(">\n");
+                        }
+                        break;
+                case 34: //Corresponds to PPS.
+                        {
+                            UInt8 dependent_slice_segments_enabled_flag, output_flag_present_flag, num_extra_slice_header_bits,
+                            sign_data_hiding_enabled_flag, cabac_init_present_flag,constrained_intra_pred_flag,transform_skip_enabled_flag,cu_qp_delta_enabled_flag,pps_slice_chroma_qp_offsets_present_flag,weighted_pred_flag,weighted_bipred_flag,transquant_bypass_enabled_flag,tiles_enabled_flag,entropy_coding_sync_enabled_flag,uniform_spacing_flag,loop_filter_across_tiles_enabled_flag,pps_loop_filter_across_slices_enabled_flag,deblocking_filter_control_present_flag,deblocking_filter_override_enabled_flag,pps_deblocking_filter_disabled_flag,pps_scaling_list_data_present_flag,scaling_list_pred_mode_flag[4][6],lists_modification_present_flag,slice_segment_header_exension_present_flag,pps_extension_present_flag,pps_range_extension_flag=0,pps_multilayer_extension_flag=0,pps_3d_extension_flag=0,pps_scc_extension_flag=0,pps_extension_4bits=0,cross_component_prediction_enabled_flag,chroma_qp_offset_list_enabled_flag,poc_reset_info_present_flag,pps_infer_scaling_list_flag,pps_scaling_list_ref_layer_id,ref_loc_offset_layer_id[65],scaled_ref_layer_offset_present_flag[65],ref_region_offset_present_flag[65],resample_phase_set_present_flag[65],colour_mapping_enabled_flag,cm_ref_layer_id[62],cm_octant_depth,cm_y_part_num_log2,cm_res_quant_bits,cm_delta_flc_bits_minus1,dlts_present_flag,pps_depth_layers_minus1,pps_bit_depth_for_depth_layers_minus8,dlt_flag[65],dlt_pred_flag[65],dlt_val_flags_present_flag[65],dlt_value_flag[65][70],pps_curr_pic_ref_enabled_flag,residual_adaptive_colour_transform_enabled_flag,pps_slice_act_qp_offsets_present_flag,pps_palette_predictor_initializer_present_flag,monochrome_palette_flag,pps_extension_data_flag;
+                            
+                            UInt32 i,j,k, pps_pic_parameter_set_id, pps_seq_parameter_set_id,num_ref_idx_l0_default_active_minus1,num_ref_idx_l1_default_active_minus1, diff_cu_qp_delta_depth,num_tile_columns_minus1,num_tile_rows_minus1,column_width_minus1,row_heigth_minus1,sizeId,matrixId,scaling_list_pred_matrix_id_delta[4][6],nextCoef,coefNum,ScalingList[4][6][64],log2_parallel_merge_level_minus2,log2_max_transform_skip_block_size2_minus2,diff_cu_chroma_qp_offset_depth,chroma_qp_offset_list_len_minus1,log2_sao_offset_scale_luma,log2_sao_offset_scale_chroma,num_ref_loc_offsets,phase_hor_luma,phase_ver_luma,phase_hor_chroma_plus8,phase_ver_chroma_plus8,num_cm_ref_layers_minus1,luma_bit_depth_cm_input_minus8,chroma_bit_depth_cm_input_minus8,luma_bit_depth_cm_output_minus8,chroma_bit_depth_cm_output_minus8,depthMaxValue,num_val_delta_dlt,max_diff,size_min_diff_minus1,min_diff_minus1,delta_dlt_val0,size_delta_val_diff_minus_min,delta_val_diff_minus_min,pps_num_palette_predictor_initializer,luma_bit_depth_entry_minus8,chroma_bit_depth_entry_minus8,numComps,comp,pps_palette_predictor_initializers;
+                            
+                            SInt32 init_qp_minus26,pps_cb_qp_offset,pps_cr_qp_offset,pps_beta_offset_div2,pps_tc_offset_div2,scaling_list_dc_coef_minus8[4][6], scaling_list_delta_coef,cb_qp_offset_list,cr_qp_offset_list,scaled_ref_layer_left_offset,scaled_ref_layer_top_offset,scaled_ref_layer_right_offset,scaled_ref_layer_bottom_offset,ref_region_left_offset,ref_region_right_offset,ref_region_top_offset,ref_region_bottom_offset,cm_adapt_threshold_u_delta,cm_adapt_threshold_v_delta,pps_act_y_qp_offset_plus5,pps_act_cb_qp_offset_plus5,pps_act_cr_qp_offset_plus3;
+                            
+                            VALIDATE_UEV( "%d", pps_pic_parameter_set_id);
+                            VALIDATE_UEV( "%d", pps_seq_parameter_set_id);
+                            VALIDATE_FIELD  ("%d", dependent_slice_segments_enabled_flag, 1);
+                            VALIDATE_FIELD  ("%d", output_flag_present_flag, 1);
+                            VALIDATE_FIELD  ("%d", num_extra_slice_header_bits, 3);
+                            VALIDATE_FIELD  ("%d", sign_data_hiding_enabled_flag, 1);
+                            VALIDATE_FIELD  ("%d", cabac_init_present_flag, 1);
+                            VALIDATE_UEV( "%d", num_ref_idx_l0_default_active_minus1);
+                            VALIDATE_UEV( "%d", num_ref_idx_l1_default_active_minus1);
+                            VALIDATE_SEV( "%d", init_qp_minus26);
+                            VALIDATE_FIELD  ("%d", constrained_intra_pred_flag, 1);
+                            VALIDATE_FIELD  ("%d", transform_skip_enabled_flag, 1);
+                            VALIDATE_FIELD  ("%d", cu_qp_delta_enabled_flag, 1);
+                            if(cu_qp_delta_enabled_flag)
+                                VALIDATE_UEV( "%d", diff_cu_qp_delta_depth);
+                            VALIDATE_SEV( "%d", pps_cb_qp_offset);
+                            VALIDATE_SEV( "%d", pps_cr_qp_offset);
+                            VALIDATE_FIELD  ("%d", pps_slice_chroma_qp_offsets_present_flag, 1);
+                            VALIDATE_FIELD  ("%d", weighted_pred_flag, 1);
+                            VALIDATE_FIELD  ("%d", weighted_bipred_flag, 1);
+                            VALIDATE_FIELD  ("%d", transquant_bypass_enabled_flag, 1);
+                            VALIDATE_FIELD  ("%d", tiles_enabled_flag, 1);
+                            VALIDATE_FIELD  ("%d", entropy_coding_sync_enabled_flag, 1);
+                            if(tiles_enabled_flag){
+                                VALIDATE_UEV( "%d", num_tile_columns_minus1);
+                                VALIDATE_UEV( "%d", num_tile_rows_minus1);
+                                VALIDATE_FIELD  ("%d", uniform_spacing_flag, 1);
+                                if(!uniform_spacing_flag){
+                                    for(i=0;i<num_tile_columns_minus1;i++)
+                                        column_width_minus1=read_golomb_uev(bb, &err); if (err) goto bail;
+                                    for(i=0;i<num_tile_rows_minus1;i++)
+                                        row_heigth_minus1=read_golomb_uev(bb, &err); if (err) goto bail;
+                                }
+                                VALIDATE_FIELD  ("%d", loop_filter_across_tiles_enabled_flag, 1);
+                            }
+                            VALIDATE_FIELD  ("%d", pps_loop_filter_across_slices_enabled_flag, 1);
+                            VALIDATE_FIELD  ("%d", deblocking_filter_control_present_flag, 1);
+                            if(deblocking_filter_control_present_flag){
+                                VALIDATE_FIELD  ("%d", deblocking_filter_override_enabled_flag, 1);
+                                VALIDATE_FIELD  ("%d", pps_deblocking_filter_disabled_flag, 1);
+                                if(!pps_deblocking_filter_disabled_flag){
+                                    VALIDATE_SEV( "%d", pps_beta_offset_div2);
+                                    VALIDATE_SEV( "%d", pps_tc_offset_div2);
+                                }
+                            }
+                            VALIDATE_FIELD  ("%d", pps_scaling_list_data_present_flag, 1);
+                            if(pps_scaling_list_data_present_flag){
+                                //scaling_list_data() function is expanded here.
+                                    for(sizeId=0;sizeId<4;sizeId++){
+                                        for(matrixId=0;matrixId<6;matrixId+=(sizeId==3)?3:1){
+                                            scaling_list_pred_mode_flag[sizeId][matrixId]=GetBits(bb, 1, &err); if (err) goto bail;
+                                            if(!scaling_list_pred_mode_flag[sizeId][matrixId]){
+                                                //sprintf(tempStr,"scaling_list_pred_matrix_id_delta_%d_%d",sizeId,matrixId);
+                                                //VALIDATE_UEV("%d",puts(tempStr));
+                                                scaling_list_pred_matrix_id_delta[sizeId][matrixId]=read_golomb_uev(bb, &err); if (err) goto bail; 
+                                            }
+                                            else{
+                                                nextCoef=8;
+                                                coefNum=64;
+                                                if(coefNum >(1<<(4+(sizeId<<1))))
+                                                    coefNum=(1<<(4+(sizeId<<1)));
+                                                //coefNum=min(64,(1<<(4+(sizeId<<1))));
+                                                if(sizeId>1){
+                                                   scaling_list_dc_coef_minus8[sizeId-2][matrixId]=read_golomb_sev(bb, &err); if (err) goto bail;
+                                                   nextCoef=scaling_list_dc_coef_minus8[sizeId-2][matrixId]+8;
+                                                }
+                                                for(k=0;k<coefNum;k++){
+                                                    scaling_list_delta_coef=read_golomb_sev(bb, &err); if (err) goto bail;
+                                                    nextCoef=(nextCoef+scaling_list_delta_coef+256)%256;
+                                                    ScalingList[sizeId][matrixId][k]=nextCoef;
+                                                }
+                                            }
+                                                
+                                        }
+                                    }
+                            }
+                            VALIDATE_FIELD  ("%d", lists_modification_present_flag, 1);
+                            VALIDATE_UEV( "%d", log2_parallel_merge_level_minus2);
+                            VALIDATE_FIELD  ("%d", slice_segment_header_exension_present_flag, 1);
+                            VALIDATE_FIELD  ("%d", pps_extension_present_flag, 1);
+                            if(pps_extension_present_flag){
+                                 VALIDATE_FIELD  ("%d", pps_range_extension_flag, 1);
+                                 VALIDATE_FIELD  ("%d", pps_multilayer_extension_flag, 1);
+                                 VALIDATE_FIELD  ("%d", pps_3d_extension_flag, 1);
+                                 VALIDATE_FIELD  ("%d", pps_scc_extension_flag, 1);
+                                 VALIDATE_FIELD  ("%d", pps_extension_4bits, 4);
+                            }
+                            if(pps_range_extension_flag){
+                                if(transform_skip_enabled_flag)
+                                    VALIDATE_UEV( "%d", log2_max_transform_skip_block_size2_minus2);
+                                VALIDATE_FIELD  ("%d", cross_component_prediction_enabled_flag, 1);
+                                VALIDATE_FIELD  ("%d", chroma_qp_offset_list_enabled_flag, 1);
+                                if(chroma_qp_offset_list_enabled_flag){
+                                     VALIDATE_UEV( "%d", diff_cu_chroma_qp_offset_depth);
+                                     VALIDATE_UEV( "%d", chroma_qp_offset_list_len_minus1);
+                                     for(i=0;i<=chroma_qp_offset_list_len_minus1;i++){
+                                         cb_qp_offset_list=read_golomb_sev(bb, &err); if (err) goto bail;
+                                         cr_qp_offset_list=read_golomb_sev(bb, &err); if (err) goto bail;
+                                    }
+                                         
+                                }
+                                VALIDATE_UEV( "%d", log2_sao_offset_scale_luma);
+                                VALIDATE_UEV( "%d", log2_sao_offset_scale_chroma);
+                            }
+                            if(pps_multilayer_extension_flag){
+                                VALIDATE_FIELD  ("%d", poc_reset_info_present_flag, 1);
+                                VALIDATE_FIELD  ("%d", pps_infer_scaling_list_flag, 1);
+                                if(pps_infer_scaling_list_flag)
+                                    VALIDATE_FIELD  ("%d", pps_scaling_list_ref_layer_id, 6);
+                                VALIDATE_UEV( "%d", num_ref_loc_offsets);
+                                for(i=0;i<num_ref_loc_offsets;i++){
+                                    ref_loc_offset_layer_id[i]=GetBits(bb, 6, &err); if (err) goto bail;
+                                    scaled_ref_layer_offset_present_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    if(scaled_ref_layer_offset_present_flag[i]){
+                                        scaled_ref_layer_left_offset=read_golomb_sev(bb, &err); if (err) goto bail;
+                                        scaled_ref_layer_top_offset=read_golomb_sev(bb, &err); if (err) goto bail;
+                                        scaled_ref_layer_right_offset=read_golomb_sev(bb, &err); if (err) goto bail;
+                                        scaled_ref_layer_bottom_offset=read_golomb_sev(bb, &err); if (err) goto bail;
+                                    }
+                                    ref_region_offset_present_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    if(ref_region_offset_present_flag[i]){
+                                        ref_region_left_offset=read_golomb_sev(bb, &err); if (err) goto bail;
+                                        ref_region_top_offset=read_golomb_sev(bb, &err); if (err) goto bail;
+                                        ref_region_right_offset=read_golomb_sev(bb, &err); if (err) goto bail;
+                                        ref_region_bottom_offset=read_golomb_sev(bb, &err); if (err) goto bail;
+                                    }
+                                    resample_phase_set_present_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                    if( resample_phase_set_present_flag[i]){
+                                        phase_hor_luma=read_golomb_uev(bb, &err); if (err) goto bail; 
+                                        phase_ver_luma=read_golomb_uev(bb, &err); if (err) goto bail; 
+                                        phase_hor_chroma_plus8=read_golomb_uev(bb, &err); if (err) goto bail; 
+                                        phase_ver_chroma_plus8=read_golomb_uev(bb, &err); if (err) goto bail; 
+                                        
+                                    }
+                                }
+                                VALIDATE_FIELD  ("%d", colour_mapping_enabled_flag, 1);
+                                if(colour_mapping_enabled_flag){
+                                    num_cm_ref_layers_minus1=read_golomb_uev(bb, &err); if (err) goto bail; 
+                                    for(i=0;i<=num_cm_ref_layers_minus1;i++)
+                                        cm_ref_layer_id[i]=GetBits(bb, 6, &err); if (err) goto bail;
+                                    VALIDATE_FIELD  ("%d", cm_octant_depth, 2); 
+                                    VALIDATE_FIELD  ("%d", cm_y_part_num_log2, 2); 
+                                    VALIDATE_UEV( "%d", luma_bit_depth_cm_input_minus8);
+                                    VALIDATE_UEV( "%d", chroma_bit_depth_cm_input_minus8);
+                                    VALIDATE_UEV( "%d", luma_bit_depth_cm_output_minus8);
+                                    VALIDATE_UEV( "%d", chroma_bit_depth_cm_output_minus8);
+                                    VALIDATE_FIELD  ("%d", cm_res_quant_bits, 2); 
+                                    VALIDATE_FIELD  ("%d", cm_delta_flc_bits_minus1, 2); 
+                                    if(cm_octant_depth==1){
+                                         VALIDATE_SEV( "%d", cm_adapt_threshold_u_delta);
+                                         VALIDATE_SEV( "%d", cm_adapt_threshold_v_delta);
+                                    }
+                                    Validate_colour_mapping_octants(bb, 0,0,0,0,(1<<cm_octant_depth),cm_octant_depth,cm_y_part_num_log2,cm_delta_flc_bits_minus1);
+                                    
+                                }
+                                
+                            }
+                            if(pps_3d_extension_flag){
+                                 VALIDATE_FIELD  ("%d", dlts_present_flag, 1); 
+                                 if(dlts_present_flag){
+                                     VALIDATE_FIELD  ("%d", pps_depth_layers_minus1, 6); 
+                                     VALIDATE_FIELD  ("%d", pps_bit_depth_for_depth_layers_minus8, 4); 
+                                     depthMaxValue=(1<<(pps_bit_depth_for_depth_layers_minus8+8))-1;
+                                     for(i=0;i<=pps_depth_layers_minus1;i++){
+                                         dlt_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                         if(dlt_flag[i]){
+                                             dlt_pred_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                             if(! dlt_pred_flag[i])
+                                                 dlt_val_flags_present_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
+                                             if(dlt_val_flags_present_flag[i]){
+                                                 
+                                                 for(j=0;j<=depthMaxValue;j++)
+                                                     dlt_value_flag[i][j]=GetBits(bb, 1, &err); if (err) goto bail;
+                                             }
+                                             else{
+                                                 num_val_delta_dlt=GetBits(bb, field_size(pps_bit_depth_for_depth_layers_minus8+8), &err); if (err) goto bail;
+                                                 if(num_val_delta_dlt>0){
+                                                     if(num_val_delta_dlt>1)
+                                                         max_diff=GetBits(bb, field_size(pps_bit_depth_for_depth_layers_minus8+8), &err); if (err) goto bail;
+                                                     if(num_val_delta_dlt >2 && max_diff >0){
+                                                         size_min_diff_minus1=ceil(log(max_diff+1)*1.442695);//Calculate log2.
+                                                         min_diff_minus1=GetBits(bb, field_size(size_min_diff_minus1), &err); if (err) goto bail;
+                                                     }
+                                                     delta_dlt_val0=GetBits(bb, field_size(pps_bit_depth_for_depth_layers_minus8+8), &err); if (err) goto bail;
+                                                     if(max_diff>(min_diff_minus1+1)){
+                                                         size_delta_val_diff_minus_min=ceil(log(max_diff-(min_diff_minus1+1)+1)*1.442695);
+                                                         for(k=1;k<num_val_delta_dlt;k++)
+                                                             delta_val_diff_minus_min=GetBits(bb, field_size(size_delta_val_diff_minus_min), &err); if (err) goto bail;
+                                                    }
+                                                }
+                                            }
+                                                 
+                                        }
+                                    }
+                                }
+                                
+                            }
+                            if(pps_scc_extension_flag){
+                                VALIDATE_FIELD  ("%d", pps_curr_pic_ref_enabled_flag, 1); 
+                                VALIDATE_FIELD  ("%d", residual_adaptive_colour_transform_enabled_flag, 1); 
+                                if(residual_adaptive_colour_transform_enabled_flag){
+                                    VALIDATE_FIELD  ("%d", pps_slice_act_qp_offsets_present_flag, 1); 
+                                    VALIDATE_SEV( "%d", pps_act_y_qp_offset_plus5);
+                                    VALIDATE_SEV( "%d", pps_act_cb_qp_offset_plus5);
+                                    VALIDATE_SEV( "%d", pps_act_cr_qp_offset_plus3);
+                                }
+                                 VALIDATE_FIELD  ("%d", pps_palette_predictor_initializer_present_flag, 1); 
+                                 if(pps_palette_predictor_initializer_present_flag){
+                                     VALIDATE_UEV( "%d", pps_num_palette_predictor_initializer);
+                                     if(pps_num_palette_predictor_initializer>0){
+                                         VALIDATE_FIELD  ("%d", monochrome_palette_flag, 1); 
+                                         VALIDATE_UEV( "%d", luma_bit_depth_entry_minus8);
+                                         if(!monochrome_palette_flag)
+                                             VALIDATE_UEV( "%d", chroma_bit_depth_entry_minus8);
+                                         numComps=monochrome_palette_flag?1:3;
+                                         for(comp=0;comp<numComps;comp++)
+                                             for(i=0;i<pps_num_palette_predictor_initializer;i++){
+                                                 if(comp==0)
+                                                    pps_palette_predictor_initializers=GetBits(bb, field_size(luma_bit_depth_entry_minus8+8), &err); if (err) goto bail;
+                                                 else if(comp==1 || comp==2)
+                                                     pps_palette_predictor_initializers=GetBits(bb, field_size(chroma_bit_depth_entry_minus8+8), &err); if (err) goto bail;
+                                             }
+                                    }
+                                         
+                                }
+                            }
+                            if(pps_extension_4bits){
+                                while(mybb.bits_left > 1)
+                                    pps_extension_data_flag=GetBits(bb, 1, &err); if (err) goto bail;
+                            }
+
+                             zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
+                            if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d \n",zero_bit);
+                            atomprint(">\n");
+                        }
+                        
+                        break;
+		
+		default:
+			/* sampleprinthexdata((void*)bb->cptr, nal_length); */
+			 SkipBytes(bb,nal_length-2);
+			/*{
+				unsigned int i;
+				i = bb->bits_left;
+				while (i>=8) {
+					GetBits(bb, 8, &err); i-=8;
+					if (err) break;
+				}
+				if (i>0) GetBits(bb, i, &err);*/
+				atomprint(">\n");
+			//}
+			// errprint("\tUnknown NAL Unit %d",nal_type);
+			break;
+	}
+	if (bb->bits_left != 0) errprint("Validate HEVC NAL Unit didn't use %ld bits\n", bb->bits_left);
+
+bail:
+	//--vg.tabcnt; atomprint("</NALUnit>\n");
+
+	if (err) {
+                atomprint(">\n");
+                --vg.tabcnt; atomprint("</NALUnit>\n");
+		errprint("Validate_NAL_Unit_HEVC: %d\n",err);
+	}
+	else{
+            --vg.tabcnt; atomprint("</NALUnit>\n");
+        }
+
+	return err;
+}
+
+OSErr Validate_colour_mapping_octants(BitBuffer *bb, UInt32 inpDepth,UInt32 idxY,UInt32 idxCb,UInt32 idxCr, UInt32 inpLength,UInt8 cm_octant_depth,UInt8 cm_y_part_num_log2,UInt8 cm_delta_flc_bits_minus1)
+{
+    OSErr err = noErr;
+    UInt8 PartNumY,split_octant_flag,coded_res_flag,res_coeff_s;
+    UInt32 k,m,n,idxShiftY,i,j,c,res_coeff_q,res_coeff_r;
+        PartNumY=1<<cm_y_part_num_log2;
+        if(inpDepth<cm_octant_depth)
+            VALIDATE_FIELD  ("%d", split_octant_flag, 1); 
+        if(split_octant_flag){
+            for(k=0;k<2;k++)
+                for(m=0;m<2;m++)
+                    for(n=0;n<2;n++)
+                        Validate_colour_mapping_octants(bb,inpDepth+1,idxY+PartNumY*k*inpLength/2, idxCb+m*inpLength/2, idxCr+n*inpLength/2,inpLength/2,cm_octant_depth,cm_y_part_num_log2,cm_delta_flc_bits_minus1);
+        }
+        else{
+            for(i=0;i<PartNumY;i++){
+                idxShiftY=idxY+(i<<(cm_octant_depth-inpDepth));
+                for(j=0;j<4;j++){
+                    coded_res_flag=GetBits(bb, 1, &err); if (err) goto bail;
+                    if(coded_res_flag){
+                        for(c=0;c<3;c++){
+                            res_coeff_q=read_golomb_uev(bb, &err); if (err) goto bail; 
+                            res_coeff_r=GetBits(bb, field_size(cm_delta_flc_bits_minus1), &err); if (err) goto bail;
+                            if(res_coeff_q || res_coeff_r)
+                                res_coeff_s=GetBits(bb, 1, &err); if (err) goto bail;
+                        }
+                    }
+                        
+                }
+            }
+        }
+bail:
+	if (err) {
+		errprint("Validate_colour_mapping_octants: %d\n",err);
+	}
+	return err;
+            
+}
 //==========================================================================================
 
 OSErr Validate_DecSpecific_Descriptor( BitBuffer *inbb, UInt8 ObjectType, UInt8 StreamType, void *p_sc )
@@ -2511,7 +3427,7 @@ OSErr Validate_Random_Descriptor(BitBuffer *bb, char* dname)
 			else tagname = "Forbidden";
 			
 			atomprintnotab("\ttag=\"0x%2.2x\" size=\"%d\">\n", tag, size);
-			atomprint("<comment descriptor tag is %s />\n",tagname);
+			atomprint("comment=\"descriptor tag is %s\"\n",tagname);
 			
 			atomprinthexdata((char *)((void*)bb->cptr), size);
 			atomprint("/>\n");
@@ -2653,7 +3569,7 @@ OSErr Validate_sdsm_sample_Bitstream( BitBuffer *bb, void *refcon )
 	
 	command = PeekBits( bb, 2, &err );
 	if (err) goto bail;
-	sampleprint("<comment BIFS command is %s />\n",commands[command]);
+	sampleprint("<comment=\"BIFS command is %s\"/>\n",commands[command]);
 	
 	sampleprinthexdata((char *)((void*)bb->cptr), bb->length);
 
@@ -2699,7 +3615,7 @@ OSErr Validate_odsm_sample_Bitstream( BitBuffer *bb, void *refcon )
 		{
 			UInt32 bits_to_leave;
 			bits_to_leave = bb->bits_left - (esSize*8); if (bits_to_leave<0) bits_to_leave = 0;
-			sampleprint("<comment command is %s />\n",commands[esTag]);
+			sampleprint("<comment=\"command is %s\"/>\n",commands[esTag]);
 			switch(esTag){
 				case 1:		// OD Update
 					printed = 1;
@@ -2940,3 +3856,119 @@ OSErr CheckValuesInContext( UInt32 bufferSize, UInt32 maxBitrate, UInt32 avgBitr
 }
 
 //==========================================================================================
+
+OSErr Validate_HEVCConfigRecord( BitBuffer *bb, void *refcon )
+{
+	TrackInfoRec *tir = (TrackInfoRec *)refcon;
+	OSErr err;
+	//char	tempStr[100];
+	UInt16 nal_length,numNalus;
+        UInt8 reserved, nalUnitType,array_completeness;
+	HevcConfigInfo hevcHeader;
+	//UInt32* codec_specific;
+	//int counter = 0;
+        UInt32 j,i;
+	//codec_specific = &((tir->validatedSampleDescriptionRefCons)[tir->currentSampleDescriptionIndex - 1]);
+
+	hevcHeader.config_ver 	= GetBits(bb, 8, &err); if (err) goto bail;
+	hevcHeader.profile_space      = GetBits(bb, 2, &err); if (err) goto bail;
+
+	atomprint("config=\"%d\"\n",hevcHeader.config_ver);
+	atomprint("profile_space=\"%d\"\n", hevcHeader.profile_space);
+	
+        
+        hevcHeader.tier_flag      = GetBits(bb, 1, &err); if (err) goto bail;
+        hevcHeader.profile_idc      = GetBits(bb, 5, &err); if (err) goto bail;
+        atomprint("tier_flag=\"%d\"\n",hevcHeader.tier_flag);
+        atomprint("profile_idc=\"%d\"\n",hevcHeader.profile_idc);
+        
+        for(j=0; j<32; j++)
+        {
+            hevcHeader.compatibility_flag[j]= GetBits(bb, 1, &err); if (err) goto bail;
+            atomprint("compatibility_flag_%d=\"%d\"\n",j,hevcHeader.compatibility_flag[j]);
+        }
+        
+        hevcHeader.constraint_indicator_flags      = GetBits(bb, 48, &err); if (err) goto bail;
+        atomprint("constraint_indicator_flags=\"%d\"\n",hevcHeader.constraint_indicator_flags);
+        
+       
+            
+        
+        hevcHeader.level_idc      = GetBits(bb, 8, &err); if (err) goto bail;
+        atomprint("level_idc=\"%d\"\n",hevcHeader.level_idc);
+        
+        hevcHeader.min_spatial_segmentation_idc      = GetBits(bb, 16, &err); if (err) goto bail;
+        if ((hevcHeader.min_spatial_segmentation_idc & 0xF000) != 0xF000) {
+		errprint( "reserved 1 bits are not 1 %x", hevcHeader.min_spatial_segmentation_idc & 0xF000 );
+	}
+	hevcHeader.min_spatial_segmentation_idc = hevcHeader.min_spatial_segmentation_idc & 0x0FFF;
+	atomprint("min_spatial_segmentation_idc=\"%d\"\n", hevcHeader.min_spatial_segmentation_idc);
+        
+        hevcHeader.parallelismType      = GetBits(bb, 8, &err); if (err) goto bail;
+        if ((hevcHeader.parallelismType & 0xFC) != 0xFC) {
+		errprint( "reserved 1 bits are not 1 %x", hevcHeader.parallelismType & 0xFC );
+	}
+	hevcHeader.parallelismType = hevcHeader.parallelismType & 3;
+	atomprint("parallelismType=\"%d\"\n", hevcHeader.parallelismType);
+        
+        hevcHeader.chroma_format_idc      = GetBits(bb, 8, &err); if (err) goto bail;
+        if ((hevcHeader.chroma_format_idc & 0xFC) != 0xFC) {
+		errprint( "reserved 1 bits are not 1 %x", hevcHeader.chroma_format_idc & 0xFC );
+	}
+	hevcHeader.chroma_format_idc = hevcHeader.chroma_format_idc & 3;
+	atomprint("chroma_format_idc=\"%d\"\n", hevcHeader.chroma_format_idc);
+        
+        hevcHeader.bit_depth_luma_minus8      = GetBits(bb, 8, &err); if (err) goto bail;
+        if ((hevcHeader.bit_depth_luma_minus8 & 0xF8) != 0xF8) {
+		errprint( "reserved 1 bits are not 1 %x", hevcHeader.bit_depth_luma_minus8 & 0xF8 );
+	}
+	hevcHeader.bit_depth_luma_minus8 = hevcHeader.bit_depth_luma_minus8 & 7;
+	atomprint("bit_depth_luma_minus8=\"%d\"\n", hevcHeader.bit_depth_luma_minus8);
+        
+        hevcHeader.bit_depth_chroma_minus8      = GetBits(bb, 8, &err); if (err) goto bail;
+        if ((hevcHeader.bit_depth_chroma_minus8 & 0xF8) != 0xF8) {
+		errprint( "reserved 1 bits are not 1 %x", hevcHeader.bit_depth_chroma_minus8 & 0xF8 );
+	}
+	hevcHeader.bit_depth_chroma_minus8 = hevcHeader.bit_depth_chroma_minus8 & 7;
+	atomprint("bit_depth_chroma_minus8=\"%d\"\n", hevcHeader.bit_depth_chroma_minus8);
+        
+        hevcHeader.avgFrameRate      = GetBits(bb, 16, &err); if (err) goto bail;
+        hevcHeader.constantFrameRate      = GetBits(bb, 2, &err); if (err) goto bail;
+        hevcHeader.numTemporalLayers      = GetBits(bb, 3, &err); if (err) goto bail;
+        hevcHeader.temporalIdNested      = GetBits(bb, 1, &err); if (err) goto bail;
+        hevcHeader.lengthSizeMinusOne      = GetBits(bb, 2, &err); if (err) goto bail;
+        hevcHeader.numOfArrays      = GetBits(bb, 8, &err); if (err) goto bail;
+        
+        atomprint("avgFrameRate=\"%d\"\n",hevcHeader.avgFrameRate);
+        atomprint("constantFrameRate=\"%d\"\n",hevcHeader.constantFrameRate);
+        atomprint("numTemporalLayers=\"%d\"\n",hevcHeader.numTemporalLayers);
+        atomprint("temporalIdNested=\"%d\"\n",hevcHeader.temporalIdNested);
+        atomprint("lengthSizeMinusOne=\"%d\"\n",hevcHeader.lengthSizeMinusOne);
+        atomprint("numOfArrays=\"%d\"\n",hevcHeader.numOfArrays);
+        atomprint(">\n");
+        
+        for( j=0; j< hevcHeader.numOfArrays; j++)
+        {
+            atomprint("<NAL_Unit_Array_%d\n",j);
+            VALIDATE_FIELD("%d", array_completeness, 1);
+            VALIDATE_FIELD_V("%d", reserved, 1, 0, "HEVCConfigRecord");
+            VALIDATE_FIELD("%d", nalUnitType, 6);
+            numNalus      = GetBits(bb, 16, &err); if (err) goto bail;
+            atomprint(">\n");
+            for(i=0;i<numNalus;i++)
+            {
+                nal_length      = GetBits(bb, 16, &err); if (err) goto bail;
+                BAILIFERR( Validate_NAL_Unit_HEVC( bb, 0, nal_length) );
+                GetBits( bb, nal_length*8, & err);
+            }
+            atomprint("</NAL_Unit_Array_%d>\n",j);
+            
+        }
+bail:
+	
+	if (err) {
+             atomprint("</NAL_Unit_Array_%d>\n",j);
+		errprint("Validate_HEVCConfigRecord: %d\n",err);
+	}
+	return err;
+}

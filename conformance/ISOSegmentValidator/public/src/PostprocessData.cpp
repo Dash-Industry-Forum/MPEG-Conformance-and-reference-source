@@ -88,8 +88,15 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                     }
 
                     if (list[j].type == 'moof') {
-                        if (j == (cnt - 1) || list[j + 1].offset >= (offset + segmentSizes[index]) || list[j + 1].type != 'mdat')
+                        if (j == (cnt - 1) || list[j + 1].offset >= (offset + segmentSizes[index]) || list[j + 1].type != 'mdat'){
                             errprint("mdat not found following a moof in segment %d (at file absolute offset %lld), violating: Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): Each Media Segment shall contain one or more whole self-contained movie fragments. A whole, self-contained movie fragment is a movie fragment ('moof') box and a media data ('mdat') box that contains all the media samples that do not use external data references referenced by the track runs in the movie fragment box.\n", index, list[j].offset);
+			    if(vg.cmaf){
+				errprint("CMAF check violated: Section 7.5.18. \"Each CMAF Fragment SHALL contain one or more Media Data Box(es)\", not found in Segment/Fragment %d (at file absolute offset %lld).\n",index, list[j].offset);
+                                errprint("CMAF check violated: Section 7.3.1.3. \"A CMAF Fragment SHALL consist of one or more ISO Base Media segments that contains one MovieFragmentBox followed by one or more Media Data Box(es) containing the samples it references\", but mdat not found following a moof in Segment/Fragment %d (at file absolute offset %lld).\n",index, list[j].offset);
+                                if(vg.cmafChunk)
+                                    errprint("CMAF check violated: Section 7.3.2.2 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but mdat not found following a moof in Chunk %d (at file absolute offset %lld).\n", index, list[j].offset);
+                            }
+			}
 
                         fragmentInSegmentFound = true;
                     }
@@ -114,8 +121,14 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                     }
                 }
 
-                if (!fragmentInSegmentFound && !initializationSegment)
+                if (!fragmentInSegmentFound && !initializationSegment){
                     errprint("No fragment found in segment %d\n", index + 1);
+                    if(vg.cmaf){
+                        errprint("CMAF check violated: Section 7.3.1.3 \"A CMAF Fragment SHALL consist of one or more ISO Base Media segments that contains one MovieFragmentBox followed by one or more Media Data Box(es)\", but moof not found in Segment/Fragment %d (at file absolute offset %lld).\n",index, list[j].offset);
+                        if(vg.cmafChunk)
+                            errprint("CMAF check violated: Section 7.3.2.2 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but moof not found in Chunk %d (at file absolute offset %lld).\n", index);
+                    }
+                }
 
                 if (vg.dsms[index] && !moovInSegmentFound)
                     errprint("Segment %d has dsms compatible brand (Self-initializing media segment), however, moov box not found in this segment as expected.\n", index + 1);
@@ -713,6 +726,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir) {
                 if (mir->moofInfo[j].offset >= segmentOffset && mir->moofInfo[j].offset < firstSidxOfSegment->offset)
                     errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box shall be placed before any 'moof' box. Violated for fragment number %d\n", j + 1);
 
+
                 if (mir->moofInfo[j].samplesToBePresented && mir->moofInfo[j].offset >= segmentOffset && mir->moofInfo[j].offset < (segmentOffset + vg.segmentSizes[i])) {
                     segmentDurationSec += (mir->moofInfo[j].moofPresentationEndTimePerTrack[trackIndex] - mir->moofInfo[j].moofEarliestPresentationTimePerTrack[trackIndex]);
                 }
@@ -1037,4 +1051,276 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir) {
     }
 
     return;
+}
+
+void checkCMAFBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bool CMAFHeader, UInt64 *segmentSizes)
+{
+    UInt64 offset = 0;
+    //In this function,all top level boxes like ftyp, moov , moof etc are checked for order. Other lower level boxes have separate functions.
+    bool ord_err=false;
+    char err_order[50];
+    err_order[0]={'\0'};
+    
+    if (CMAFHeader) {
+        for (int i= 0; i < cnt; i++) {
+            if (list[i].offset < segmentSizes[0]) {
+                if (i==0 && list[i].type != 'ftyp')
+                    ord_err=true;
+                else if (i==1 && list[i].type != 'moov') 
+                    ord_err=true;
+                else if(list[i].type == 'udta' || list[i].type == 'meta')
+                    errprint("CMAF check violated: Section 7.5.2. \"If UserDataBox or MetaBoxes present, SHALL NOT occur at file level, i.e. they can only be contained in a box.\"");
+                    
+            }
+        }
+        if(ord_err){
+            strcat(err_order,ostypetostr(list[0].type));
+            for (int z= 1; z < cnt; z++){
+                if (list[z].offset < segmentSizes[0]) {
+                    strcat(err_order, "--");
+                    strcat(err_order,ostypetostr(list[z].type));
+                }
+            }
+                errprint("CMAF check violated (ordinality/nesting) : \"In CMAF Header, the allowed box order as per Section 7.3.1. of ISO/IEC 23000-19(E) is: ftyp--moov \", but order found is: %s \n", err_order);
+        }
+         offset += segmentSizes[0];
+    }
+    
+    for (int index = (CMAFHeader ? 1 : 0); index < segmentInfoSize; index++) {
+        for (int i = 0; i < cnt; i++) {
+            if (list[i].offset >= (offset + segmentSizes[index])) //Segment end
+            {
+                break;
+            }
+            if (list[i].offset == offset) {//For live segments, comes here for each Media Segment.
+                if (list[i].type != 'styp' && list[i].type != 'prft' && list[i].type != 'emsg' && (list[i].type != 'moof') && (list[i].type != 'ftyp' || CMAFHeader)){
+                    if (list[i].type == 'ftyp' && CMAFHeader)
+                        warnprint("ftyp box found in the begining of a media segment while CMAFHeader is provided!\n");
+                    else
+                        warnprint("Unexpected box type %s found at the begining of segment %d.\n", ostypetostr(list[i].type), index+1);
+                }
+                
+                
+                bool cmafFragmentInCMAFSegmentFound = false;
+                for (int j = i; list[j].offset < (offset + segmentSizes[index]); j++) {//For all boxes inside a Media Segment.
+                     if(list[j].type == 'emsg' && cmafFragmentInCMAFSegmentFound){
+                         
+                        errprint("CMAF check violated: Section 7.4.5, \"If 'emsg' is present, SHALL precede the first 'moof' in the CMAF Fragment \", in segment %d 'moof' found before 'emsg'\n", index);
+                           
+                    }
+                    if (list[j].type == 'moof') { //This condition is also implemented in Dash box order.
+                        if (j == (cnt - 1) || list[j + 1].offset >= (offset + segmentSizes[index]) || list[j + 1].type != 'mdat'){
+                            errprint("mdat not found following a moof in segment %d (at file absolute offset %lld), violating: CMAF Section 7.3.1 (ordinality/nesting), 'mdat' follows 'moof' in box order and Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): Each Media Segment shall contain one or more whole self-contained movie fragments. A whole, self-contained movie fragment is a movie fragment ('moof') box and a media data ('mdat') box that contains all the media samples that do not use external data references referenced by the track runs in the movie fragment box.\n", index, list[j].offset);
+			}
+
+                        cmafFragmentInCMAFSegmentFound = true;
+                    }
+                    if(list[j].type == 'udta' || list[j].type == 'meta')
+                        errprint("CMAF check violated: Section 7.5.2. \"If UserDataBox or MetaBoxes present, SHALL NOT occur at file level, i.e. they can only be contained in a box.\"");
+                    
+                }
+            }
+        }
+    offset += segmentSizes[index];
+    }
+}
+
+void checkCMAFBoxOrder_moov(long cnt,atomOffsetEntry *list)
+{
+    bool ord_err=false;
+    char err_order[50];
+    err_order[0]={'\0'};
+    //Check the order of boxes inside 'moov'.
+    for (int i= 0; i < cnt; i++) {
+        if (i==0 && list[i].type != 'mvhd')
+            ord_err=true;
+        else if(i==1 && list[i].type != 'trak')
+            ord_err=true;
+        else if(i==2 && list[i].type != 'mvex')
+           ord_err=true;
+        //pssh box at the end is an optional one and hence not checked.
+    }
+    if(ord_err){
+        strcat(err_order,ostypetostr(list[0].type));
+        for (int j= 1; j < cnt; j++){
+             strcat(err_order, "--");
+            strcat(err_order,ostypetostr(list[j].type));
+        }
+        errprint("CMAF check violated (ordinality/nesting) : \"In 'moov', the allowed box order as per Section 7.3.1. of ISO/IEC 23000-19(E) is: mvhd--trak--mvex--pssh (opt) \", but order found is: %s \n", err_order);
+    }
+        
+}
+
+void checkCMAFBoxOrder_trak(long cnt,atomOffsetEntry *list)
+{
+    int edts_flag=0;
+    bool ord_err=false;
+    char err_order[50];
+    err_order[0]={'\0'};
+    //Check the order of boxes inside 'trak'.
+    for (int i= 0; i < cnt; i++) {
+        if (i==0 && list[i].type != 'tkhd') 
+            ord_err=true;
+        else if(i==1 && list[i].type == 'edts')
+            edts_flag=1;
+                                            
+        if((i==1 && !edts_flag) ||  (i==2 && edts_flag)){
+           if(list[i].type != 'mdia')
+             ord_err=true;
+        }
+    }
+     if(ord_err){
+        strcat(err_order,ostypetostr(list[0].type));
+        for (int j= 1; j < cnt; j++){
+             strcat(err_order, "--");
+            strcat(err_order,ostypetostr(list[j].type));
+        }
+        errprint("CMAF check violated (ordinality/nesting) : \"In 'trak', the allowed box order as per Section 7.3.1. of ISO/IEC 23000-19(E) is: tkhd--edts (opt)--mdia--udta (opt) \", but order found is: %s \n", err_order);
+    }
+    
+}
+
+void checkCMAFBoxOrder_mdia(long cnt,atomOffsetEntry *list)
+{
+    int elng_flag=0;
+    bool ord_err=false;
+    char err_order[50];
+    err_order[0]={'\0'};
+    for (int i= 0; i < cnt; i++) {
+        if (i==0 && list[i].type != 'mdhd')
+           ord_err=true;
+        else if (i==1 && list[i].type != 'hdlr')
+            ord_err=true;
+        else if (i==2 && list[i].type != 'elng')
+            elng_flag=1;
+        
+        if((i==2 && !elng_flag) ||  (i==3 && elng_flag)){
+            if(list[i].type != 'minf')
+              ord_err=true;
+        }
+    }
+    if(ord_err){
+        strcat(err_order,ostypetostr(list[0].type));
+        for (int j= 1; j < cnt; j++){
+             strcat(err_order, "--");
+            strcat(err_order,ostypetostr(list[j].type));
+        }
+        errprint("CMAF check violated (ordinality/nesting) : \"In 'mdia', the allowed box order as per Section 7.3.1. of ISO/IEC 23000-19(E) is: mdhd--hdlr--elng (opt)--minf \", but order found is: %s \n", err_order);
+    }
+    
+}
+void checkCMAFBoxOrder_minf(long cnt,atomOffsetEntry *list)
+{
+    bool ord_err=false;
+    char err_order[50];
+    err_order[0]={'\0'};
+    for (int i= 0; i < cnt; i++) {
+        if (i==0 && list[i].type != 'vmhd' && list[i].type !='smhd' && list[i].type !='sthd')
+           ord_err=true;
+        else if (i==1 && list[i].type != 'dinf')
+            ord_err=true;
+        else if (i==2 && list[i].type != 'stbl')
+            ord_err=true;
+    }
+    if(ord_err){
+        strcat(err_order,ostypetostr(list[0].type));
+        for (int j= 1; j < cnt; j++){
+             strcat(err_order, "--");
+            strcat(err_order,ostypetostr(list[j].type));
+        }
+        errprint("CMAF check violated (ordinality/nesting) : \"In 'minf', the allowed box order as per Section 7.3.1. of ISO/IEC 23000-19(E) is: vmhd/smhd/sthd--dinf--stbl \", but order found is: %s \n", err_order);
+    }
+}
+
+void checkCMAFBoxOrder_stbl(long cnt,atomOffsetEntry *list)
+{
+    bool ord_err=false;
+    char err_order[50];
+    err_order[0]={'\0'};
+    for (int i= 0; i < cnt; i++) {
+        if (i==0 && list[i].type != 'stsd')
+            ord_err=true;
+        else if (i==1 && list[i].type != 'stts')
+            ord_err=true;
+        else if (i==2 && list[i].type != 'stsc')
+            ord_err=true;
+        else if (i==3 && (list[i].type != 'stsz' && list[i].type != 'stz2'))
+            ord_err=true;
+        else if (i==4 && list[i].type != 'stco')
+            ord_err=true;
+    }
+    if(ord_err){
+        strcat(err_order,ostypetostr(list[0].type));
+        for (int j= 1; j < cnt; j++){
+             strcat(err_order, "--");
+            strcat(err_order,ostypetostr(list[j].type));
+        }
+        errprint("CMAF check violated (ordinality/nesting) : \"In 'stbl', the allowed box order as per Section 7.3.1. of ISO/IEC 23000-19(E) is: stsd--stts--stsc--stsz/stz2--stco--sgpd (opt)--stss (opt) \", but order found is: %s \n", err_order);
+    }
+}
+
+void checkCMAFBoxOrder_sinf(long cnt,atomOffsetEntry *list)
+{
+    bool ord_err=false;
+    char err_order[50];
+    err_order[0]={'\0'};
+    for (int i= 0; i < cnt; i++) {
+        if (i==0 && list[i].type != 'frma')
+           ord_err=true;
+        else if (i==1 && list[i].type != 'schm')
+           ord_err=true;
+        else if (i==2 && list[i].type != 'schi')
+           ord_err=true;
+    }
+    if(ord_err){
+        strcat(err_order,ostypetostr(list[0].type));
+        for (int j= 1; j < cnt; j++){
+             strcat(err_order, "--");
+            strcat(err_order,ostypetostr(list[j].type));
+        }
+        errprint("CMAF check violated (ordinality/nesting) : \"In 'sinf', the allowed box order as per Section 7.3.1. of ISO/IEC 23000-19(E) is: frma--schm--schi \", but order found is: %s \n", err_order);
+    }
+}
+void checkCMAFBoxOrder_moof(long cnt,atomOffsetEntry *list)
+{
+    bool ord_err=false;
+    char err_order[50];
+    err_order[0]={'\0'};
+    for (int i= 0; i < cnt; i++) {
+        if (i==0 && list[i].type != 'mfhd')
+           ord_err=true;
+        else if (i==1 && list[i].type != 'traf')
+           ord_err=true;
+    }
+    if(ord_err){
+        strcat(err_order,ostypetostr(list[0].type));
+        for (int j= 1; j < cnt; j++){
+             strcat(err_order, "--");
+            strcat(err_order,ostypetostr(list[j].type));
+        }
+        errprint("CMAF check violated (ordinality/nesting) : \"In 'moof', the allowed box order as per Section 7.3.1. of ISO/IEC 23000-19(E) is: mfhd--traf \", but order found is: %s \n", err_order);
+    }
+}
+
+void checkCMAFBoxOrder_traf(long cnt,atomOffsetEntry *list)
+{
+    bool ord_err=false;
+    char err_order[50];
+    err_order[0]={'\0'};
+    for (int i= 0; i < cnt; i++) {
+        if (i==0 && list[i].type != 'tfhd')
+           ord_err=true;
+        else if (i==1 && list[i].type != 'tfdt')
+           ord_err=true;
+        else if (i==2 && list[i].type != 'trun')
+           ord_err=true;
+    }
+    if(ord_err){
+        strcat(err_order,ostypetostr(list[0].type));
+        for (int j= 1; j < cnt; j++){
+             strcat(err_order, "--");
+            strcat(err_order,ostypetostr(list[j].type));
+        }
+        errprint("CMAF check violated (ordinality/nesting) : \"In 'traf', the allowed box order as per Section 7.3.1. of ISO/IEC 23000-19(E) is: tfhd--tfdt--trun--send (opt)--saio (opt)--saiz (opt)--sbgp (opt)--sgpd (opt)--subs (opt) \", but order found is: %s \n", err_order);
+    }
 }

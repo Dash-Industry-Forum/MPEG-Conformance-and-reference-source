@@ -82,7 +82,7 @@ OSErr Validate_iods_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
 	FieldMustBe( flags, 0, "'iods' version must be %d not %d" );
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 	
 	// Get the ObjectDescriptor
 	BAILIFERR( GetFileBitStreamDataToEndOfAtom( aoe, &odDataP, &odSize, offset, &offset ) );
@@ -101,9 +101,9 @@ bail:
 //==========================================================================================
 
 typedef struct MovieHeaderCommonRecord {
-    Fixed                           rate;              // must be 1.0 for mp4
+    Fixed                           preferredRate;              // must be 1.0 for mp4
 
-    SInt16                          volume;           	// must be 1.0 for mp4
+    SInt16                          preferredVolume;           	// must be 1.0 for mp4
     short                           reserved1;					// must be 0
 
     long                            preferredLong1;				// must be 0 for mp4
@@ -175,8 +175,8 @@ OSErr Validate_mvhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
 	
 	BAILIFERR( GetFileData( aoe, &mvhdHeadCommon, offset, sizeof(mvhdHeadCommon), &offset ) );
-    mvhdHeadCommon.rate = EndianU32_BtoN(mvhdHeadCommon.rate);
-    mvhdHeadCommon.volume = EndianS16_BtoN(mvhdHeadCommon.volume);
+    mvhdHeadCommon.preferredRate = EndianU32_BtoN(mvhdHeadCommon.preferredRate);
+    mvhdHeadCommon.preferredVolume = EndianS16_BtoN(mvhdHeadCommon.preferredVolume);
     mvhdHeadCommon.reserved1 = EndianS16_BtoN(mvhdHeadCommon.reserved1);
     mvhdHeadCommon.preferredLong1 = EndianS32_BtoN(mvhdHeadCommon.preferredLong1);
     mvhdHeadCommon.preferredLong2 = EndianS32_BtoN(mvhdHeadCommon.preferredLong2);
@@ -189,6 +189,21 @@ OSErr Validate_mvhd_Atom( atomOffsetEntry *aoe, void *refcon )
     mvhdHeadCommon.currentTime = EndianS32_BtoN(mvhdHeadCommon.currentTime);
     mvhdHeadCommon.nextTrackID = EndianS32_BtoN(mvhdHeadCommon.nextTrackID);
 	
+	if(vg.cmaf){
+		if(mvhdHead.duration != 0){
+			errprint("CMAF check violated: Section 7.5.1. \"The value of the duration field SHALL be set to zero\", found %llu\n", mvhdHead.duration);
+		}
+		if(mvhdHeadCommon.preferredRate != 0x00010000){
+			errprint("CMAF check violated: Section 7.5.1. \"The field rate SHALL be set to its default value\", found 0x%lx\n", mvhdHeadCommon.preferredRate);
+		}
+		if(mvhdHeadCommon.preferredVolume != 0x0100){
+			errprint("CMAF check violated: Section 7.5.1. \"The field volume SHALL be set to its default value\", found 0x%lx\n", mvhdHeadCommon.preferredVolume);
+		}
+		if(mvhdHeadCommon.matrix[0][0] != 0 && mvhdHeadCommon.matrix[1][1] != 0 && mvhdHeadCommon.matrix[2][2] != 0x40000000){
+			errprint("CMAF check violated: Section 7.5.1. \"The field matrix SHALL be set to its default value\", found (0x%lx, 0x%lx, 0x%lx)\n", mvhdHeadCommon.matrix[0][0], mvhdHeadCommon.matrix[1][1], mvhdHeadCommon.matrix[2][2]);
+		}
+	}
+    
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("creationTime=\"%s\"\n", int64toxstr(mvhdHead.creationTime));
@@ -196,23 +211,23 @@ OSErr Validate_mvhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprint("timeScale=\"%s\"\n", int64todstr(mvhdHead.timeScale));
 	atomprint("duration=\"%s\"\n", int64todstr(mvhdHead.duration));
 	atomprint("nextTrackID=\"%ld\"\n", mvhdHeadCommon.nextTrackID);
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	mir->mvhd_timescale = mvhdHead.timeScale;    //Used for edit lists
 
 	// Check required field values
-	FieldMustBe( mvhdHeadCommon.rate, 0x00010000, "'mvhd' rate must be 0x%lx not 0x%lx" );
-	FieldMustBe( mvhdHeadCommon.volume, 0x0100, "'mvhd' volume must be 0x%lx not 0x%lx" );
-	FieldMustBe( mvhdHeadCommon.reserved1, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.reserved1, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.preferredLong1, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.preferredLong2, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.previewTime, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.previewDuration, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.posterTime, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.selectionTime, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.selectionDuration, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
-	FieldMustBe( mvhdHeadCommon.currentTime, 0, "'mvhd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.preferredRate, 0x00010000, "'mhvd' preferredRate must be 0x%lx not 0x%lx" );
+	FieldMustBe( mvhdHeadCommon.preferredVolume, 0x0100, "'mhvd' preferredVolume must be 0x%lx not 0x%lx" );
+	FieldMustBe( mvhdHeadCommon.reserved1, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.reserved1, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.preferredLong1, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.preferredLong2, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.previewTime, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.previewDuration, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.posterTime, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.selectionTime, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.selectionDuration, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
+	FieldMustBe( mvhdHeadCommon.currentTime, 0, "'mhvd' has a non-zero reserved field, should be %d is %d" );
 		
 	BAILIFERR( CheckMatrixForUnity( mvhdHeadCommon.matrix ) );
 
@@ -309,6 +324,7 @@ OSErr Validate_tkhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	tkhdHeadCommon.trackWidth = EndianS32_BtoN(tkhdHeadCommon.trackWidth);
 	tkhdHeadCommon.trackHeight = EndianS32_BtoN(tkhdHeadCommon.trackHeight);
 	
+
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("creationTime=\"%s\"\n", int64toxstr(tkhdHead.creationTime));
@@ -318,7 +334,7 @@ OSErr Validate_tkhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprint("volume=\"%s\"\n", fixed16str(tkhdHeadCommon.volume));
 	atomprint("width=\"%s\"\n", fixedU32str(tkhdHeadCommon.trackWidth));
 	atomprint("height=\"%s\"\n", fixedU32str(tkhdHeadCommon.trackHeight));
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	// Check required field values
 	// else FieldMustBe( flags, 1, "'tkhd' flags must be 1" );
@@ -333,7 +349,7 @@ OSErr Validate_tkhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	FieldMustBe( tkhdHeadCommon.alternateGroup, 0, "'tkhd' alternateGroup must be %d not %d" );
 	FieldMustBe( tkhdHeadCommon.reserved, 0, "'tkhd' reserved must be %d not %d" );
 	
-	// ï¿½ï¿½ï¿½ï¿½ CHECK for audio/video
+	// ¥¥¥¥ CHECK for audio/video
 	{
 		FieldMustBeOneOf2( tkhdHeadCommon.volume, SInt16, "'tkhd' volume must be set to one of ", (0, 0x0100) );
 		if( vg.majorBrand == brandtype_mp41 ){
@@ -341,6 +357,22 @@ OSErr Validate_tkhd_Atom( atomOffsetEntry *aoe, void *refcon )
 			FieldMustBeOneOf2( tkhdHeadCommon.trackHeight, Fixed, "'tkhd' trackHeight must be set to one of ", (0, (240L << 16)) );
 		}
 	}
+	
+	if(vg.cmaf){
+		if(tkhdHead.duration != 0){
+			errprint("CMAF check violated: Section 7.5.4. \"The value of the duration field SHALL be set to a value of zero\", found %llu\n",tkhdHead.duration);
+		}
+	
+		if((tkhdHeadCommon.matrix[0][0] != 0 && tkhdHeadCommon.matrix[1][1] != 0 && tkhdHeadCommon.matrix[2][2] != 0x40000000) || (tkhdHeadCommon.matrix[0][0] != 0x00010000 && tkhdHeadCommon.matrix[1][1] != 0x00010000 && tkhdHeadCommon.matrix[2][2] != 0x40000000)){
+			errprint("CMAF check violated: Section 7.5.4. \"The field matrix SHALL be set their default values\", found (0x%lx, 0x%lx, 0x%lx)\n", tkhdHeadCommon.matrix[0][0], tkhdHeadCommon.matrix[1][1], tkhdHeadCommon.matrix[2][2]);
+		}
+	
+		if(tir->mediaType == 'soun'){
+			if(tkhdHeadCommon.trackWidth != 0 && tkhdHeadCommon.trackHeight != 0)
+				errprint("CMAF check violated: Section 7.5.4. \"The width and height fields for a non-visual track SHALL be 0\", found width=\"%s\", height=\"%s\"\n", fixedU32str(tkhdHeadCommon.trackWidth), fixedU32str(tkhdHeadCommon.trackHeight));
+		}
+	}
+	
 
 		// save off some of the fields in the rec
 	if (tir != NULL) {
@@ -430,6 +462,11 @@ OSErr Validate_mdhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
 	tir->mediaTimeScale = mdhdHead.timescale;
 	tir->mediaDuration = mdhdHead.duration;
+        vg.mediaHeaderTimescale=mdhdHead.timescale;
+	
+	if(vg.cmaf && mdhdHead.duration != 0){
+		errprint("CMAF check violated: Section 7.5.5. \"The value of the duration field SHALL be set to a value of zero\", found %d\n",mdhdHead.duration);
+	}
 
 	BAILIFERR( GetFileData( aoe, &mdhdHeadCommon, offset, sizeof(mdhdHeadCommon), &offset ) );
 	mdhdHeadCommon.language = EndianU16_BtoN(mdhdHeadCommon.language); 
@@ -444,7 +481,7 @@ OSErr Validate_mdhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprint("language=\"%s\"\n", langtodstr(mdhdHeadCommon.language));
 	if (mdhdHeadCommon.language==0) warnprint("Warning: Media Header language code of 0 not strictly legit -- 'und' preferred\n");
 	
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	// Check required field values
 	FieldMustBe( flags, 0, "'mdvd' flags must be %d not %d" );
@@ -529,7 +566,7 @@ OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	tir->hdlrInfo = hdlrInfo;
 	// All done
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 	aoe->aoeflags |= kAtomValidated;
 
 bail:
@@ -577,7 +614,7 @@ OSErr Validate_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 	FieldMustBe( hdlrInfo->componentFlagsMask, 0, "'hdlr' componentFlagsMask (reserved in mp4) must be %d not 0x%lx" );
 	
 	// All done
-	atomprint("/>\n"); 
+	atomprint(">\n");
 	aoe->aoeflags |= kAtomValidated;
 
 bail:
@@ -614,8 +651,20 @@ OSErr Validate_vmhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
+	if(vg.cmaf){
+		if(version != 0){
+			errprint("CMAF check violated: Section 7.5.6. \"The following field SHALL be set to its default value: version=0\", found %d\n",version);
+		}
+		if(vmhdInfo.graphicsMode != 0){
+			errprint("CMAF check violated: Section 7.5.6. \"The following field SHALL be set to its default value: graphicsmode=0\", found %d\n",vmhdInfo.graphicsMode);
+		}
+		if(vmhdInfo.opColorRed != 0 && vmhdInfo.opColorGreen != 0 && vmhdInfo.opColorBlue != 0){
+			errprint("CMAF check violated: Section 7.5.6. \"The following field SHALL be set to its default value: opcolor={0, 0, 0}\", found {0x%lx, 0x%lx, 0x%lx}\n",vmhdInfo.opColorRed, vmhdInfo.opColorGreen, vmhdInfo.opColorBlue);
+		}
+	}
+	
 	// Check required field values
 	FieldMustBe( version, 0, "'vmhd' version must be %d not %d" );
 	FieldMustBe( flags, 1, "'vmhd' flags must be %d not 0x%lx" );
@@ -658,13 +707,16 @@ OSErr Validate_smhd_Atom( atomOffsetEntry *aoe, void *refcon )
 
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	// Check required field values
 	FieldMustBe( flags, 0, "'smhd' flags must be %d not 0x%lx" );
 	FieldMustBe( smhdInfo.balance, 0, "'smhd' balance (reserved in mp4) must be %d not %d" );
 	FieldMustBe( smhdInfo.rsrvd,   0, "'smhd' rsrvd must be %d not 0x%lx" );
 
+        if(vg.cmaf && smhdInfo.balance !=0)
+            errprint("CMAF check violated: Section 10.2.4. \"The balance field in SoundMediaHeaderBox SHALL be set to its default value 0\", found %d\n",smhdInfo.balance);
+        
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 
@@ -710,7 +762,7 @@ OSErr Validate_hmhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprint("maxbitrate=\"%ld\"\n", hmhdInfo.maxbitrate);
 	atomprint("avgbitrate=\"%ld\"\n", hmhdInfo.avgbitrate);
 	atomprint("slidingavgbitrate=\"%ld\"\n", hmhdInfo.slidingavgbitrate);
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	// Check required field values
 	FieldMustBe( flags, 0, "'hmdh' flags must be %d not 0x%lx" );
@@ -740,9 +792,9 @@ OSErr Validate_nmhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
-//ï¿½ï¿½ï¿½ï¿½ï¿½ need to check for underrun
+//¥¥¥¥¥ need to check for underrun
 
 	// Check required field values
 	FieldMustBe( flags, 0, "'nmhd' flags must be %d not 0x%lx" );
@@ -819,9 +871,13 @@ OSErr Validate_url_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint("/>\n"); 
 
 	// Check required field values
-//ï¿½ï¿½ï¿½	FieldMustBe( flags, 0, "'mp4s' flags must be 0" );
-//ï¿½ï¿½ï¿½   need to check that the atom has ended.
+//¥¥¥	FieldMustBe( flags, 0, "'mp4s' flags must be 0" );
+//¥¥¥   need to check that the atom has ended.
 
+        if(vg.cmaf && flags != 0x000001){
+		errprint("CMAF check violated: Section 7.5.8. \"The Data Reference Box ('dref') SHALL contain a single entry with the entry_flags set to 0x000001 \", found 0x%lx\n", flags); //Single entry has been checked in 'dref' validation.
+	}
+	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 
@@ -863,9 +919,13 @@ OSErr Validate_urn_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint("/>\n"); 
 
 	// Check required field values
-//ï¿½ï¿½ï¿½	FieldMustBe( flags, 0, "'mp4s' flags must be 0" );
-//ï¿½ï¿½ï¿½   need to check that the atom has ended.
+//¥¥¥	FieldMustBe( flags, 0, "'mp4s' flags must be 0" );
+//¥¥¥   need to check that the atom has ended.
 
+        if(vg.cmaf && flags != 0x000001){
+		errprint("CMAF check violated: Section 7.5.8. \"The Data Reference Box ('dref') SHALL contain a single entry with the entry_flags set to 0x000001 \", found 0x%lx\n", flags); //Single entry has been checked in 'dref' validation.
+	}
+	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 
@@ -891,6 +951,10 @@ OSErr Validate_dref_Atom( atomOffsetEntry *aoe, void *refcon )
 
 	// Get data 
 	BAILIFERR( GetFileDataN32( aoe, &entryCount, offset, &offset ) );
+	
+	if(vg.cmaf && entryCount != 1){
+		errprint("CMAF check violated: Section 7.5.8. \"The Data Reference Box ('dref') SHALL contain a single entry \", found %ld\n", entryCount);
+	}
 	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
@@ -928,9 +992,11 @@ OSErr Validate_dref_Atom( atomOffsetEntry *aoe, void *refcon )
 					break;
 					
 				default:
-				// ï¿½ï¿½ should warn
+				// ¥¥ should warn
 					warnprint("WARNING: unknown/unexpected dref entry '%s'\n",ostypetostr(entry->type));
 					atomprint("???? />\n");
+                                        if(vg.cmaf)
+                                            errprint("CMAF check violated: Section 7.5.8. \"The Data Reference Box ('dref') SHALL contain DataEntryUrnBox ('urn') or DataEntryUrlBox ('url') \", found %s", ostypetostr(entry->type));
 					break;
 			}
 			--vg.tabcnt; 
@@ -985,11 +1051,15 @@ OSErr Validate_stts_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
 	vg.tabcnt++;
 
     if(vg.dashSegment && entryCount != 0)
         errprint("stts atom, entry_count %d, violating\nSection 6.3.3. of ISO/IEC 23009-1:2012(E): The tracks in the \"moov\" box shall contain no samples \n(i.e. the entry_count in the \"stts\", \"stsc\", and \"stco\" boxes shall be set to 0)\n",entryCount);
+    
+	if(vg.cmaf && entryCount != 0){
+		errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+	}
     
 		//  changes to i stuff where needed to make it 1 based
 	for ( i = 1; i <= entryCount; i++ ) {
@@ -1073,8 +1143,12 @@ OSErr Validate_ctts_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
 	vg.tabcnt++;
+	
+	//if(vg.cmaf && entryCount != 0){
+	//	errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+	//}
 	
 	totalcount = 0;  allzero = 1;
 	
@@ -1133,11 +1207,21 @@ OSErr Validate_stsz_Atom( atomOffsetEntry *aoe, void *refcon )
 		}
 	}
 	
+	if(vg.cmaf){
+		if(sampleSize != 0){
+			errprint("CMAF check violated: Section 7.5.11. \"The sample_size field of the 'stsz' box SHALL be set to zero\", found %d\n", sampleSize);
+		}
+	
+		if(entryCount != 0){
+			errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+		}
+	}
+	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("sampleSize=\"%ld\"\n", sampleSize);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
 	if ((sampleSize == 0) && entryCount) {
 		vg.tabcnt++;
 		listP[0].sampleSize = 0;
@@ -1187,6 +1271,10 @@ OSErr Validate_stz2_Atom( atomOffsetEntry *aoe, void *refcon )
 	listSize = entryCount * sizeof(SampleSizeRecord);
 		// 1 based array + room for one over for the 4-bit case loop
 	BAILIFNIL( listP = (SampleSizeRecord *)malloc(listSize + sizeof(SampleSizeRecord) + sizeof(SampleSizeRecord)), allocFailedErr );
+	
+	if(vg.cmaf && entryCount != 0){
+		errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+	}
 	
 	if (entryCount) switch (fieldSize) {
 		case 4:
@@ -1288,8 +1376,13 @@ OSErr Validate_stsc_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
 	vg.tabcnt++;
+	
+	if(vg.cmaf && entryCount != 0){
+		errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+	}
+	
 	listP[0].firstChunk = listP[0].samplesPerChunk = listP[0].sampleDescriptionIndex = 0;
 	for ( i = 1; i <= entryCount; i++ ) {
 		atomprintdetailed("<stscEntry firstChunk=\"%d\" samplesPerChunk=\"%d\" sampleDescriptionIndex=\"%d\" />\n", 
@@ -1342,6 +1435,10 @@ OSErr Validate_stco_Atom( atomOffsetEntry *aoe, void *refcon )
 		listP[i].chunkOffset = EndianU32_BtoN(listP[i].chunkOffset);
 	}
 	
+	if(vg.cmaf && entryCount != 0){
+		errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+	}
+	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
@@ -1349,7 +1446,7 @@ OSErr Validate_stco_Atom( atomOffsetEntry *aoe, void *refcon )
     if(vg.dashSegment && entryCount != 0)
         errprint("stco atom, entry_count %d, violating\nSection 6.3.3. of ISO/IEC 23009-1:2012(E): The tracks in the \"moov\" box shall contain no samples \n(i.e. the entry_count in the \"stts\", \"stsc\", and \"stco\" boxes shall be set to 0)\n",entryCount);
 
-	atomprint("/>\n");
+	atomprint(">\n");
 	vg.tabcnt++;
 	list64P[0].chunkOffset = listP[0].chunkOffset = 0;
 	for ( i = 1; i <= entryCount; i++ ) {
@@ -1400,6 +1497,10 @@ OSErr Validate_co64_Atom( atomOffsetEntry *aoe, void *refcon )
 	for ( i = 1; i <= entryCount; i++ ) {
 		listP[i].chunkOffset = EndianU64_BtoN(listP[i].chunkOffset);
 	}
+	
+	//if(vg.cmaf && entryCount != 0){
+	//	errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+	//}
 	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
@@ -1461,8 +1562,13 @@ OSErr Validate_stss_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
 	vg.tabcnt++;
+	
+	if(vg.cmaf && entryCount != 0){
+		errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+	}
+	
 	for ( i = 0; i < entryCount; i++ ) {
 		atomprintdetailed("<stssEntry sampleNum=\"%d\" />\n", listP[i].sampleNum);
 		if (listP[i].sampleNum == 0) {
@@ -1512,6 +1618,10 @@ OSErr Validate_stsh_Atom( atomOffsetEntry *aoe, void *refcon )
 		listP[i].shadowSyncNumber = EndianU32_BtoN(listP[i].shadowSyncNumber);
 		listP[i].syncSampleNumber = EndianU32_BtoN(listP[i].syncSampleNumber);
 	}
+	
+	//if(vg.cmaf && entryCount != 0){
+	//	errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+	//}
 	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
@@ -1575,6 +1685,10 @@ OSErr Validate_stdp_Atom( atomOffsetEntry *aoe, void *refcon )
 	for ( i = 0; i < entryCount; i++ ) {
 		listP[i].priority = EndianU16_BtoN(listP[i].priority);
 	}
+	
+	//if(vg.cmaf && entryCount != 0){
+	//	errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+	//}
 	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
@@ -1646,6 +1760,10 @@ OSErr Validate_sdtp_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFNIL( listP = (UInt8 *)malloc(listSize), allocFailedErr );
 	BAILIFERR( GetFileData( aoe, listP, offset, listSize, &offset ) );
 	
+	//if(vg.cmaf && entryCount != 0){
+	//	errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+	//}
+	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
@@ -1710,6 +1828,10 @@ OSErr Validate_padb_Atom( atomOffsetEntry *aoe, void *refcon )
 		if ((thePads & 0x84) !=0) errprint("reserved bits must be zero in padding bits entries\n");
 	}
 
+	//if(vg.cmaf && entryCount != 0){
+	//	errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+	//}
+	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
@@ -1782,7 +1904,6 @@ OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
                 //listP[i].duration = list0P[i].duration;
                 //listP[i].mediaTime = (SInt64)((Int32)list0P[i].mediaTime);
                 //listP[i].mediaRate = list0P[i].mediaRate;
-                
 			}
 		} else if (version == 1) {
 			BAILIFERR( GetFileData( aoe, listP, offset, listSize, &offset ) );
@@ -1801,7 +1922,13 @@ OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
-	atomprint("/>\n");
+	atomprint(">\n");
+        if(vg.cmaf)
+        {
+            if(entryCount!=1)
+                errprint("CMAF check violated: Section 7.5.12. \"An offset edit list SHALL be a single EditListBox in an EditBox, i.e., entryCount SHALL be 1\", found %ld\n", entryCount);
+        }
+        
 	vg.tabcnt++;
 	for ( i = 0; i < entryCount; i++ ) {
 		atomprint("<elstEntry duration=\"%s\"", int64todstr(listP[i].duration));
@@ -1809,6 +1936,20 @@ OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
 		if ((listP[i].mediaTime < 0) && (listP[i].mediaTime != -1))
 			errprint("Edit list:  the only allowed negative value for media time is -1\n");
 		atomprintnotab(" mediaRate=\"%s\" />\n", fixed32str(listP[i].mediaRate));
+		
+		if(vg.cmaf){
+			if(version == 0 || version == 1){
+				if(listP[i].duration != 0){
+					errprint("CMAF check violated: Section 7.5.12. \"A start offset edit list SHALL be defined as a single Edit List Box with segment-duration = 0\", found %s\n", int64todstr(listP[i].duration));
+				}
+				//if(listP[i].mediaTime != tir->mediaTimeScale){
+				//	errprint("CMAF check violated: Section 7.5.12. \"A start offset edit list SHALL be defined as a single Edit List Box with media-time = offset from the start of the first Fragment measured in the Track timescale\", found %ld\n", listP[i].mediaTime);
+				//}
+				if(strcmp(fixed32str(listP[i].mediaRate), "1.000000")!=0){
+					errprint("CMAF check violated: Section 7.5.12. \"A start offset edit list SHALL be defined as a single Edit List Box with media-rate = 1\", found %s\n", fixed32str(listP[i].mediaRate));
+				}
+			}
+		}
 
 		switch (vg.filetype) {
 			default:		// ISO family
@@ -1937,6 +2078,16 @@ OSErr Validate_stsd_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFNULL( sampleDescriptionPtrArray = (SampleDescriptionPtr *)calloc((entryCount + 1), sizeof(SampleDescriptionPtr)), allocFailedErr );
 	BAILIFNULL( validatedSampleDescriptionRefCons = (UInt32 *)calloc((entryCount + 1), sizeof(UInt32)), allocFailedErr );
 	
+	if(vg.cmaf){
+		if(version != 0){
+			errprint("CMAF check violated: Section 7.5.9. \"Sample Description Boxes in a CMAF Track SHALL conform to verion 0\", found %d\n", version);
+		}
+	
+		//if(entryCount != 0){
+		//	errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+		//}
+	}
+	
 	// Print atom contents non-required fields
 	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
 	atomprint("entryCount=\"%ld\"\n", entryCount);
@@ -2049,6 +2200,8 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	vsdi.width = EndianS16_BtoN(vsdi.width);
 	vsdi.height = EndianS16_BtoN(vsdi.height);
 	
+	char vsdi_name[strlen(vsdi.name)];
+	
 	tir->sampleDescWidth = vsdi.width; tir->sampleDescHeight = vsdi.height;
 	if ((tir->trackWidth>>16) != vsdi.width) {
 		warnprint("WARNING: Sample description width %d not the same as track width %s\n",vsdi.width,fixedU32str(tir->trackWidth));
@@ -2064,7 +2217,7 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	vsdi.vRes = EndianU32_BtoN(vsdi.vRes);
 	vsdi.dataSize = EndianU32_BtoN(vsdi.dataSize);
 	vsdi.frameCount = EndianS16_BtoN(vsdi.frameCount);
-	// vsdi.name
+	strcpy(vsdi_name, vsdi.name);
 	vsdi.depth = EndianS16_BtoN(vsdi.depth);
 	vsdi.clutID = EndianS16_BtoN(vsdi.clutID);
 	// Print atom contents non-required fields
@@ -2072,21 +2225,24 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint("dataRefIndex=\"%ld\"\n", sdh.dataRefIndex);
 	// atomprint(">\n"); //vg.tabcnt++; 
 
+	if(vsdi_name[0] == '\v' || vsdi_name[0]== '\017')	//to make the vsdi.name be acceptable by xml
+	  vsdi_name[0] = '\\';
 	// Check required field values
 	atomprint("version=\"%hd\"\n", vsdi.version);
-	atomprint("revisionLevel =\"%hd\"\n", vsdi.revisionLevel);
-	atomprint("vendor =\"%s\"\n", ostypetostr(vsdi.vendor));
-	atomprint("temporalQuality =\"%ld\"\n", vsdi.temporalQuality);
-	atomprint("spatialQuality =\"%ld\"\n", vsdi.spatialQuality);
-	atomprint("width =\"%hd\"\n", vsdi.width);
-	atomprint("height =\"%hd\"\n", vsdi.height);
-	atomprint("hRes =\"%s\"\n", fixedU32str(vsdi.hRes));
-	atomprint("vRes =\"%s\"\n", fixedU32str(vsdi.vRes));
-	atomprint("dataSize =\"%ld\"\n", vsdi.dataSize);
-	atomprint("frameCount =\"%hd\"\n", vsdi.frameCount);
-	atomprint("name =\"%s\"\n", vsdi.name);
-	atomprint("depth =\"%hd\"\n", vsdi.depth);
-	atomprint("clutID =\"%hd\"\n", vsdi.clutID);
+	atomprint("revisionLevel=\"%hd\"\n", vsdi.revisionLevel);
+	atomprint("vendor=\"%s\"\n", ostypetostr(vsdi.vendor));
+	atomprint("temporalQuality=\"%ld\"\n", vsdi.temporalQuality);
+	atomprint("spatialQuality=\"%ld\"\n", vsdi.spatialQuality);
+	atomprint("width=\"%hd\"\n", vsdi.width);
+	atomprint("height=\"%hd\"\n", vsdi.height);
+	atomprint("hRes=\"%s\"\n", fixedU32str(vsdi.hRes));
+	atomprint("vRes=\"%s\"\n", fixedU32str(vsdi.vRes));
+	atomprint("dataSize=\"%ld\"\n", vsdi.dataSize);
+	atomprint("frameCount=\"%hd\"\n", vsdi.frameCount);
+	atomprint("name=\"%s\"\n", vsdi_name);
+	atomprint("depth=\"%hd\"\n", vsdi.depth);
+	atomprint("clutID=\"%hd\"\n", vsdi.clutID);
+	atomprint(">\n");
 		FieldMustBeOneOf4( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4v', 'avc1', 'encv', or 'hev1'", ('mp4v', 'avc1', 'encv', 'hev1') );
 		
 	FieldMustBe( sdh.resvd1, 0, "SampleDescription resvd1 must be %d not %d" );
@@ -2120,7 +2276,8 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 			atomOffsetEntry *list;
 			int i;
 			int is_protected = 0;
-			
+			int sinfFound =0;
+                        
 			minOffset = offset;
 			maxOffset = aoe->offset + aoe->size;
 			
@@ -2135,6 +2292,15 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 			for (i = 0; i < cnt; i++) {
 				entry = &list[i];
 				
+				/*if(vg.cmaf && is_protected && entry->type != 'sinf'){
+					char entry_type_name[5] = {0};
+					entry_type_name[0] = (entry->type >> 24) & 0xff;
+					entry_type_name[1] = (entry->type >> 16) & 0xff;
+					entry_type_name[2] = (entry->type >>  8) & 0xff;
+					entry_type_name[3] = (entry->type >>  0) & 0xff;
+					errprint("CMAF check violated: Section 7.5.9. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", found %s\n", entry_type_name);
+				}*/
+				
 				if (entry->type == 'esds') {
 					BAILIFERR( Validate_ESDAtom( entry, refcon, Validate_vide_ES_Bitstream, (char *)"vide_ES" ) );
 				}
@@ -2148,6 +2314,7 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 				else if ( entry->type == 'sinf' ) 
 				{
 					// Process 'sinf' atoms
+                                        sinfFound=1;
 					atomprint("<sinf"); vg.tabcnt++;
 					BAILIFERR( Validate_sinf_Atom( entry, refcon, kTypeAtomFlagMustHaveOne ) );
 					--vg.tabcnt; atomprint("</sinf>\n");
@@ -2184,6 +2351,17 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 						//goto bail;
 					}
 				}
+				else if (( sdh.sdType == 'hev1' ) || ( sdh.sdType == 'hvc1' )) 
+				{
+					if (entry->type == 'hvcC') {
+						BAILIFERR( Validate_hvcC_Atom( entry, refcon, (char *)"hvcC" ) );
+					}
+					else { 
+						err = badAtomErr;
+						warnprint("Warning: Unknown atom found \"%s\": video sample descriptions would not normally contain this\n",ostypetostr(entry->type));
+						//goto bail;
+					}
+				}
 				else { 
 					err = badAtomErr;
 					warnprint("Warning: Unknown atom found \"%s\": video sample descriptions would not normally contain this\n",ostypetostr(entry->type));
@@ -2191,6 +2369,10 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 				}
 				
 			}
+			if(vg.cmaf && is_protected && sinfFound!=1)
+                            errprint("CMAF check violated: Section 7.5.9. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", but 'sinf' not found. \n");
+			if(vg.cmaf && vg.dash264enc && sinfFound!=1)
+                            errprint("CMAF check violated: Section 7.5.10. \"An encrypted CMAF Track SHALL include at least one Protection Scheme Information Box ('sinf') \", found %d\n", 0);
 		}
 	
 	// All done
@@ -2235,6 +2417,14 @@ OSErr Validate_trex_Atom( atomOffsetEntry *aoe, void *refcon )
 
     // Get data 
 	BAILIFERR( GetFileDataN32( aoe, &tir->default_sample_flags, offset, &offset ) );
+	
+	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+	atomprint("trackID=\"%ld\"\n", track_ID);
+	atomprint("sampleDescriptionIndex=\"%ld\"\n", tir->default_sample_description_index);
+	atomprint("sampleDuration=\"%ld\"\n", tir->default_sample_duration);
+	atomprint("sampleSize=\"%ld\"\n", EndianU32_BtoN(tir->default_sample_size));
+	atomprint("sampleFlags=\"%ld\"\n", EndianU32_BtoN(tir->default_sample_flags));
+	atomprint(">\n");
 
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -2268,6 +2458,14 @@ OSErr Validate_mehd_Atom( atomOffsetEntry *aoe, void *refcon )
         BAILIFERR( GetFileDataN32( aoe, &temp, offset, &offset ) );
         mir->fragment_duration = temp;
     }
+	
+	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+	atomprint("fragmentDuration=\"%lld\"\n", (mir->fragment_duration));
+	atomprint(">\n");
+        
+        if(vg.cmaf && mir->fragment_duration <=0)
+            errprint("CMAF checks violated: Section 7.3.2.1. \"If 'mehd' is present, SHALL provide the overall duration of a fragmented movie. If duration \
+            is unknown, this box SHALL be omitted.\", but duration found as %d",mir->fragment_duration);
 
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -2293,6 +2491,10 @@ OSErr Validate_mfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     
 	// Get data 
 	BAILIFERR( GetFileDataN32( aoe, &moofInfo->sequence_number, offset, &offset ) );
+	
+	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+	atomprint("sequenceNumber=\"%ld\"\n", moofInfo->sequence_number);
+	atomprint(">\n");
 
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -2315,9 +2517,11 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &tf_flags, &offset ) );
+	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, tf_flags);
     
 	// Get data 
 	BAILIFERR( GetFileDataN32( aoe, &trafInfo->track_ID, offset, &offset ) );
+	atomprint("trackID=\"%ld\"\n", trafInfo->track_ID);
 
     TrackInfoRec *tir;
 	tir = check_track(trafInfo->track_ID);
@@ -2360,6 +2564,25 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	else
 		trafInfo->default_sample_flags = tir->default_sample_flags;
     
+    if(vg.cmaf){
+ 	if(trafInfo->track_ID != tir->trackID){
+ 		errprint("CMAF check violated: Section 7.5.15. \"The track_ID field SHALL contain the same value as the track_ID in the matching CMAF Header\", found %ld\n", trafInfo->track_ID);
+ 	}
+	if(trafInfo->base_data_offset_present != 0){
+		errprint("CMAF check violated: Section 7.5.15. \"The base-data-offset-present flag SHALL be set to zero\", found %d\n", trafInfo->base_data_offset_present);
+	}
+	if(trafInfo->default_base_is_moof != 1){
+		errprint("CMAF check violated: Section 7.5.15. \"The default-base-is-moof flag SHALL be set to one\", found %d\n", trafInfo->default_base_is_moof);
+	}
+    }
+	
+    atomprint("baseDataOffset=\"%ld\"\n", EndianU64_BtoN(trafInfo->base_data_offset));
+    atomprint("sampleDescriptionIndex=\"%ld\"\n", trafInfo->sample_description_index);
+    atomprint("defaultSampleDuration=\"%ld\"\n", trafInfo->default_sample_duration);
+    atomprint("defaultSampleSize=\"%ld\"\n", EndianU32_BtoN(trafInfo->default_sample_size));
+    atomprint("defaultSampleFlags=\"%ld\"\n", EndianU32_BtoN(trafInfo->default_sample_flags));
+    atomprint(">\n");
+    
     // All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2384,6 +2607,7 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
     
 	// Get version/flags
 	BAILIFERR( GetFullAtomVersionFlags( aoe, &trunInfo->version, &tr_flags, &offset ) );
+	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", trunInfo->version, tr_flags);
 
     trunInfo->data_offset_present = (tr_flags & 0x000001)!=0;
     trunInfo->first_sample_flags_present = (tr_flags & 0x000004)!=0;
@@ -2393,6 +2617,8 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
     trunInfo->sample_composition_time_offsets_present = (tr_flags & 0x000800)!=0;
 
 	BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_count, offset, &offset ) );
+	atomprint("sampleCount=\"%ld\"\n", trunInfo->sample_count);
+	//atomprint(">\n");
 
     if(trunInfo->data_offset_present)
 	    BAILIFERR( GetFileDataN32( aoe, &trunInfo->data_offset, offset, &offset ) );
@@ -2471,8 +2697,9 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
                 trunInfo->sample_flags[0] = trunInfo->first_sample_flags;
             else
 			    trunInfo->sample_flags[i] = trafInfo->default_sample_flags;
-		}
-
+		}     
+        //atomprint("sample_flags_%d=\"%ld\"\n", i+1,trunInfo->sample_flags[i]);
+		
         //Use it as a signed int when version is non-zero
         if(trunInfo->sample_composition_time_offsets_present)
         {
@@ -2493,8 +2720,26 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
             trafInfo->latestCompositionTimeInTrackFragment = compositionTimeInTrackFragment;
         
     }
+    
+	if(vg.cmaf && trunInfo->data_offset_present != true){
+		errprint("CMAF check violated: Section 7.5.16. \"The data-offset-present flag SHALL be set to true\", found %d\n", trunInfo->data_offset_present);
+	}
+    
+    vg.tabcnt++;
+    for(int i=0; i<trunInfo->sample_count; i++){
+	sampleprint("<sampleInfo sampleDuration=\"%ld\"", trunInfo->sample_duration[i]);
+	sampleprintnotab(" sampleSize=\"%ld\"", trunInfo->sample_size[i]);
+	sampleprintnotab(" sampleFlags=\"%ld\"", EndianU32_BtoN(trunInfo->sample_flags[i]));
+	sampleprintnotab(" sampleCompositionTimeOffset=\"%ld\"/>\n", trunInfo->sample_composition_time_offset[i]);
+    }
+    --vg.tabcnt;
   
     trafInfo->processedTrun++;
+    
+    atomprint("cummulatedSampleDuration=\"%lld\"\n", trunInfo->cummulatedSampleDuration);
+    atomprint("earliestCompositionTime=\"%ld\"\n", trafInfo->earliestCompositionTimeInTrackFragment);
+    atomprint("data_offset=\"%ld\"\n", trunInfo->data_offset);
+    atomprint(">\n");
     
     // All done
 	aoe->aoeflags |= kAtomValidated;
@@ -2536,6 +2781,21 @@ OSErr Validate_sbgp_Atom( atomOffsetEntry *aoe, void *refcon )
     }
 
     trafInfo->processedSbgp++;
+    
+    // Print data
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", sbgpInfo->version, flags);
+    atomprint("groupingType=\"%ld\"\n", EndianU32_BtoN(sbgpInfo->grouping_type));
+    atomprint("groupingTypeParameter=\"%ld\"\n", EndianU32_BtoN(sbgpInfo->grouping_type_parameter));
+    atomprint("entryCount=\"%ld\"\n", sbgpInfo->entry_count);
+    atomprint(">\n");
+    vg.tabcnt++;
+    
+    for ( UInt32 i = 0; i < sbgpInfo->entry_count; i++ ) {
+	sampleprint("<sampleInfo sampleCount=\"%ld\"", EndianU32_BtoN(sbgpInfo->sample_count[i]));
+	sampleprintnotab(" group_description_index=\"%ld\"/>\n", EndianU32_BtoN(sbgpInfo->group_description_index[i]));
+    }
+    
+    --vg.tabcnt;
     
     // All done
 	aoe->aoeflags |= kAtomValidated;
@@ -2585,6 +2845,19 @@ OSErr Validate_sgpd_Atom( atomOffsetEntry *aoe, void *refcon )
     }
 
     trafInfo->processedSgpd++;
+    
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", sgpdInfo->version, flags);
+    atomprint("groupingType=\"%ld\"\n", EndianU32_BtoN(sgpdInfo->grouping_type));
+    atomprint("entryCount=\"%ld\"\n", sgpdInfo->entry_count);
+    atomprint(">\n");
+    vg.tabcnt++;
+    
+    for(UInt32 i=0; i<sgpdInfo->entry_count; i++){
+	sampleprint("<sgpdEntry descriptionLength=\"%ld\"", EndianU32_BtoN(sgpdInfo->description_length[i]));
+	sampleprintnotab(" sampleGroupDescriptionEntry=\"%ld\"/>\n", EndianU32_BtoN(sgpdInfo->SampleGroupDescriptionEntry[i]));
+    }
+    
+    --vg.tabcnt;
     
     // All done
 	aoe->aoeflags |= kAtomValidated;
@@ -2637,6 +2910,17 @@ OSErr Validate_emsg_Atom( atomOffsetEntry *aoe, void *refcon )
 	message_data = new UInt8[aoe->maxOffset - offset];
 	BAILIFERR( GetFileData( aoe,message_data, offset, aoe->maxOffset - offset , &offset ) );
     
+     atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+     atomprint("timeScale=\"%ld\"\n", EndianU32_BtoN(timescale));
+     atomprint("presentationTimeDelta=\"%ld\"\n", EndianU32_BtoN(presentation_time_delta));
+     atomprint("eventDuration=\"%ld\"\n", EndianU32_BtoN(event_duration));
+     atomprint("id=\"%ld\"\n", EndianU32_BtoN(id));
+     atomprint(">\n");
+	
+     if(vg.cmaf){
+         if(EndianU32_BtoN(timescale) !=vg.mediaHeaderTimescale)
+             errprint("CMAF check violated: Section 7.4.5. \"The DASHEventMessageBox in a CMAF Track SHALL contain its timescale field value equal to the timescale in the MediaHeaderBox of CMAF Track that contains it. \", found timescale as %ld instead of %ld \n",timescale, vg.mediaHeaderTimescale);
+    }
     // All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2669,6 +2953,10 @@ OSErr Validate_tfdt_Atom( atomOffsetEntry *aoe, void *refcon )
 
     trafInfo->tfdtFound = true;
     
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+    atomprint("baseMediaDecodeTime=\"%lld\"\n", (trafInfo->baseMediaDecodeTime));//EndianU64_BtoN
+    atomprint(">\n");
+    
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2698,7 +2986,22 @@ OSErr Validate_pssh_Atom( atomOffsetEntry *aoe, void *refcon )
     
     Data = (UInt8 *)malloc(DataSize*sizeof(UInt8)); 
     BAILIFERR( GetFileData( aoe,Data, offset, DataSize , &offset ) );
+    
+    
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+    //Adjust SystemID before printing, ascii to integer.
+    char print_SysID[50], SysID_char[20];
+    print_SysID[0]={'\0'};
+    SysID_char[0]={'\0'};
+    for(int z=0;z<16;z++)
+    {
+        sprintf(SysID_char,"%d",SystemID[z]);
+        strcat(print_SysID, SysID_char);
+    }
 
+    atomprint("systemID=\"%s\"\n", print_SysID);
+    atomprint("dataSize=\"%ld\"\n", EndianU32_BtoN(DataSize));
+    atomprint(">\n");
     //Compare pssh box contents with the cenc:pssh element of MPD
     
     char *pssh_contents;
@@ -2744,6 +3047,7 @@ OSErr Validate_pssh_Atom( atomOffsetEntry *aoe, void *refcon )
       }
     }
  
+
     free(Data);
     
     // All done
@@ -2774,8 +3078,8 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
   sidxInfo->offset > starting of index range && 
   sidxInfo->offset + sidxInfo->size - 1 < ending of index range */
     
-    int offs=sidxInfo->offset;       //convert to int value and store it in a variable
-    int siz=sidxInfo->size;
+  int offs=sidxInfo->offset;       //convert to int value and store it in a variable
+  int siz=sidxInfo->size;
   
     if (vg.isoondemand) //only check for ondemand profile
     {
@@ -2792,8 +3096,8 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
         }
     }
     
-    // Get version/flags
-    BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+	// Get version/flags
+	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
     
     BAILIFERR( GetFileDataN32( aoe, &sidxInfo->reference_ID, offset, &offset ) );
 
@@ -2804,7 +3108,14 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
     if(tir == 0)
         return badAtomErr;
     
+    
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+    atomprint("referenceID=\"%ld\"\n", sidxInfo->reference_ID);
+    
+    
     BAILIFERR( GetFileDataN32( aoe, &sidxInfo->timescale, offset, &offset ) );
+    atomprint("timeScale=\"%ld\"\n", sidxInfo->timescale);
+    
 
     if(tir->mediaTimeScale != sidxInfo->timescale)
         warnprint("sidx timescale %d != track timescale %d for track ID %d, Section 8.16.3.3 of ISO/IEC 14496-12 4th edition: it is recommended that this match the timescale of the reference stream or track\n",sidxInfo->timescale,tir->mediaTimeScale,sidxInfo->reference_ID);
@@ -2823,9 +3134,14 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
 	    BAILIFERR( GetFileDataN64( aoe, &sidxInfo->earliest_presentation_time, offset, &offset ) );
 	    BAILIFERR( GetFileDataN64( aoe, &sidxInfo->first_offset, offset, &offset ) );
     }
+    
+    atomprint("earliestPresentationTime=\"%lld\"\n",sidxInfo->earliest_presentation_time); //int64todstr(EndianU64_BtoN(sidxInfo->earliest_presentation_time)));
+    atomprint("firstOffset=\"%lld\"\n", (EndianU64_BtoN(sidxInfo->first_offset)));
 
     BAILIFERR( GetFileDataN32( aoe, &temp, offset, &offset ) );
     sidxInfo->reference_count = (UInt16)(temp & 0xFFFF);
+    
+    atomprint("referenceCount=\"%ld\"\n", sidxInfo->reference_count);
 
     sidxInfo->references = (Reference *)malloc(((UInt32)sidxInfo->reference_count)*sizeof(Reference));
 
@@ -2835,7 +3151,8 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
     { 
         BAILIFERR( GetFileDataN32( aoe, &temp, offset, &offset ) );
         sidxInfo->references[i].reference_type = (UInt8)(temp >> 31);
-
+            
+        atomprint("reference_type_%d=\"%d\"\n", i+1, sidxInfo->references[i].reference_type);
         if(sidxInfo->references[i].reference_type == 0)
             tir->numLeafs++;
             
@@ -2850,9 +3167,22 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
         sidxInfo->references[i].SAP_type = (UInt8)((temp & 0x70000000) >> 28);
         sidxInfo->references[i].SAP_delta_time = temp & 0xFFFFFFF;
 
+        //atomprint("SAP_type_%d=\"%d\"\n", i+1, sidxInfo->references[i].SAP_type);
     }
 
     mir->processedSdixs++;
+    
+    atomprint("cumulatedDuration=\"%Lf\"\n", sidxInfo->cumulatedDuration);
+    atomprint(">\n");
+    vg.tabcnt++;
+	for ( i = 0; i < sidxInfo->reference_count; i++ ) {
+	    sampleprint("<subsegment subsegment_duration=\"%ld\"", sidxInfo->references[i].subsegment_duration);
+	    sampleprintnotab(" starts_with_SAP=\"%d\"", sidxInfo->references[i].starts_with_SAP);
+	    sampleprintnotab(" SAP_type=\"%d\"", sidxInfo->references[i].SAP_type);
+	    sampleprintnotab(" SAP_delta_time=\"%ld\" />\n", sidxInfo->references[i].SAP_delta_time);
+	}
+    --vg.tabcnt;
+    
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2872,7 +3202,7 @@ typedef struct SoundSampleDescriptionInfo {
 	SInt16		sampleSize;                 /* number of bits per sample */
 	SInt16		compressionID;              /* unused. set to zero. */
 	SInt16		packetSize;                 /* unused. set to zero. */
-	UInt32		sampleRate;					/*ï¿½ï¿½ï¿½ UnsignedFixed ï¿½ï¿½ï¿½*/ /* sample rate sound is captured at */
+	UInt32		sampleRate;					/*¥¥¥ UnsignedFixed ¥¥¥*/ /* sample rate sound is captured at */
 } SoundSampleDescriptionInfo;
 
 OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
@@ -2946,7 +3276,8 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 		long cnt;
 		atomOffsetEntry *list;
 		int i;
-		
+		int sinfFound=0;
+                
 		minOffset = offset;
 		maxOffset = aoe->offset + aoe->size;
 		
@@ -2960,6 +3291,15 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 		for (i = 0; i < cnt; i++) {
 			entry = &list[i];
 			
+			/*if(vg.cmaf && ((sdh.sdType == 'drmi' ) || (( (sdh.sdType & 0xFFFFFF00) | ' ') == 'enc ' )) && entry->type != 'sinf'){
+				char entry_type_name[5] = {0};
+				entry_type_name[0] = (entry->type >> 24) & 0xff;
+				entry_type_name[1] = (entry->type >> 16) & 0xff;
+				entry_type_name[2] = (entry->type >>  8) & 0xff;
+				entry_type_name[3] = (entry->type >>  0) & 0xff;
+				errprint("CMAF check violated: Section 7.5.9. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", found %s\n", entry_type_name);
+			}*/
+			
 			if (entry->type == 'esds') { 
 				BAILIFERR( Validate_ESDAtom( entry, refcon, Validate_soun_ES_Bitstream, (char *)"soun_ES" ) ); 
 			}
@@ -2967,6 +3307,7 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 			else if ( entry->type == 'sinf' ) 
 			{
 				// Process 'sinf' atoms
+                                sinfFound=1;
 				atomprint("<sinf"); vg.tabcnt++;
 				BAILIFERR( Validate_sinf_Atom( entry, refcon, kTypeAtomFlagMustHaveOne ) );
 				--vg.tabcnt; atomprint("</sinf>\n");
@@ -2978,6 +3319,10 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 			else warnprint("Warning: Unknown atom found \"%s\": audio sample descriptions would not normally contain this\n",ostypetostr(entry->type));
 			
 		}
+		if(vg.cmaf && ((sdh.sdType == 'drmi' ) || (( (sdh.sdType & 0xFFFFFF00) | ' ') == 'enc ' )) && sinfFound!=1)
+                    errprint("CMAF check violated: Section 7.5.9. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", but 'sinf' not found. \n");
+		if(vg.cmaf && vg.dash264enc && sinfFound!=1)
+                    errprint("CMAF check violated: Section 7.5.10. \"An encrypted CMAF Track SHALL include at least one Protection Scheme Information Box ('sinf') \", found %d\n", 0);
 	}
 
 	// All done
@@ -3002,18 +3347,26 @@ OSErr Validate_hint_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	// Get data 
 	BAILIFERR( GetFileData( aoe, &sdh, offset, sizeof(sdh), &offset ) );
 	EndianSampleDescriptionHead_BtoN( &sdh );
-//ï¿½ï¿½ï¿½ï¿½how to cope with hint data
+//¥¥¥Êhow to cope with hint data
 	
 	// Print atom contents non-required fields
 	atomprint("sdType=\"%s\"\n", ostypetostr(sdh.sdType));
 	atomprint("dataRefIndex=\"%ld\"\n", sdh.dataRefIndex);
 	atomprint(">\n"); //vg.tabcnt++; 
 
+	if(vg.cmaf && ((sdh.sdType == 'drmi' ) || (( (sdh.sdType & 0xFFFFFF00) | ' ') == 'enc ' )) && aoe->type != 'sinf'){
+		char entry_type_name[5] = {0};
+		entry_type_name[0] = (aoe->type >> 24) & 0xff;
+		entry_type_name[1] = (aoe->type >> 16) & 0xff;
+		entry_type_name[2] = (aoe->type >>  8) & 0xff;
+		entry_type_name[3] = (aoe->type >>  0) & 0xff;
+		errprint("CMAF check violated: Section 7.5.9. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", found %s\n", entry_type_name);
+	}
 	// Check required field values
 	FieldMustBe( sdh.resvd1, 0, "SampleDescription resvd1 must be %d not 0x%lx" );
 	FieldMustBe( sdh.resvdA, 0, "SampleDescription resvd1 must be %d not 0x%lx" );
 	
-//ï¿½ï¿½ï¿½ hint data
+//¥¥¥ hint data
 	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -3035,7 +3388,7 @@ OSErr Validate_mp4_SD_Entry( atomOffsetEntry *aoe, void *refcon, ValidateBitstre
 	// Get data 
 	BAILIFERR( GetFileData( aoe, &sdh, offset, sizeof(sdh), &offset ) );
 	EndianSampleDescriptionHead_BtoN( &sdh );
-//ï¿½ï¿½ï¿½ï¿½how to cope with hint data
+//¥¥¥Êhow to cope with hint data
 	
 	// Print atom contents non-required fields
 	atomprint("sdType=\"%s\"\n", ostypetostr(sdh.sdType));
@@ -3070,6 +3423,14 @@ OSErr Validate_mp4_SD_Entry( atomOffsetEntry *aoe, void *refcon, ValidateBitstre
 		for (i = 0; i < cnt; i++) {
 			entry = &list[i];
 			
+			if(vg.cmaf && ((sdh.sdType == 'drmi' ) || (( (sdh.sdType & 0xFFFFFF00) | ' ') == 'enc ' )) && entry->type != 'sinf'){
+				char entry_type_name[5] = {0};
+				entry_type_name[0] = (entry->type >> 24) & 0xff;
+				entry_type_name[1] = (entry->type >> 16) & 0xff;
+				entry_type_name[2] = (entry->type >>  8) & 0xff;
+				entry_type_name[3] = (entry->type >>  0) & 0xff;
+				errprint("CMAF check violated: Section 7.5.9. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", found %s\n", entry_type_name);
+			}
 			
 			BAILIFERR( Validate_ESDAtom( entry, refcon, validateBitstreamProc, esname) );
 			
@@ -3108,19 +3469,31 @@ OSErr Validate_mhaC_Atom( atomOffsetEntry *aoe, void *refcon)
 	offset = aoe->offset + aoe->atomStartSize;
 	MHADecoderConfigurationRecord mhaDecoderConfigurationRecord;
         //errprint( "offset= %d\n",offset );
+	
+	atomprint("<mhaC\n"); 
+	vg.tabcnt++;
 
 	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.configurationVersion , offset, sizeof(mhaDecoderConfigurationRecord.configurationVersion), &offset ) );	
 	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daProfileLevelIndication , offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daProfileLevelIndication), &offset ) );	
 	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.referenceChannelLayout , offset, sizeof(mhaDecoderConfigurationRecord.referenceChannelLayout) , &offset ) );
 	BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daConfigLength, offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daConfigLength), &offset ) );	
         BAILIFERR( GetFileData( aoe, &mhaDecoderConfigurationRecord.mpegh3daConfig, offset, sizeof(mhaDecoderConfigurationRecord.mpegh3daConfigLength*8), &offset ) );
-   
+	
+	atomprint("configurationVersion=\"%d\"\n", mhaDecoderConfigurationRecord.configurationVersion);
+	atomprint("mpegh3daProfileLevelIndication=\"%d\"\n", mhaDecoderConfigurationRecord.mpegh3daProfileLevelIndication);
+	atomprint("referenceChannelLayout=\"%d\"\n", mhaDecoderConfigurationRecord.referenceChannelLayout);
+	atomprint("mpegh3daConfigLength=\"%ld\"\n", EndianU16_BtoN(mhaDecoderConfigurationRecord.mpegh3daConfigLength));
+	atomprint("mpegh3daConfig=\"%ld\"\n", EndianU32_BtoN(mhaDecoderConfigurationRecord.mpegh3daConfig));
+	atomprint(">\n");
 	
         FieldMustBe( mhaDecoderConfigurationRecord.configurationVersion , 1, "ConfigurationVersion must be %d not %d" );
 	if(vg.audioChValue != mhaDecoderConfigurationRecord.referenceChannelLayout)
 	{
 	   errprint( "The referenceChannelLayout is not matching  with out of box AudioChannelConfiguration value\n" );
 	}
+	
+	--vg.tabcnt; 
+	atomprint("</mhaC>\n");
 	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -3260,7 +3633,7 @@ OSErr Validate_colr_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		colrHeader.matrix    = EndianU16_BtoN( colrHeader.matrix );
 		if (colrHeader.matrix < 8) matr = matrices[colrHeader.matrix]; else matr = (char *)"unknown";
-		atomprintnotab("\tavg Colr/nclc Primaries=\"%d\" (%s), function=\"%d\" (%s), matrix=\"%d\" (%s)\n", 
+		atomprintnotab("\tavg(Colr/nclc)Primaries=\"%d\" (%s), function=\"%d\" (%s), matrix=\"%d\" (%s)\n", 
 			colrHeader.primaries, prim,
 			colrHeader.function, func,
 			colrHeader.matrix, matr);
@@ -3269,9 +3642,10 @@ OSErr Validate_colr_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
 	else if(colrHeader.colrtype == 'nclx'){ //errprint( "colr atom size or type not as expected; size %d, should be %d; or type %s not nclc\n", 
 	     	//colrHeader.start.atomSize, 18, ostypetostr(colrHeader.colrtype) );
+            atomprint(">\n");
            warnprint("WARNING: colr atom of type nclx found, the software does not handle colr atoms of this type. \n");
         }
-        
+			
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 	
@@ -3302,7 +3676,7 @@ OSErr Validate_avcC_Atom( atomOffsetEntry *aoe, void *refcon, char *esname )
 	BitBuffer_Init(&bb, (UInt8 *)bsDataP, avcHeader.start.atomSize - 8);
 
 	BAILIFERR( Validate_AVCConfigRecord( &bb, refcon ) );		
-	--vg.tabcnt; atomprint("/>\n");
+	//--vg.tabcnt; atomprint("</%s>\n", esname);
 
 
 	free( bsDataP );
@@ -3311,6 +3685,7 @@ OSErr Validate_avcC_Atom( atomOffsetEntry *aoe, void *refcon, char *esname )
 	aoe->aoeflags |= kAtomValidated;
 	
 bail:
+	--vg.tabcnt; atomprint("</%s>\n", esname);
 	return err;
 }
 
@@ -3336,9 +3711,8 @@ OSErr Validate_btrt_Atom( atomOffsetEntry *aoe, void *refcon, char *esName )
 	bitrHeader.maxBitrate   = EndianU32_BtoN( bitrHeader.maxBitrate );
 	bitrHeader.avgBitrate   = EndianU32_BtoN( bitrHeader.avgBitrate );
 	
-	atomprintnotab("\tBuffzersizeDB=\"%d\"  max Bitrate=\"%d\" avg Bitrate=\"%d\"\n", 
+	atomprintnotab("\tBuffzersizeDB=\"%d\"  maxBitrate=\"%d\" avgBitrate=\"%d\"\n", 
 		bitrHeader.buffersizeDB, bitrHeader.maxBitrate, bitrHeader.avgBitrate );
-	atomprint(">\n"); 
 	
 	if( sizeof( AvcBtrtInfo ) != bitrHeader.start.atomSize ){
 		err = badAtomSize;
@@ -3346,7 +3720,7 @@ OSErr Validate_btrt_Atom( atomOffsetEntry *aoe, void *refcon, char *esName )
 		goto bail;
 	}
 		
-	--vg.tabcnt; atomprint(">\n");
+	--vg.tabcnt; atomprint("/>\n");
 
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -3449,7 +3823,7 @@ OSErr Validate_cprt_Atom( atomOffsetEntry *aoe, void *refcon )
 		else {
 			int ix;
 			
-			// ï¿½ï¿½ clf -- The right solution is probably to generate "\uNNNN" for Unicode characters not in the range 0-0x7f. That
+			// ¥¥ clf -- The right solution is probably to generate "\uNNNN" for Unicode characters not in the range 0-0x7f. That
 			// will require the array be 5 times as large in the worst case.
 			utf8noticeP = (char *)calloc(numChars, 1);
 			pASCII= utf8noticeP;
@@ -3473,7 +3847,7 @@ OSErr Validate_cprt_Atom( atomOffsetEntry *aoe, void *refcon )
 #endif
 	atomprint("notice=\"%s\"\n", noticeP);
 
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -3537,7 +3911,7 @@ OSErr Validate_loci_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFERR( GetFileUTFString( aoe, &noticeP, offset, aoe->maxOffset - offset, &offset ) );
 	atomprint("Notes=\"%s\"\n", noticeP);
 
-	atomprint("/>\n"); 
+	atomprint(">\n"); 
 	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -3619,7 +3993,15 @@ OSErr Validate_schm_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
 	
 	atomprint(">\n"); 
-	
+        
+	if(vg.cmaf){
+         if( scheme!= 'cenc' && scheme!='cbc1' && scheme!='cens' && scheme!='cbcs')
+            errprint("CMAF check violated: Section 7.5.10. \"CMAF SHALL use Common Encryption for Tracks containing encrypted Segments.\",Scheme type 'cenc/cbc1/cens/cbcs' expected, but found %s\n",ostypetostr(scheme));
+         
+         if(s_version !=0x00010000)
+             errprint("CMAF check violated: Section 7.5.10. \"CMAF SHALL use Common Encryption for Tracks containing encrypted Segments, scheme version SHALL be set to 0x00010000 \", but found %d\n",s_version);
+        }
+        
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 	
@@ -3646,9 +4028,16 @@ OSErr Validate_schi_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomprint(" comment=\"%d contained atoms\" >\n",cnt);
 
     // Process 'tenc' atoms
-	atomerr = ValidateAtomOfType( 'tenc', kTypeAtomFlagCanHaveAtMostOne, 
+        if(vg.cmaf){
+            atomerr = ValidateAtomOfType( 'tenc', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_tenc_Atom, cnt, list, nil );
-	if (!err) err = atomerr;
+            if (!err) err = atomerr;
+        }
+        else{
+            atomerr = ValidateAtomOfType( 'tenc', kTypeAtomFlagCanHaveAtMostOne, 
+                    Validate_tenc_Atom, cnt, list, nil );
+            if (!err) err = atomerr;
+        }
 
 	bool schiFound;
 
@@ -3692,6 +4081,7 @@ OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon )
     
     // Get version/flags
     BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
     
     // Get data 
     UInt8    temp1[3];
@@ -3709,6 +4099,8 @@ OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon )
 	UInt8	default_KID[16]; 
     BAILIFERR( GetFileData( aoe,default_KID, offset, 16 , &offset ) );
     
+    atomprint("default_IsEncrypted=\"%d\"\n", default_IsEncrypted);
+    atomprint("default_IV_size=\"%d\"\n", default_IV_size);
     //Adjust KID before printing, ascii to integer.
     char tenc_KID[50], KID_char[20];
     tenc_KID[0]={'\0'};
@@ -3718,7 +4110,14 @@ OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon )
         sprintf(KID_char,"%d",default_KID[z]);
         strcat(tenc_KID, KID_char);
     }
+    atomprint("default_KID=\"%s\"\n", tenc_KID);
+    atomprint(">\n");
+    
     vg.tencInInit=true;// As the 'tenc' box is present in moov box (initialization segment).
+    
+    if(vg.cmaf && default_IsEncrypted!=1){
+        errprint("CMAF Check violated : Section 8.2.3.2. \"In an encrypted Track, the isProtected flag in the TrackEncryptionBox SHALL be set to 1.\",found %ld \n",default_IsEncrypted);
+    }
     
     //Check the default_KID is matching with the one mentioned in the MPD
     
@@ -4101,3 +4500,135 @@ bail:
 	return err;
 }
 
+OSErr Validate_senc_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+        OSErr err = noErr;
+        UInt32 version;
+        UInt32 flags;
+        UInt64 offset;
+        
+        // Get version/flags
+        BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+        atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+        atomprint("offset=\"%ld\"\n", aoe->offset);
+        
+        UInt32   sample_count;
+        BAILIFERR( GetFileData( aoe,&sample_count, offset, 4 , &offset ) );
+        sample_count=EndianU32_BtoN(sample_count);
+        
+        UInt8   initializationVector;
+        UInt16 subsample_count;
+        UInt16 BytesOfClearData;
+        UInt32 BytesOfProtectedData;
+        //TODO Allocate resources to above members according to sample and subsample counts.
+        
+        atomprint("sample_count=\"%ld\"\n", sample_count);
+        atomprint(">\n");
+        
+        vg.sencFound= true;
+    	// All done
+	aoe->aoeflags |= kAtomValidated;
+	
+bail:
+	return err;
+}
+
+OSErr Validate_saio_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+        OSErr err = noErr;
+        UInt32 version;
+        UInt32 flags;
+        UInt64 offset,temp1;
+        
+        // Get version/flags
+        BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+        atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+        
+        UInt32 aux_info_typ;
+        UInt32 aux_info_type_parameter;
+        UInt32 entry_count, temp;
+        
+        if(flags & 1){
+            BAILIFERR( GetFileData( aoe, &aux_info_typ,  offset, sizeof( UInt32 ), &offset ) );
+	    aux_info_typ= EndianU32_BtoN(aux_info_typ);
+            BAILIFERR( GetFileData( aoe, &aux_info_type_parameter,  offset, sizeof( UInt32 ), &offset ) );
+            if(vg.cmaf && aux_info_typ!='cenc')
+                errprint("CMAF check violated: Section 8.2.2.1: \"For encrypted Fragments that contain Sample Auxiliary Informantion, 'saio' SHALL be present with aux_info_type value of 'cenc'\", but found %s\n",ostypetostr(aux_info_typ));
+        }
+        
+        BAILIFERR( GetFileData( aoe, &entry_count,  offset, sizeof( UInt32 ), &offset ) );
+        entry_count = EndianU32_BtoN(entry_count);
+        atomprint("entry_count=\"%ld\"\n", entry_count);
+        //atomprint("aux_info_typ=\"%s\"\n", ostypetostr(aux_info_typ));
+        
+        //TODO Allocate saio_offset based on entry_count.
+        if(version ==0)
+        {
+            UInt32 saio_offset[entry_count];
+            for(int i=0;i<entry_count;i++)
+            {
+                BAILIFERR( GetFileData( aoe, &temp,  offset, sizeof( UInt32 ), &offset ) );
+                saio_offset[i] = EndianU32_BtoN(temp);
+                atomprint("saio_offset_%d=\"%ld\"\n", i, saio_offset[i]);
+            }
+            
+        }
+        else
+        {
+            UInt64 saio_offset[entry_count];
+            for(int i=0;i<entry_count;i++)
+            {
+                BAILIFERR( GetFileData( aoe, &temp1,  offset, sizeof( UInt64 ), &offset ) );
+                saio_offset[i] = EndianU64_BtoN(temp1);
+                atomprint("saio_offset_%d=\"%ld\"\n", i, saio_offset[i]);
+            }
+        }
+        
+      
+        atomprint(">\n");
+        
+        if(vg.cmaf && entry_count!=1)
+            errprint("CMAF check violated: Section 8.2.2.1: \"The entry_count field of the SampleAuxiliaryInformationOffsetsBox SHALL equal 1\", but found %ld\n",entry_count);
+        
+    	// All done
+	aoe->aoeflags |= kAtomValidated;
+	
+bail:
+	return err;
+}
+// Validate function for HEVC atom and ConfigRecord.
+OSErr Validate_hvcC_Atom( atomOffsetEntry *aoe, void *refcon, char *esname )
+{
+#pragma unused(refcon)
+	OSErr err = noErr;
+	UInt64 offset;
+	HevcConfigInfo hevcHeader;
+	void* bsDataP;
+	BitBuffer bb;
+	
+	atomprint("<%s", esname); vg.tabcnt++;
+	
+	// Get version/flags
+	offset = aoe->offset;
+	BAILIFERR( GetFileData( aoe, &hevcHeader.start.atomSize, offset, sizeof( AtomSizeType ), &offset ) );
+	hevcHeader.start.atomSize = EndianU32_BtoN( hevcHeader.start.atomSize );
+	hevcHeader.start.atomType = EndianU32_BtoN( hevcHeader.start.atomType );
+	
+
+	BAILIFNIL( bsDataP = calloc(hevcHeader.start.atomSize - 8 + bitParsingSlop, 1), allocFailedErr );
+	BAILIFERR( GetFileData( aoe, bsDataP, offset, hevcHeader.start.atomSize - 8, &offset ) );
+	BitBuffer_Init(&bb, (UInt8 *)bsDataP, hevcHeader.start.atomSize - 8);
+
+	BAILIFERR( Validate_HEVCConfigRecord( &bb, refcon ) );		
+	//--vg.tabcnt; atomprint("</%s>\n", esname);
+
+
+	free( bsDataP );
+
+	// All done
+	aoe->aoeflags |= kAtomValidated;
+	
+bail:
+	--vg.tabcnt; atomprint("</%s>\n", esname);
+	return err;
+}
