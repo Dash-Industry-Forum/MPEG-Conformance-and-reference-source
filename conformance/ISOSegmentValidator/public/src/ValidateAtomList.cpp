@@ -57,6 +57,8 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 	
 	BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
     	
+	atomprint("<atomlist>\n"); vg.tabcnt++;
+	
 	// Process 'ftyp' atom
 
 	atomerr = ValidateAtomOfType( 'ftyp', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne | kTypeAtomFlagMustBeFirst, 
@@ -65,9 +67,16 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
 	
 	// Process 'moov' atoms ; check for more than 1 moov atoms done later
 	vg.mir = NULL; 
-	atomerr = ValidateAtomOfType( 'moov', kTypeAtomFlagMustHaveOne, 
+        if(vg.cmaf){
+            atomerr = ValidateAtomOfType( 'moov', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_moov_Atom, cnt, list, nil );
-	if (!err) err = atomerr;
+            if (!err) err = atomerr;
+        }
+        else{
+            atomerr = ValidateAtomOfType( 'moov', kTypeAtomFlagMustHaveOne, 
+                    Validate_moov_Atom, cnt, list, nil );
+            if (!err) err = atomerr;
+        }
 	
 	// Process 'meta' atoms
 	atomerr = ValidateAtomOfType( 'meta', kTypeAtomFlagCanHaveAtMostOne, 
@@ -199,6 +208,9 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
     //the checks for duration
     if(vg.dashSegment)
         checkDASHBoxOrder(cnt,list,vg.segmentInfoSize,vg.initializationSegment,vg.segmentSizes,vg.mir);
+    
+    if(vg.cmaf)
+        checkCMAFBoxOrder(cnt,list,vg.segmentInfoSize, vg.initializationSegment, vg.segmentSizes);
 
   if(vg.mir->fragmented)
     postprocessFragmentInfo(vg.mir);
@@ -213,8 +225,11 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
             processBuffering(cnt,list,vg.mir);
         logLeafInfo(vg.mir);
    }
+   
+   --vg.tabcnt; atomprint("</atomlist>\n");
+   
+ 	aoe->aoeflags |= kAtomValidated;
 	
-	aoe->aoeflags |= kAtomValidated;
 bail:
 	if ( vg.mir != NULL) {
 		dispose_mir(vg.mir);
@@ -408,6 +423,9 @@ OSErr Validate_minf_Atom( atomOffsetEntry *aoe, void *refcon )
 		if (!err) err = atomerr;
 	}
 	
+	if(vg.cmaf)
+            checkCMAFBoxOrder_minf(cnt,list);
+	
 	aoe->aoeflags |= kAtomValidated;
 bail:
 	return err;
@@ -468,6 +486,9 @@ OSErr Validate_mdia_Atom( atomOffsetEntry *aoe, void *refcon )
 		
 		if (!err) err = atomerr;
 	}
+	
+	if(vg.cmaf)
+            checkCMAFBoxOrder_mdia(cnt,list);
 	
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -728,6 +749,9 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 			break;
 	}
 	
+	if(vg.cmaf)
+            checkCMAFBoxOrder_trak(cnt,list);
+	
 	aoe->aoeflags |= kAtomValidated;
 bail:
 	return err;
@@ -878,6 +902,9 @@ OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon )
         else if(!vg.dashSegment)
 		    warnprint("WARNING: STSC empty; with an empty STSC atom, chunk mapping is not verifiable\n");
 	}
+	
+	if(vg.cmaf)
+            checkCMAFBoxOrder_stbl(cnt,list);
 
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -983,6 +1010,8 @@ OSErr ValidateAtomOfType( OSType theType, long flags, ValidateAtomTypeProcPtr va
 	atompathType curatompath;
 	Boolean curatomprint;
 	Boolean cursampleprint;
+	Boolean traf_exists = false;
+	long traf_cnt = 0;
 	
 	cstr[0] = (theType >> 24) & 0xff;
 	cstr[1] = (theType >> 16) & 0xff;
@@ -999,10 +1028,30 @@ OSErr ValidateAtomOfType( OSType theType, long flags, ValidateAtomTypeProcPtr va
 				errprint("Multiple '%s' atoms not allowed\n", cstr);
 			}
 			if ((flags & kTypeAtomFlagMustBeFirst) && (i>0)) {
+                                if(vg.cmaf){
+                                    if(theType=='ftyp')
+                                        errprint("CMAF check violated: Section 7.3.1.1. \"The CMAF Header SHALL start with a FileTypeBox.\", but actually found at position %d", i+1);
+                                    if(theType =='mvhd')
+                                        errprint("CMAF check violated: Section 7.3.1.1. \"The MovieBox SHALL start with a MovieHeaderBox.\", but actually found at position %d", i+1);
+                                }
 				if (i==1) warnprint("Warning: atom %s before ftyp atom MUST be a signature\n",ostypetostr((&list[0])->type));
 				else errprint("Atom %s must be first and is actually at position %d\n",ostypetostr(theType),i+1);
 			}			
 			typeCnt++;
+			
+			if(vg.cmaf){
+				if(theType == 'traf'){
+					traf_exists = true;
+					traf_cnt = typeCnt;
+				}
+				if(traf_exists && theType == 'tfdt'){
+					if(typeCnt - traf_cnt == 0)
+						traf_exists = false;
+					else
+						errprint("CMAF check violated: Section 7.5.15. \"Every Track Fragment Box SHALL contain a Track Fragment Decode Time Box\", but 'traf' at position %d has none.\n", i);
+				}
+			}
+			  
 			addAtomToPath( vg.curatompath, theType, typeCnt, curatompath );
 			if (vg.print_atompath) {
 				fprintf(stdout,"%s\n", vg.curatompath);
@@ -1018,7 +1067,7 @@ OSErr ValidateAtomOfType( OSType theType, long flags, ValidateAtomTypeProcPtr va
 			atomprint("<%s",cstr); vg.tabcnt++;
 				atomerr = CallValidateAtomTypeProc(validateProc, entry, 
 											entry->refconOverride?((void*) (entry->refconOverride)):refcon);
-			--vg.tabcnt; atomprint("</%s>\n",cstr); 
+			--vg.tabcnt; atomprint("</%s>\n",cstr);
 			vg.printatom = curatomprint;
 			vg.printsample = cursampleprint;
 			restoreAtomPath( vg.curatompath, curatompath );
@@ -1033,7 +1082,53 @@ OSErr ValidateAtomOfType( OSType theType, long flags, ValidateAtomTypeProcPtr va
 		} else {
 			errprint("No '%s' atoms\n",cstr);
 		}
+		
+		if( vg.cmaf){
+                    if(theType =='moov')
+			errprint("CMAF check violated: Section 7.3.1.1. \"CMAF Header SHALL include one MovieBox.\", found %d 'moov' box\n", typeCnt);
+                    if(theType =='trex')
+			errprint("CMAF check violated: Section 7.5.13. \"Track Extends Boxes SHALL be present in a CMAF Track\", found %d\n", typeCnt);
+                    if(theType =='trak')
+			errprint("CMAF check violated: Section 7.3.1.1. \"The MovieBox SHALL contain exactly one track containing media data.\", found %d\n", typeCnt);
+                    if(theType =='mfhd')
+                        errprint("CMAF check violated: Section 7.3.1.3. \"Each CMAF Fragment SHALL contain a MovieFragmentHeaderBox.\", found %d\n", typeCnt);
+                    if(theType =='mvex')
+                        errprint("CMAF check violated: Section 7.3.1.1. \"The MovieBox SHALL contain a MovieExtendsBox.\", found %d\n", typeCnt);
+                    if(theType =='tenc')
+                        errprint("CMAF check violated: Section 7.3.1. \"The SchemeInformationbox SHALL contain a TrackEncryptionBox.\", found %d\n", typeCnt);
+                    if(theType =='dref')
+                        errprint("CMAF check violated: Section 7.3.1. \"There SHALL be a Data Reference Box in Data Information Box.\", found %d\n", typeCnt);
+                    if(theType =='vmhd')
+                        errprint("CMAF check violated: Section 7.3.1. \"The Media Information Box SHALL contain a Video Media Header for media type video\", found %d\n", typeCnt);
+                    if(theType =='smhd')
+                        errprint("CMAF check violated: Section 7.3.1. \"The Media Information Box SHALL contain a Sound Media Header for media type audio\", found %d\n", typeCnt);
+                    if(theType =='sthd')
+                        errprint("CMAF check violated: Section 7.3.1. \"The Media Information Box SHALL contain a Subtitle Media Header for media type subtitle\", found %d\n", typeCnt);
+                    if(theType =='saio')
+                        errprint("CMAF check violated: Section 8.2.2.1. \"For encrypted CMAF Fragments that contain Sample Auxiliary Information, each TrackFragmentBox SHALL contain a 'saio'\", found %d\n", typeCnt);
+                    
+		}
 	} else if ((flags & kTypeAtomFlagCanHaveAtMostOne) && (typeCnt > 1)) {
+                if(vg.cmaf){
+                    if(theType =='moov')
+			errprint("CMAF check violated: Section 7.3.1.1. \"CMAF Header SHALL include one MovieBox.\", found %d 'moov' box\n", typeCnt);
+                    if(theType =='trak')
+                        errprint("CMAF check violated: Section 7.3.1.1. \"The MovieBox SHALL contain exactly one track containing media data.\", found %d\n", typeCnt);
+                    if(theType =='mfhd')
+                        errprint("CMAF check violated: Section 7.3.1.3. \"Each CMAF Fragment SHALL contain a MovieFragmentHeaderBox.\", found %d\n", typeCnt);
+                    if(theType =='mvex')
+                        errprint("CMAF check violated: Section 7.3.1.1 \"The MovieBox SHALL contain a MovieExtendsBox.\", found %d\n", typeCnt);
+                    if(theType =='tenc')
+                        errprint("CMAF check violated: Section 7.3.1. \"The SchemeInformationbox SHALL contain a TrackEncryptionBox.\", found %d\n", typeCnt);
+                    if(theType =='dref')
+                        errprint("CMAF check violated: Section 7.3.1. \"There SHALL be a Data Reference Box in Data Information Box.\", found %d\n", typeCnt);
+                    if(theType =='vmhd')
+                        errprint("CMAF check violated: Section 7.3.1. \"The Media Information Box SHALL contain a Video Media Header for media type video\", found %d\n", typeCnt);
+                    if(theType =='smhd')
+                        errprint("CMAF check violated: Section 7.3.1. \"The Media Information Box SHALL contain a Sound Media Header for media type audio\", found %d\n", typeCnt);
+                    if(theType =='sthd')
+                        errprint("CMAF check violated: Section 7.3.1. \"The Media Information Box SHALL contain a Subtitle Media Header for media type subtitle\", found %d\n", typeCnt);
+                }
 		errprint("Multiple '%s' atoms not allowed\n",cstr);
 	}
 
@@ -1061,7 +1156,7 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFERR( GetFileDataN32( aoe, &majorBrand, offset, &offset ) );
 	BAILIFERR( GetFileDataN32( aoe, &version, offset, &offset ) );
 
-	atomprintnotab(" majorbrand=\"%.4s\" version=\"%s\", compatible_brands=[\n", ostypetostr_r(majorBrand, tempstr1), 
+	atomprintnotab("\tmajorbrand=\"%.4s\" version=\"%s\" compatible_brands='[\n", ostypetostr_r(majorBrand, tempstr1), 
 						int64toxstr((UInt64) version));
 
 	vg.majorBrand = majorBrand;
@@ -1069,6 +1164,11 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 		// the isom can only be a compatible brand
 		errprint("The brand 'isom' can only be a compatible, not major, brand\n");
 	}
+	
+	if(vg.cmaf){
+            if(majorBrand=='cmfc' && version != 0)
+                errprint("CMAF Check violated : Section 7.2. \"If 'cmfc' is the major_brand, the minor_version SHALL be 0.\", found %ld\n",version);
+        }
 	
 	compatBrandListSize = (aoe->size - 8 - aoe->atomStartSize);
 	numCompatibleBrands = compatBrandListSize / sizeof(OSType);
@@ -1089,8 +1189,8 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
         		
 		for (ix=0; ix < numCompatibleBrands; ix++) {
 			BAILIFERR( GetFileDataN32( aoe, &currentBrand, offset, &offset ) );
-			if (ix<(numCompatibleBrands-1)) atomprint("\"%s\",\n", ostypetostr_r(currentBrand, tempstr1));
-			      else atomprint("\"%s\"\n",  ostypetostr_r(currentBrand, tempstr1));
+			if (ix<(numCompatibleBrands-1)) atomprint(" \"%s\" \n", ostypetostr_r(currentBrand, tempstr1));
+			      else atomprint(" \"%s\"\n",  ostypetostr_r(currentBrand, tempstr1));
 			
 			if (majorBrand == currentBrand) {
 				majorBrandFoundAmongCompatibleBrands = true;
@@ -1112,6 +1212,11 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 				vg.dsms[0] = true;
 				vg.dashSegment = true;
 			}
+			else if(currentBrand == 'cmfc'){
+				vg.dashSegment = true; // Equivalent to CMAF Fragment. Can be directly used in CMAF Fragment conformances.
+				vg.cmaf = true; //Niteesh: This might not be required if -cmaf is passed as an arg.
+			}
+			
 		}
 
 		if (!majorBrandFoundAmongCompatibleBrands) {
@@ -1123,7 +1228,7 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 			
  	}
  	
- 	atomprint("]>\n"); 
+ 	atomprint("]'>\n"); 
 	
 	aoe->aoeflags |= kAtomValidated;
 
@@ -1147,7 +1252,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFERR( GetFileDataN32( aoe, &majorBrand, offset, &offset ) );
 	BAILIFERR( GetFileDataN32( aoe, &version, offset, &offset ) );
 
-	atomprintnotab(" majorbrand=\"%.4s\" version=\"%s\", compatible_brands=[\n", ostypetostr_r(majorBrand, tempstr1), 
+	atomprintnotab(" majorbrand=\"%.4s\" version=\"%s\" compatible_brands='[\n", ostypetostr_r(majorBrand, tempstr1), 
 						int64toxstr((UInt64) version));
 
 	vg.majorBrand = majorBrand;
@@ -1228,6 +1333,16 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 				if(segmentFound && segmentNum != (vg.segmentInfoSize-1))
                     errprint("Brand 'lmsg' found as a compatible brand for segment number %d (not the last segment %d); violates Section 7.3.1. of ISO/IEC 23009-1:2012(E): In all cases for which a Representation contains more than one Media Segment ... If the Media Segment is not the last Media Segment in the Representation, the 'lmsg' compatibility brand shall not be present.\n",segmentNum+1,vg.segmentInfoSize);
 			}
+            else if(currentBrand == 'cmfc'){
+                                vg.dashSegment = true; // Equivalent to CMAF Fragment. Can be directly used in CMAF Fragment conformances.
+				//vg.cmaf = true; //Niteesh: This might not be required if -cmaf is passed as an arg.
+			}
+            else if(currentBrand == 'cmfs'){
+                            vg.cmafSegment = true; // To be used for CMAF Segment conformances.
+                        }
+            else if(currentBrand == 'cmfl'){
+                            vg.cmafChunk = true;// To be used for CMAF Chunk conformances.
+                        }
 						
 		}
 
@@ -1259,7 +1374,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 */	
  	}
  	
- 	atomprint("]>\n"); 
+ 	atomprint("]'>\n"); 
 	
 	aoe->aoeflags |= kAtomValidated;
 
@@ -1320,10 +1435,18 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFNIL( vg.mir = (MovieInfoRec	*)calloc(1, sizeof(MovieInfoRec) + i), allocFailedErr );
 	mir = vg.mir;
     mir->fragmented = false; //unless 'mvex' is found in 'moov'
-
+    
+        if(vg.cmaf){
+            atomerr = ValidateAtomOfType( 'mvhd', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne | kTypeAtomFlagMustBeFirst, 
+		Validate_mvhd_Atom, cnt, list, mir);
+            if (!err) err = atomerr;
+            
+        }
+        else{
 	atomerr = ValidateAtomOfType( 'mvhd', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_mvhd_Atom, cnt, list, mir);
 	if (!err) err = atomerr;
+        }
 
 
 	// pre-process 'trak' atoms - get the track types
@@ -1357,6 +1480,12 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 
 
 	// Process non-hint 'trak' atoms
+	if(vg.cmaf){
+            atomerr = ValidateAtomOfType( 'trak', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
+                    Validate_trak_Atom, cnt, list, nil );
+            if (!err) err = atomerr;
+        }
+        
 	atomerr = ValidateAtomOfType( 'trak', 0, Validate_trak_Atom, cnt, list, nil );
 	if (!err) err = atomerr;
 
@@ -1381,9 +1510,16 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 	if (!err) err = atomerr;
 	
 	// Process 'mvex' atoms
-	atomerr = ValidateAtomOfType( 'mvex', kTypeAtomFlagCanHaveAtMostOne, 
-		Validate_mvex_Atom, cnt, list, mir->tirList );
-	if (!err) err = atomerr;
+        if(vg.cmaf){
+            atomerr = ValidateAtomOfType( 'mvex', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
+                    Validate_mvex_Atom, cnt, list, mir->tirList );
+            if (!err) err = atomerr;
+        }
+        else{
+            atomerr = ValidateAtomOfType( 'mvex', kTypeAtomFlagCanHaveAtMostOne, 
+                    Validate_mvex_Atom, cnt, list, mir->tirList );
+            if (!err) err = atomerr;
+        }
 
 	// Process 'iods' atoms
 	atomerr = ValidateAtomOfType( 'iods', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
@@ -1613,7 +1749,10 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 		} while (done != 1);
 		// until we have processed all chunks of all tracks
 	}
-			
+		
+        if(vg.cmaf)
+            checkCMAFBoxOrder_moov(cnt,list);
+            
 	aoe->aoeflags |= kAtomValidated;
 bail:
 //	if (mir != NULL) {
@@ -1637,7 +1776,9 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
     
     MoofInfoRec *moofInfo = &mir->moofInfo[mir->processedFragments];
 	
-	atomprintnotab(">\n"); 
+    atomprint("size=\"%lld\"\n", aoe->size);
+    atomprint("offset=\"%lld\"\n", aoe->offset);
+	atomprint(">\n"); 
 	
 	minOffset = aoe->offset + aoe->atomStartSize;
 	maxOffset = aoe->offset + aoe->size - aoe->atomStartSize;
@@ -1715,6 +1856,9 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
     
     mir->processedFragments++;
+    
+        if(vg.cmaf)
+            checkCMAFBoxOrder_moof(cnt,list);
 
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -1808,13 +1952,25 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
 
     flags = kTypeAtomFlagCanHaveAtMostOne;
 
-    if(vg.dashSegment)
+    if(vg.dashSegment) // This is also suitable for CMAF Fragment checks.
         flags |= kTypeAtomFlagMustHaveOne;
     
     atomerr = ValidateAtomOfType( 'tfdt', flags, 
         Validate_tfdt_Atom, cnt, list, trafInfo );
     if (!err) err = atomerr;
     
+    if(vg.cmaf){
+        atomerr = ValidateAtomOfType( 'senc', 0, 
+            Validate_senc_Atom, cnt, list, trafInfo );
+        if (!err) err = atomerr;
+        
+        if(vg.sencFound){
+            atomerr = ValidateAtomOfType( 'saio', kTypeAtomFlagMustHaveOne, 
+                Validate_saio_Atom, cnt, list, trafInfo );
+            if (!err) err = atomerr;
+        }
+    
+    }
 	//
 	for (i = 0; i < cnt; i++) {
 		entry = &list[i];
@@ -1860,6 +2016,9 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
 
     moofInfo->compositionInfoMissingPerTrack[index] = moofInfo->compositionInfoMissingPerTrack[index] || trafInfo->compositionInfoMissing;
 
+        if(vg.cmaf)
+            checkCMAFBoxOrder_traf(cnt,list);
+        
 	aoe->aoeflags |= kAtomValidated;
 bail:
 	return err;
@@ -2236,6 +2395,9 @@ OSErr Validate_sinf_Atom( atomOffsetEntry *aoe, void *refcon, UInt32 flags )
 		
 		if (!err) err = atomerr;
 	}
+	
+	if(vg.cmaf)
+            checkCMAFBoxOrder_sinf(cnt,list);
 	
 	aoe->aoeflags |= kAtomValidated;
 bail:
