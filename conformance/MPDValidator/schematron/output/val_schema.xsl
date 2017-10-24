@@ -242,6 +242,10 @@
             <xsl:apply-templates/>
          </svrl:active-pattern>
          <xsl:apply-templates select="/" mode="M21"/>
+         <svrl:active-pattern>
+            <xsl:apply-templates/>
+         </svrl:active-pattern>
+         <xsl:apply-templates select="/" mode="M22"/>
       </svrl:schematron-output>
    </xsl:template>
 
@@ -886,16 +890,16 @@
 
 		    <!--ASSERT -->
 <xsl:choose>
-         <xsl:when test="if (@mimeType and not((@mimeType = 'video/mp4') or (@mimeType = 'audio/mp4') or (@mimeType = 'application/mp4'))) then false() else true()"/>
+         <xsl:when test="if (@mimeType and not((@mimeType = 'video/mp4') or (@mimeType = 'audio/mp4') or (@mimeType = 'application/mp4') or (@mimeType = 'application/ttml+xml') or (@mimeType = 'text/vtt'))) then false() else true()"/>
          <xsl:otherwise>
             <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
                                 xmlns:schold="http://www.ascc.net/xml/schematron"
                                 xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
-                                test="if (@mimeType and not((@mimeType = 'video/mp4') or (@mimeType = 'audio/mp4') or (@mimeType = 'application/mp4'))) then false() else true()">
+                                test="if (@mimeType and not((@mimeType = 'video/mp4') or (@mimeType = 'audio/mp4') or (@mimeType = 'application/mp4') or (@mimeType = 'application/ttml+xml') or (@mimeType = 'text/vtt'))) then false() else true()">
                <xsl:attribute name="location">
                   <xsl:apply-templates select="." mode="schematron-get-full-path"/>
                </xsl:attribute>
-               <svrl:text> DASH-IF IOP (v3.3) Section 3.2.13: For Adaptation Sets the mimeType shall be one of the four following type: "video/mp4", "audio/mp4", or "application/mp4"</svrl:text>
+               <svrl:text>If a DASH-IF profile identifier is present, for the Adaptation Sets the mimeType shall be one of the five following type: "video/mp4", "audio/mp4", "application/mp4", "application/ttml+xml or "text/vtt"</svrl:text>
             </svrl:failed-assert>
          </xsl:otherwise>
       </xsl:choose>
@@ -1818,5 +1822,69 @@
    <xsl:template match="text()" priority="-1" mode="M21"/>
    <xsl:template match="@*|node()" priority="-2" mode="M21">
       <xsl:apply-templates select="*|comment()|processing-instruction()" mode="M21"/>
+   </xsl:template>
+
+   <!--PATTERN -->
+
+
+	<!--RULE -->
+<xsl:template match="dash:SupplementalProperty" priority="1000" mode="M22">
+      <svrl:fired-rule xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                       xmlns:schold="http://www.ascc.net/xml/schematron"
+                       xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                       context="dash:SupplementalProperty"/>
+
+		    <!--ASSERT -->
+<xsl:choose>
+         <xsl:when test="if((@schemeIdUri= 'urn:mpeg:dash:chaining:2016') and not((count(tokenize(@value, ','))=1) or (count(tokenize(@value, ','))&gt;1)) )then false() else true()"/>
+         <xsl:otherwise>
+            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                                xmlns:schold="http://www.ascc.net/xml/schematron"
+                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                                test="if((@schemeIdUri= 'urn:mpeg:dash:chaining:2016') and not((count(tokenize(@value, ','))=1) or (count(tokenize(@value, ','))&gt;1)) )then false() else true()">
+               <xsl:attribute name="location">
+                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
+               </xsl:attribute>
+               <svrl:text>If schemeIdUri urn:mpeg:dash:chaining:2016 is used, then value attribute shall be composed of the comma separated parameters (no comma needed if only first parameter is present). </svrl:text>
+            </svrl:failed-assert>
+         </xsl:otherwise>
+      </xsl:choose>
+
+		    <!--ASSERT -->
+<xsl:choose>
+         <xsl:when test="if(not(parent::dash:MPD) and (@schemeIdUri= 'urn:mpeg:dash:fallback:2016') )then false() else true()"/>
+         <xsl:otherwise>
+            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                                xmlns:schold="http://www.ascc.net/xml/schematron"
+                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                                test="if(not(parent::dash:MPD) and (@schemeIdUri= 'urn:mpeg:dash:fallback:2016') )then false() else true()">
+               <xsl:attribute name="location">
+                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
+               </xsl:attribute>
+               <svrl:text>MPD fallback chaining shall be signaled by Supplemental Descriptor on MPD level with schemeIdUri urn:mpeg:dash:fallback:2016. </svrl:text>
+            </svrl:failed-assert>
+         </xsl:otherwise>
+      </xsl:choose>
+
+		    <!--ASSERT -->
+<xsl:choose>
+         <xsl:when test="if((@schemeIdUri= 'urn:mpeg:dash:fallback:2016') and not((count(tokenize(@value, ' '))=1) or (count(tokenize(@value, ' '))&gt;1)) )then false() else true()"/>
+         <xsl:otherwise>
+            <svrl:failed-assert xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                                xmlns:schold="http://www.ascc.net/xml/schematron"
+                                xmlns:svrl="http://purl.oclc.org/dsdl/svrl"
+                                test="if((@schemeIdUri= 'urn:mpeg:dash:fallback:2016') and not((count(tokenize(@value, ' '))=1) or (count(tokenize(@value, ' '))&gt;1)) )then false() else true()">
+               <xsl:attribute name="location">
+                  <xsl:apply-templates select="." mode="schematron-get-full-path"/>
+               </xsl:attribute>
+               <svrl:text>If schemeIdUri urn:mpeg:dash:fallback:2016 is used, then value attribute shall be composed of one URL or whitespace separated URLs. </svrl:text>
+            </svrl:failed-assert>
+         </xsl:otherwise>
+      </xsl:choose>
+      <xsl:apply-templates select="*|comment()|processing-instruction()" mode="M22"/>
+   </xsl:template>
+   <xsl:template match="text()" priority="-1" mode="M22"/>
+   <xsl:template match="@*|node()" priority="-2" mode="M22">
+      <xsl:apply-templates select="*|comment()|processing-instruction()" mode="M22"/>
    </xsl:template>
 </xsl:stylesheet>
