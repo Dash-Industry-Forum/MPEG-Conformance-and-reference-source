@@ -1906,9 +1906,9 @@ bail:
 static OSErr Validate_HEVC_hrd_parameters( BitBuffer *bb, UInt32 commonInfPresentFlag, UInt8 maxNumSubLayersMinus1)
 {
 	UInt8 nal_hrd_parameters_present_flag,vcl_hrd_parameters_present_flag,sub_pic_hrd_params_present_flag,tick_divisor_minus2,du_cpb_removal_delay_increment_length_minus1,sub_pic_cpb_params_in_pic_timing_sei_flag,dpb_output_delay_du_length_minus1,bit_rate_scale,cpb_size_scale,cpb_size_du_scale
-        ,initial_cpb_removal_delay_length_minus1,au_cpb_removal_delay_length_minus1,dbp_output_delay_length_minus1,fixed_pic_rate_general_flag[8],fixed_pic_rate_within_cvs_flag[8],low_delay_hrd_flag[8];
+        ,initial_cpb_removal_delay_length_minus1,au_cpb_removal_delay_length_minus1,dbp_output_delay_length_minus1,fixed_pic_rate_general_flag[8]={0},fixed_pic_rate_within_cvs_flag[8]={0},low_delay_hrd_flag[8]={0};
         
-        UInt32 elemental_duration_in_tc_minus1[8],cpb_cnt_minus1[8],bit_rate_value_minus1[32],cpb_size_value_minus1[32],cpb_size_du_value_minus1[32],bit_rate_du_value_minus1[32],cbr_flag[32];
+	UInt32 elemental_duration_in_tc_minus1[8]={0},cpb_cnt_minus1[8]={0},bit_rate_value_minus1[32]={0},cpb_size_value_minus1[32]={0},cpb_size_du_value_minus1[32]={0},bit_rate_du_value_minus1[32]={0},cbr_flag[32]={0};
 	OSErr err;
 	if(commonInfPresentFlag){
             VALIDATE_FIELD("%d", nal_hrd_parameters_present_flag, 1);
@@ -1932,16 +1932,20 @@ static OSErr Validate_HEVC_hrd_parameters( BitBuffer *bb, UInt32 commonInfPresen
         }
         for(int i=0;i<=maxNumSubLayersMinus1;i++){
             fixed_pic_rate_general_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
-            if(!fixed_pic_rate_general_flag[i])
+            if(!fixed_pic_rate_general_flag[i]) {
                 fixed_pic_rate_within_cvs_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
-            if(fixed_pic_rate_within_cvs_flag[i])
-                elemental_duration_in_tc_minus1[i]= read_golomb_uev(bb, &err); if (err) goto bail; 
-            else
+            }
+            if(fixed_pic_rate_within_cvs_flag[i]) {
+                elemental_duration_in_tc_minus1[i]= read_golomb_uev(bb, &err); if (err) goto bail;
+            }
+            else {
                 low_delay_hrd_flag[i]=GetBits(bb, 1, &err); if (err) goto bail;
-            if(!low_delay_hrd_flag[i])
-                cpb_cnt_minus1[i]=read_golomb_uev(bb, &err); if (err) goto bail; 
+            }
+            if(!low_delay_hrd_flag[i]) {
+                cpb_cnt_minus1[i]=read_golomb_uev(bb, &err); if (err) goto bail;
+            }
             if(nal_hrd_parameters_present_flag){
-                for(int j=0;j<=cpb_cnt_minus1[i];j++){
+                for(unsigned j=0;j<=cpb_cnt_minus1[i] + 1;j++){
                     bit_rate_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
                     cpb_size_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
                     if(sub_pic_hrd_params_present_flag){
@@ -1953,7 +1957,7 @@ static OSErr Validate_HEVC_hrd_parameters( BitBuffer *bb, UInt32 commonInfPresen
                     
             }
             if(vcl_hrd_parameters_present_flag){
-                for(int j=0;j<=cpb_cnt_minus1[i];j++){
+                for(unsigned j=0;j<=cpb_cnt_minus1[i] + 1;j++){
                     bit_rate_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
                     cpb_size_value_minus1[j]=read_golomb_uev(bb, &err); if (err) goto bail; 
                     if(sub_pic_hrd_params_present_flag){
@@ -2443,13 +2447,31 @@ bail:
 	return err;
 }
 
+
+void rbsp_trailing_bits_HEVC(BitBuffer * bb, char * where)
+{
+    unsigned one_bit, zero_bits;
+    one_bit = GetBits(bb,1,nil);
+    if (one_bit != 1) {
+        errprint("%s rbsp trailing bits did not start with 1\n", where);
+    }
+    if (bb->bits_left > 7) {
+        errprint("%s: more than 7 (%d) trailing bits\n", where, bb->bits_left);
+    }
+    zero_bits = GetBits(bb, bb->bits_left, nil);
+    if (zero_bits != 0) {
+        errprint("%s: rbsp trailing zero bits not zero (got %d)\n", where, zero_bits);
+    }
+}
+
+
 OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length )
 {
 	OSErr err;
-	UInt8 zero_bit, nal_unit_type, nuh_layer_id, nuh_temporal_id_plus1, one_bit;
-	UInt32 trailing,i,j,k;
-        char tempStr[100];
-	BitBuffer mybb;
+	UInt8 zero_bit, nal_unit_type, nuh_layer_id, nuh_temporal_id_plus1;
+	UInt32 i,j,k;
+	// char tempStr[100];
+	BitBuffer mybb={0};
 	BitBuffer *bb;
 		static char* naltypes[] = {
 		"TRAIL_N","TRAIL_R",      //0-1
@@ -2485,12 +2507,6 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
 	mybb.prevent_emulation = 1;
 	bb = &mybb;
 
-	/* strip the trailing bits so we can check for more_data at the end of PPSs, sigh */
-	trailing = strip_trailing_zero_bits(bb, &err);
-
-	if (trailing > 8) warnprint("Warning: Validate_NAL_Unit_HEVC: more than 8 (%d) trailing bits\n", trailing);
-	
-	
 	VALIDATE_FIELD_V("0x%01x", zero_bit, 1, 0, "NALUnit");
 	//VALIDATE_FIELD  ("0x%02x", nal_ref_idc, 2);
 	if (expect_type) {
@@ -2509,12 +2525,12 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
                             UInt8 sps_video_parameter_set_id, sps_max_sub_layers_minus1, sps_temporal_id_nesting_flag, 
                             separate_colour_plane_flag, conformance_window_flag, sps_sub_layer_ordering_info_present_flag,
                             scaling_list_enabled_flag,
-                            gen_profile_space,gen_tier_flag,gen_profile_idc,gen_level_idc,gen_profile_compatibility_flag[32],zero_bit;
+                            gen_profile_space,gen_tier_flag,gen_profile_idc,gen_level_idc,gen_profile_compatibility_flag[32]={0};
                             
                             UInt32 sps_seq_parameter_set_id, chroma_format_idc, pic_width_in_luma_samples, pic_height_in_luma_samples,
                             conf_win_left_offset, conf_win_right_offset, conf_win_top_offset, conf_win_bottom_offset, bit_depth_luma_minus8,
-                            bit_depth_chroma_minus8, log2_max_pic_order_cnt_lsb_minus4, sps_max_dec_pic_buffering_minus1[8],
-                            sps_max_num_reorder_pics[8], sps_max_latency_increase_plus1[8],log2_min_luma_coding_block_size_minus3,
+                            bit_depth_chroma_minus8, log2_max_pic_order_cnt_lsb_minus4, sps_max_dec_pic_buffering_minus1[8]={0},
+                            sps_max_num_reorder_pics[8]={0}, sps_max_latency_increase_plus1[8]={0},log2_min_luma_coding_block_size_minus3,
                             log2_diff_max_min_luma_coding_block_size, log2_min_luma_transform_block_size_minus2,
                             log2_diff_max_min_luma_transform_block_size, max_transform_hierarchy_depth_inter, 
                             max_transform_hierarchy_depth_intra ;
@@ -2528,7 +2544,7 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
                             general_frame_only_constraint_flag, general_max_12bit_constraint_flag, general_max_10bit_constraint_flag, 
                             general_max_8bit_constraint_flag, general_max_422chroma_constraint_flag, general_max_420chroma_constraint_flag, 
                             general_max_monochrome_constraint_flag, general_intra_constraint_flag, general_one_picture_only_constraint_flag,
-                            general_lower_bit_rate_constraint_flag, general_max_14bit_constraint_flag, general_inbld_flag, general_reserved_zero_bit, sub_layer_profile_present_flag[8], sub_layer_level_present_flag[8], reserved_zero_2bits[8], sub_layer_profile_space[8], sub_layer_tier_flag[8], sub_layer_profile_idc[8], sub_layer_profile_compatibility_flag[8][33], sub_layer_progressive_source_flag[8], sub_layer_interlace_source_flag[8], sub_layer_non_packed_constraint_flag[8], sub_layer_frame_only_constraint_flag[8], sub_layer_max_12bit_constraint_flag[8], sub_layer_max_10bit_constraint_flag[8], sub_layer_max_8bit_constraint_flag[8], sub_layer_max_422chroma_constraint_flag[8], sub_layer_max_420chroma_constraint_flag[8], sub_layer_max_monochrome_constraint_flag[8], sub_layer_intra_constraint_flag[8], sub_layer_one_picture_only_constraint_flag[8], sub_layer_lower_bit_rate_constraint_flag[8], sub_layer_max_14bit_constraint_flag[8], sub_layer_inbld_flag[8], sub_layer_reserved_zero_bit[8], sub_layer_level_idc[8] ;
+                            general_lower_bit_rate_constraint_flag, general_max_14bit_constraint_flag, general_inbld_flag, general_reserved_zero_bit, sub_layer_profile_present_flag[8]={0}, sub_layer_level_present_flag[8]={0}, reserved_zero_2bits[8]={0}, sub_layer_profile_space[8]={0}, sub_layer_tier_flag[8]={0}, sub_layer_profile_idc[8]={0}, sub_layer_profile_compatibility_flag[8][33]={0}, sub_layer_progressive_source_flag[8]={0}, sub_layer_interlace_source_flag[8]={0}, sub_layer_non_packed_constraint_flag[8]={0}, sub_layer_frame_only_constraint_flag[8]={0}, sub_layer_max_12bit_constraint_flag[8]={0}, sub_layer_max_10bit_constraint_flag[8]={0}, sub_layer_max_8bit_constraint_flag[8]={0}, sub_layer_max_422chroma_constraint_flag[8]={0}, sub_layer_max_420chroma_constraint_flag[8]={0}, sub_layer_max_monochrome_constraint_flag[8]={0}, sub_layer_intra_constraint_flag[8]={0}, sub_layer_one_picture_only_constraint_flag[8]={0}, sub_layer_lower_bit_rate_constraint_flag[8]={0}, sub_layer_max_14bit_constraint_flag[8]={0}, sub_layer_inbld_flag[8]={0}, sub_layer_reserved_zero_bit[8]={0}, sub_layer_level_idc[8]={0} ;
                             
                             UInt64 general_reserved_zero_33bits,general_reserved_zero_34bits,general_reserved_zero_43bits,sub_layer_reserved_zero_34bits[8],sub_layer_reserved_zero_33bits[8], sub_layer_reserved_zero_43bits[8];
                             
@@ -2691,10 +2707,10 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
                             VALIDATE_FIELD  ("%d", scaling_list_enabled_flag, 1);
                             if(scaling_list_enabled_flag)
                             {
-                                UInt8 sps_scaling_list_data_present_flag, scaling_list_pred_mode_flag[4][6];
-                                UInt32 scaling_list_pred_matrix_id_delta[4][6], nextCoef, coefNum, sizeId, matrixId;
+                                UInt8 sps_scaling_list_data_present_flag, scaling_list_pred_mode_flag[4][6]={0};
+                                UInt32 scaling_list_pred_matrix_id_delta[4][6]={0}, nextCoef, coefNum, sizeId, matrixId;
                                 
-                                SInt32  scaling_list_dc_coef_minus8[4][6], scaling_list_delta_coef,ScalingList[4][6][64];
+                                SInt32  scaling_list_dc_coef_minus8[4][6]={0}, scaling_list_delta_coef,ScalingList[4][6][64]={0};
                                 
                                 VALIDATE_FIELD  ("%d", sps_scaling_list_data_present_flag, 1);
                                 if(sps_scaling_list_data_present_flag){
@@ -2729,9 +2745,9 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
                                 }
                             }
                             
-                            UInt8 amp_enabled_flag, sample_adaptive_offset_enabled_flag, pcm_enabled_flag, pcm_sample_bit_depth_luma_minus1, pcm_sample_bit_depth_chroma_minus1, pcm_loop_filter_disabled_flag,inter_ref_pic_set_prediction_flag[65],delta_rps_sign[65],used_by_curr_pic_flag[33], use_delta_flag[33], used_by_curr_pic_s0_flag[17],used_by_curr_pic_s1_flag[17], long_term_ref_pics_present_flag,used_by_curr_pic_lt_sps_flag[33],sps_temporal_mvp_enabled_flag,strong_intra_smoothing_enabled_flag,vui_parameters_present_flag,aspect_ratio_info_present_flag,aspect_ratio_idc,overscan_info_present_flag,overscan_appropriate_flag,video_signal_type_present_flag,video_format,video_full_range_flag,colour_description_present_flag,colour_primaries,transfer_characteristics,matrix_coeffs,chroma_loc_info_present_flag,neutral_chroma_indication_flag,field_seq_flag,frame_field_info_present_flag,default_display_window_flag,vui_timing_info_present_flag,vui_poc_proportional_to_timing_flag,vui_hrd_parameters_present_flag,bitstream_restriction_flag,tiles_fixed_structure_flag,motion_vectors_over_pic_boundaries_flag,restricted_ref_pic_lists_flag,sps_extension_present_flag,sps_range_extension_flag=0,sps_multilayer_extension_flag=0,sps_3d_extension_flag=0,sps_scc_extension_flag=0,sps_extension_4bits=0,transform_skip_rotation_enabled_flag,transform_skip_context_enabled_flag,implicit_rdpcm_enabled_flag,explicit_rdpcm_enabled_flag,extended_precision_processing_flag,intra_smoothing_disabled_flag,high_precision_offsets_enabled_flag,persistent_rice_adaption_enabled_flag,cabac_bypass_alignment_enabled_flag,inter_view_mv_vert_constraint_flag,iv_di_mc_enabled_flag[2],iv_mv_scal_enabled_flag[2],iv_res_pred_enabled_flag[2],depth_ref_enabled_flag[2],vsp_mc_enabled_flag[2],dbbp_enabled_flag[2],tex_mc_enabled_flag[2],intra_contour_enabled_flag[2],intra_dc_only_wedge_enabled_flag[2],cqt_cu_part_pred_enabled_flag[2],inter_dc_only_enabled_flag[2],skip_intra_enabled_flag[2],sps_curr_pic_ref_enabled_flag,palette_mode_enabled_flag,sps_palette_predictor_initializer_present_flag,sps_palette_predictor_initializers[4][129],motion_vector_resolution_control_idc,intra_boundary_filtering_disabled_flag,sps_extension_data_flag;
+                            UInt8 amp_enabled_flag, sample_adaptive_offset_enabled_flag, pcm_enabled_flag, pcm_sample_bit_depth_luma_minus1, pcm_sample_bit_depth_chroma_minus1, pcm_loop_filter_disabled_flag,inter_ref_pic_set_prediction_flag[65]={0},delta_rps_sign[65]={0},used_by_curr_pic_flag[33]={0}, use_delta_flag[33]={0}, used_by_curr_pic_s0_flag[17]={0},used_by_curr_pic_s1_flag[17]={0}, long_term_ref_pics_present_flag,used_by_curr_pic_lt_sps_flag[33]={0},sps_temporal_mvp_enabled_flag,strong_intra_smoothing_enabled_flag,vui_parameters_present_flag,aspect_ratio_info_present_flag,aspect_ratio_idc,overscan_info_present_flag,overscan_appropriate_flag,video_signal_type_present_flag,video_format,video_full_range_flag,colour_description_present_flag,colour_primaries,transfer_characteristics,matrix_coeffs,chroma_loc_info_present_flag,neutral_chroma_indication_flag,field_seq_flag,frame_field_info_present_flag,default_display_window_flag,vui_timing_info_present_flag,vui_poc_proportional_to_timing_flag,vui_hrd_parameters_present_flag,bitstream_restriction_flag,tiles_fixed_structure_flag,motion_vectors_over_pic_boundaries_flag,restricted_ref_pic_lists_flag,sps_extension_present_flag,sps_range_extension_flag=0,sps_multilayer_extension_flag=0,sps_3d_extension_flag=0,sps_scc_extension_flag=0,sps_extension_4bits=0,transform_skip_rotation_enabled_flag,transform_skip_context_enabled_flag,implicit_rdpcm_enabled_flag,explicit_rdpcm_enabled_flag,extended_precision_processing_flag,intra_smoothing_disabled_flag,high_precision_offsets_enabled_flag,persistent_rice_adaption_enabled_flag,cabac_bypass_alignment_enabled_flag,inter_view_mv_vert_constraint_flag,iv_di_mc_enabled_flag[2]={0},iv_mv_scal_enabled_flag[2]={0},iv_res_pred_enabled_flag[2]={0},depth_ref_enabled_flag[2]={0},vsp_mc_enabled_flag[2]={0},dbbp_enabled_flag[2]={0},tex_mc_enabled_flag[2]={0},intra_contour_enabled_flag[2]={0},intra_dc_only_wedge_enabled_flag[2]={0},cqt_cu_part_pred_enabled_flag[2]={0},inter_dc_only_enabled_flag[2]={0},skip_intra_enabled_flag[2]={0},sps_curr_pic_ref_enabled_flag,palette_mode_enabled_flag,sps_palette_predictor_initializer_present_flag,sps_palette_predictor_initializers[4][129]={0},motion_vector_resolution_control_idc,intra_boundary_filtering_disabled_flag,sps_extension_data_flag;
                             
-                            UInt32 log2_min_pcm_luma_coding_block_size_minus3, log2_diff_max_min_pcm_luma_coding_block_size, num_short_term_ref_pic_sets,delta_idx_minus1, abs_delta_rps_minus1[65],RefRpsIdx,NumDeltaPocs, num_negative_pics[65], num_positive_pics[65],delta_poc_s0_minus1[17], delta_poc_s1_minus1[17],num_long_term_ref_pics_sps,lt_ref_pic_poc_lsb_sps[33],chroma_sample_loc_type_top_field,chroma_sample_loc_type_bottom_field,def_disp_win_left_offset,def_disp_win_right_offset,def_disp_win_top_offset,def_disp_win_bottom_offset,vui_num_ticks_poc_diff_one_minus1,min_spatial_segmentation_idc,max_bytes_per_pic_denom,max_bits_per_min_cu_denom,log2_max_mv_length_horizontal,log2_max_mv_length_vertical,log2_ivmc_sub_pb_size_minus3[2],log2_texmc_sub_pb_size_minus3[2],palette_max_size,delta_palette_max_prdictor_size,sps_num_palette_predictor_initializer_minus1,numComps,vui_num_units_in_tick,vui_time_scale;
+                            UInt32 log2_min_pcm_luma_coding_block_size_minus3, log2_diff_max_min_pcm_luma_coding_block_size, num_short_term_ref_pic_sets,delta_idx_minus1, abs_delta_rps_minus1[65]={0},RefRpsIdx,NumDeltaPocs, num_negative_pics[65]={0}, num_positive_pics[65]={0},delta_poc_s0_minus1[17]={0}, delta_poc_s1_minus1[17]={0},num_long_term_ref_pics_sps,lt_ref_pic_poc_lsb_sps[33]={0},chroma_sample_loc_type_top_field,chroma_sample_loc_type_bottom_field,def_disp_win_left_offset,def_disp_win_right_offset,def_disp_win_top_offset,def_disp_win_bottom_offset,vui_num_ticks_poc_diff_one_minus1,min_spatial_segmentation_idc,max_bytes_per_pic_denom,max_bits_per_min_cu_denom,log2_max_mv_length_horizontal,log2_max_mv_length_vertical,log2_ivmc_sub_pb_size_minus3[2]={0},log2_texmc_sub_pb_size_minus3[2]={0},palette_max_size,delta_palette_max_prdictor_size,sps_num_palette_predictor_initializer_minus1,numComps,vui_num_units_in_tick,vui_time_scale;
                             
                             UInt16 sar_width,sar_height;
                             
@@ -2905,8 +2921,8 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
                                     if(sps_palette_predictor_initializer_present_flag){
                                         VALIDATE_UEV  ("%d", sps_num_palette_predictor_initializer_minus1);
                                         numComps=(chroma_format_idc ==0)?1:3;
-                                        for(int comp=0;comp<numComps;comp++)
-                                            for(int z=0;z<=sps_num_palette_predictor_initializer_minus1;z++)
+                                        for(unsigned comp=0;comp<numComps;comp++)
+                                            for(unsigned z=0;z<=sps_num_palette_predictor_initializer_minus1;z++)
                                                 sps_palette_predictor_initializers[comp][z]=GetBits(bb, field_size(sps_num_palette_predictor_initializer_minus1), &err); if (err) goto bail;
                                     }
                                 }
@@ -2918,20 +2934,19 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
                                 while(mybb.bits_left > 1)
                                     sps_extension_data_flag=GetBits(bb, 1, &err); if (err) goto bail;
                             }
-                            
-                            zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
-                            if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d \n",zero_bit);
+
+                            rbsp_trailing_bits_HEVC(bb, "SPS");
                             atomprint(">\n");
                         }
                         break;
                 case 34: //Corresponds to PPS.
                         {
                             UInt8 dependent_slice_segments_enabled_flag, output_flag_present_flag, num_extra_slice_header_bits,
-                            sign_data_hiding_enabled_flag, cabac_init_present_flag,constrained_intra_pred_flag,transform_skip_enabled_flag,cu_qp_delta_enabled_flag,pps_slice_chroma_qp_offsets_present_flag,weighted_pred_flag,weighted_bipred_flag,transquant_bypass_enabled_flag,tiles_enabled_flag,entropy_coding_sync_enabled_flag,uniform_spacing_flag,loop_filter_across_tiles_enabled_flag,pps_loop_filter_across_slices_enabled_flag,deblocking_filter_control_present_flag,deblocking_filter_override_enabled_flag,pps_deblocking_filter_disabled_flag,pps_scaling_list_data_present_flag,scaling_list_pred_mode_flag[4][6],lists_modification_present_flag,slice_segment_header_exension_present_flag,pps_extension_present_flag,pps_range_extension_flag=0,pps_multilayer_extension_flag=0,pps_3d_extension_flag=0,pps_scc_extension_flag=0,pps_extension_4bits=0,cross_component_prediction_enabled_flag,chroma_qp_offset_list_enabled_flag,poc_reset_info_present_flag,pps_infer_scaling_list_flag,pps_scaling_list_ref_layer_id,ref_loc_offset_layer_id[65],scaled_ref_layer_offset_present_flag[65],ref_region_offset_present_flag[65],resample_phase_set_present_flag[65],colour_mapping_enabled_flag,cm_ref_layer_id[62],cm_octant_depth,cm_y_part_num_log2,cm_res_quant_bits,cm_delta_flc_bits_minus1,dlts_present_flag,pps_depth_layers_minus1,pps_bit_depth_for_depth_layers_minus8,dlt_flag[65],dlt_pred_flag[65],dlt_val_flags_present_flag[65],dlt_value_flag[65][70],pps_curr_pic_ref_enabled_flag,residual_adaptive_colour_transform_enabled_flag,pps_slice_act_qp_offsets_present_flag,pps_palette_predictor_initializer_present_flag,monochrome_palette_flag,pps_extension_data_flag;
+                            sign_data_hiding_enabled_flag, cabac_init_present_flag,constrained_intra_pred_flag,transform_skip_enabled_flag,cu_qp_delta_enabled_flag,pps_slice_chroma_qp_offsets_present_flag,weighted_pred_flag,weighted_bipred_flag,transquant_bypass_enabled_flag,tiles_enabled_flag,entropy_coding_sync_enabled_flag,uniform_spacing_flag,loop_filter_across_tiles_enabled_flag,pps_loop_filter_across_slices_enabled_flag,deblocking_filter_control_present_flag,deblocking_filter_override_enabled_flag,pps_deblocking_filter_disabled_flag,pps_scaling_list_data_present_flag,scaling_list_pred_mode_flag[4][6]={0},lists_modification_present_flag,slice_segment_header_exension_present_flag,pps_extension_present_flag,pps_range_extension_flag=0,pps_multilayer_extension_flag=0,pps_3d_extension_flag=0,pps_scc_extension_flag=0,pps_extension_4bits=0,cross_component_prediction_enabled_flag,chroma_qp_offset_list_enabled_flag,poc_reset_info_present_flag,pps_infer_scaling_list_flag,pps_scaling_list_ref_layer_id,ref_loc_offset_layer_id[65]={0},scaled_ref_layer_offset_present_flag[65]={0},ref_region_offset_present_flag[65]={0},resample_phase_set_present_flag[65]={0},colour_mapping_enabled_flag,cm_ref_layer_id[62]={0},cm_octant_depth,cm_y_part_num_log2,cm_res_quant_bits,cm_delta_flc_bits_minus1,dlts_present_flag,pps_depth_layers_minus1,pps_bit_depth_for_depth_layers_minus8,dlt_flag[65]={0},dlt_pred_flag[65]={0},dlt_val_flags_present_flag[65]={0},dlt_value_flag[65][70]={0},pps_curr_pic_ref_enabled_flag,residual_adaptive_colour_transform_enabled_flag,pps_slice_act_qp_offsets_present_flag,pps_palette_predictor_initializer_present_flag,monochrome_palette_flag,pps_extension_data_flag;
                             
-                            UInt32 i,j,k, pps_pic_parameter_set_id, pps_seq_parameter_set_id,num_ref_idx_l0_default_active_minus1,num_ref_idx_l1_default_active_minus1, diff_cu_qp_delta_depth,num_tile_columns_minus1,num_tile_rows_minus1,column_width_minus1,row_heigth_minus1,sizeId,matrixId,scaling_list_pred_matrix_id_delta[4][6],nextCoef,coefNum,ScalingList[4][6][64],log2_parallel_merge_level_minus2,log2_max_transform_skip_block_size2_minus2,diff_cu_chroma_qp_offset_depth,chroma_qp_offset_list_len_minus1,log2_sao_offset_scale_luma,log2_sao_offset_scale_chroma,num_ref_loc_offsets,phase_hor_luma,phase_ver_luma,phase_hor_chroma_plus8,phase_ver_chroma_plus8,num_cm_ref_layers_minus1,luma_bit_depth_cm_input_minus8,chroma_bit_depth_cm_input_minus8,luma_bit_depth_cm_output_minus8,chroma_bit_depth_cm_output_minus8,depthMaxValue,num_val_delta_dlt,max_diff,size_min_diff_minus1,min_diff_minus1,delta_dlt_val0,size_delta_val_diff_minus_min,delta_val_diff_minus_min,pps_num_palette_predictor_initializer,luma_bit_depth_entry_minus8,chroma_bit_depth_entry_minus8,numComps,comp,pps_palette_predictor_initializers;
+                            UInt32 i,j,k, pps_pic_parameter_set_id, pps_seq_parameter_set_id,num_ref_idx_l0_default_active_minus1,num_ref_idx_l1_default_active_minus1, diff_cu_qp_delta_depth,num_tile_columns_minus1,num_tile_rows_minus1,column_width_minus1,row_heigth_minus1,sizeId,matrixId,scaling_list_pred_matrix_id_delta[4][6]={0},nextCoef,coefNum,ScalingList[4][6][64]={0},log2_parallel_merge_level_minus2,log2_max_transform_skip_block_size2_minus2,diff_cu_chroma_qp_offset_depth,chroma_qp_offset_list_len_minus1,log2_sao_offset_scale_luma,log2_sao_offset_scale_chroma,num_ref_loc_offsets,phase_hor_luma,phase_ver_luma,phase_hor_chroma_plus8,phase_ver_chroma_plus8,num_cm_ref_layers_minus1,luma_bit_depth_cm_input_minus8,chroma_bit_depth_cm_input_minus8,luma_bit_depth_cm_output_minus8,chroma_bit_depth_cm_output_minus8,depthMaxValue,num_val_delta_dlt,max_diff,size_min_diff_minus1,min_diff_minus1,delta_dlt_val0,size_delta_val_diff_minus_min,delta_val_diff_minus_min,pps_num_palette_predictor_initializer,luma_bit_depth_entry_minus8,chroma_bit_depth_entry_minus8,numComps,comp,pps_palette_predictor_initializers;
                             
-                            SInt32 init_qp_minus26,pps_cb_qp_offset,pps_cr_qp_offset,pps_beta_offset_div2,pps_tc_offset_div2,scaling_list_dc_coef_minus8[4][6], scaling_list_delta_coef,cb_qp_offset_list,cr_qp_offset_list,scaled_ref_layer_left_offset,scaled_ref_layer_top_offset,scaled_ref_layer_right_offset,scaled_ref_layer_bottom_offset,ref_region_left_offset,ref_region_right_offset,ref_region_top_offset,ref_region_bottom_offset,cm_adapt_threshold_u_delta,cm_adapt_threshold_v_delta,pps_act_y_qp_offset_plus5,pps_act_cb_qp_offset_plus5,pps_act_cr_qp_offset_plus3;
+                            SInt32 init_qp_minus26,pps_cb_qp_offset,pps_cr_qp_offset,pps_beta_offset_div2,pps_tc_offset_div2,scaling_list_dc_coef_minus8[4][6]={0}, scaling_list_delta_coef,cb_qp_offset_list,cr_qp_offset_list,scaled_ref_layer_left_offset,scaled_ref_layer_top_offset,scaled_ref_layer_right_offset,scaled_ref_layer_bottom_offset,ref_region_left_offset,ref_region_right_offset,ref_region_top_offset,ref_region_bottom_offset,cm_adapt_threshold_u_delta,cm_adapt_threshold_v_delta,pps_act_y_qp_offset_plus5,pps_act_cb_qp_offset_plus5,pps_act_cr_qp_offset_plus3;
                             
                             VALIDATE_UEV( "%d", pps_pic_parameter_set_id);
                             VALIDATE_UEV( "%d", pps_seq_parameter_set_id);
@@ -3164,8 +3179,7 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
                                     pps_extension_data_flag=GetBits(bb, 1, &err); if (err) goto bail;
                             }
 
-                             zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
-                            if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d \n",zero_bit);
+                            rbsp_trailing_bits_HEVC(bb, "PPS");
                             atomprint(">\n");
                         }
                         
@@ -3173,7 +3187,9 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
 		
 		default:
 			/* sampleprinthexdata((void*)bb->cptr, nal_length); */
-			 SkipBytes(bb,nal_length-2);
+			// SkipBytes(bb,nal_length-2);
+			bb->cptr += nal_length - 2;
+			bb->bits_left -= 8 * (nal_length - 2);
 			/*{
 				unsigned int i;
 				i = bb->bits_left;
@@ -3831,7 +3847,7 @@ OSErr CheckValuesInContext( UInt32 bufferSize, UInt32 maxBitrate, UInt32 avgBitr
 
 OSErr Validate_HEVCConfigRecord( BitBuffer *bb, void *refcon )
 {
-	TrackInfoRec *tir = (TrackInfoRec *)refcon;
+	//TrackInfoRec *tir = (TrackInfoRec *)refcon;
 	OSErr err;
 	//char	tempStr[100];
 	UInt16 nal_length,numNalus;
