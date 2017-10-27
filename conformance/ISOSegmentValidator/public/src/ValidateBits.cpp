@@ -112,7 +112,7 @@ UInt32 GetBits(BitBuffer *bb, UInt32 nBits, OSErr *errout)
 					goto bail;
 				}
 			}
-			else if (bb->cbyte == 0) bb->emulation_position += 1;
+			if (bb->cbyte == 0) bb->emulation_position += 1;
 			else bb->emulation_position = 0;
 		}
 	}
