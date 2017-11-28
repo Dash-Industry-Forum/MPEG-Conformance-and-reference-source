@@ -1214,7 +1214,7 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 			}
 			else if(currentBrand == 'cmfc'){
 				vg.dashSegment = true; // Equivalent to CMAF Fragment. Can be directly used in CMAF Fragment conformances.
-				vg.cmaf = true; //Niteesh: This might not be required if -cmaf is passed as an arg.
+				//vg.cmaf = true; //Niteesh: This might not be required if -cmaf is passed as an arg.
 			}
 			
 		}
