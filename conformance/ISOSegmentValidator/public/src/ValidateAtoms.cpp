@@ -2216,7 +2216,7 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint("depth=\"%hd\"\n", vsdi.depth);
 	atomprint("clutID=\"%hd\"\n", vsdi.clutID);
 	atomprint(">\n");
-		FieldMustBeOneOf4( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4v', 'avc1', 'encv', or 'hev1'", ('mp4v', 'avc1', 'encv', 'hev1') );
+		FieldMustBeOneOf6( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4v', 'avc1', 'encv', 'hev1','hvc1', or 'vp09'", ('mp4v', 'avc1', 'encv', 'hev1','hvc1','vp09') );
 		
 	FieldMustBe( sdh.resvd1, 0, "SampleDescription resvd1 must be %d not %d" );
 	FieldMustBe( sdh.resvdA, 0, "SampleDescription resvd1 must be %d not %d" );
@@ -2661,7 +2661,7 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
             else
 			    trunInfo->sample_flags[i] = trafInfo->default_sample_flags;
 		}
-
+       
         //Use it as a signed int when version is non-zero
         if(trunInfo->sample_composition_time_offsets_present)
         {
