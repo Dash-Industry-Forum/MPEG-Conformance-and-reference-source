@@ -2173,7 +2173,7 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	vsdi.width = EndianS16_BtoN(vsdi.width);
 	vsdi.height = EndianS16_BtoN(vsdi.height);
 	
-	char vsdi_name[strlen(vsdi.name)];
+    char vsdi_name[VSDI_NAME_LEN];
 	
 	tir->sampleDescWidth = vsdi.width; tir->sampleDescHeight = vsdi.height;
 	if ((tir->trackWidth>>16) != vsdi.width) {
@@ -4490,7 +4490,8 @@ OSErr Validate_saio_Atom( atomOffsetEntry *aoe, void *refcon )
         UInt32 version;
         UInt32 flags;
         UInt64 offset,temp1;
-        
+        void* saio_offset = 0; // nullptr; - unfortunately nullptr not supported with current g++ build settings
+		
         // Get version/flags
         BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
         atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
@@ -4512,29 +4513,27 @@ OSErr Validate_saio_Atom( atomOffsetEntry *aoe, void *refcon )
         atomprint("entry_count=\"%ld\"\n", entry_count);
         //atomprint("aux_info_typ=\"%s\"\n", ostypetostr(aux_info_typ));
         
-        //TODO Allocate saio_offset based on entry_count.
         if(version ==0)
         {
-            UInt32 saio_offset[entry_count];
+            saio_offset = new UInt32[entry_count];
             for(int i=0;i<entry_count;i++)
             {
                 BAILIFERR( GetFileData( aoe, &temp,  offset, sizeof( UInt32 ), &offset ) );
-                saio_offset[i] = EndianU32_BtoN(temp);
-                atomprint("saio_offset_%d=\"%ld\"\n", i, saio_offset[i]);
+                ((UInt32*)saio_offset)[i] = EndianU32_BtoN(temp);
+                atomprint("saio_offset_%d=\"%ld\"\n", i, ((UInt32*)saio_offset)[i]);
             }
             
         }
         else
         {
-            UInt64 saio_offset[entry_count];
+            saio_offset = new UInt64[entry_count];
             for(int i=0;i<entry_count;i++)
             {
                 BAILIFERR( GetFileData( aoe, &temp1,  offset, sizeof( UInt64 ), &offset ) );
-                saio_offset[i] = EndianU64_BtoN(temp1);
-                atomprint("saio_offset_%d=\"%ld\"\n", i, saio_offset[i]);
+                ((UInt64*)saio_offset)[i] = EndianU64_BtoN(temp1);
+                atomprint("saio_offset_%d=\"%ld\"\n", i, ((UInt64*)saio_offset)[i]);
             }
         }
-        
       
         atomprint(">\n");
         
@@ -4545,6 +4544,7 @@ OSErr Validate_saio_Atom( atomOffsetEntry *aoe, void *refcon )
 	aoe->aoeflags |= kAtomValidated;
 	
 bail:
+    delete[] saio_offset;
 	return err;
 }
 // Validate function for HEVC atom and ConfigRecord.

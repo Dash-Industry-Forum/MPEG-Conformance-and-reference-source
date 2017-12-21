@@ -44,8 +44,8 @@ limitations under the License.
 	#define TARGET_RT_BIG_ENDIAN 1
 #endif
 
-#define true 1
-#define false 0
+//#define true 1    - C++ Standard Library forbids macroizing keywords
+//#define false 0   - C++ Standard Library forbids macroizing keywords
 
 #define TYPE_LONGLONG 1
 
@@ -254,6 +254,7 @@ typedef struct SampleDescriptionRecord {
 
 //===========================
 
+#define VSDI_NAME_LEN 32
 typedef struct VideoSampleDescriptionInfo {
 	SInt16		version;                    /* which version is this data */
 	SInt16		revisionLevel;              /* what version of that codec did this */
@@ -266,7 +267,7 @@ typedef struct VideoSampleDescriptionInfo {
 	Fixed		vRes;                       /* vertical resolution */
 	UInt32		dataSize;                   /* if known, the size of data for this image descriptor */
 	SInt16		frameCount;                 /* number of frames this description applies to */
-    char		name[32];                   /* Str31 -- name of codec ( in case not installed )  */
+    char		name[VSDI_NAME_LEN];        /* Str31 -- name of codec ( in case not installed )  */
 	SInt16		depth;                      /* what depth is this data (1-32) or ( 33-40 grayscale ) */
 	SInt16		clutID;                     /* clut id or if 0 clut follows  or -1 if no clut */
 	char		extensions[1];		// having trouble - sizeof this guy gives me a bad value

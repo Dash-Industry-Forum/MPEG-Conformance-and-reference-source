@@ -71,7 +71,8 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                 bool fragmentInSegmentFound = false;
                 bool moovInSegmentFound = false;
 
-                for (int j = i; list[j].offset < (offset + segmentSizes[index]); j++) {
+                int j = i;
+                for (; list[j].offset < (offset + segmentSizes[index]); j++) {
                     if (list[j].type == 'ftyp') {
                         ftypFound = 1;
                     } else if (list[j].type == 'moov') {
