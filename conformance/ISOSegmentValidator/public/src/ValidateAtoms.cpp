@@ -3925,7 +3925,7 @@ OSErr Validate_schm_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	// Get version/flags
 	offset = aoe->offset;
-	BAILIFERR( GetFileData( aoe, &ahdr, offset, sizeof( AtomStartRecord ), &offset ) );
+	BAILIFERR( GetFileData( aoe, &ahdr, offset, sizeof(AtomSizeType), &offset ) );
 	ahdr.atomSize = EndianU32_BtoN( ahdr.atomSize );
 	ahdr.atomType = EndianU32_BtoN( ahdr.atomType );
 
