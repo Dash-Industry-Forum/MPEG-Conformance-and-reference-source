@@ -658,6 +658,7 @@ typedef struct {
          //To validate CMAF segment and chunk level checks.
          Boolean cmafSegment;
          Boolean cmafChunk;
+         Boolean cmafFragment;
          Boolean sencFound;
 	 
 } ValidateGlobals;
