@@ -1343,6 +1343,9 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
             else if(currentBrand == 'cmfl'){
                             vg.cmafChunk = true;// To be used for CMAF Chunk conformances.
                         }
+            else if(currentBrand == 'cmff'){
+                            vg.cmafFragment = true; // To be used for CMAF Fragment conformances
+                        }
 						
 		}
 
