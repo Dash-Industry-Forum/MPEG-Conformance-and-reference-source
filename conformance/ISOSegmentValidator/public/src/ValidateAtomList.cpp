@@ -1796,8 +1796,6 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
 
     if((mir->processedFragments > 0) && (moofInfo->sequence_number <= vg.mir->sequence_number))
         errprint( "sequence_number %d in violation of: the value in a given movie fragment be greater than in any preceding movie fragment\n",moofInfo->sequence_number );
-    if(vg.cmaf && (moofInfo->sequence_number - vg.mir->sequence_number != 1))
-        errprint("CMAF check violated: sequence_number %d in violation of: Section 7.3.3.1. \"A CMAF segment shall contain one or more complete and consecutive CMAF fragments in decode order.\"", moofInfo->sequence_number);
 
     vg.mir->sequence_number = moofInfo->sequence_number;
 
