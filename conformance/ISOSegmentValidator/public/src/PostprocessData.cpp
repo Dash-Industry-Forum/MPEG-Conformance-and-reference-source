@@ -1116,6 +1116,10 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir) {
                         errprint("CMAF check violated: Section 7.5.2. \"If UserDataBox or MetaBoxes present, SHALL NOT occur at file level, i.e. they can only be contained in a box.\"");
                     
                 }
+                
+                if(!cmafFragmentInCMAFSegmentFound){
+                    errprint("CMAF check violated: Section 7.3.3.1. \"A CMAF segment shall contain one or more complete and consecutive CMAF fragments in decode order.\", none found.");
+                }
             }
         }
     offset += segmentSizes[index];
