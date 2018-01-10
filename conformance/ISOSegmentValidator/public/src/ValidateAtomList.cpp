@@ -461,6 +461,11 @@ OSErr Validate_mdia_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomerr = ValidateAtomOfType( 'hdlr', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_mdia_hdlr_Atom, cnt, list, tir );
 	if (!err) err = atomerr;
+        
+        // Process 'elng' atoms
+	atomerr = ValidateAtomOfType( 'elng', kTypeAtomFlagCanHaveAtMostOne, 
+		Validate_elng_Atom, cnt, list, tir );
+	if (!err) err = atomerr;
 
 	// Process 'minf' atoms
 	atomerr = ValidateAtomOfType( 'minf', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
@@ -2236,6 +2241,11 @@ OSErr Validate_udta_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomerr = ValidateAtomOfType( 'loci', 0,		// can have multiple copyright atoms 
 								 Validate_loci_Atom, cnt, list, nil );
 	if (!err) err = atomerr;
+        
+        // Process 'kind' atoms
+        atomerr = ValidateAtomOfType( 'kind', 0,		// can have multiple track kind atoms 
+		Validate_kind_Atom, cnt, list, nil );
+        if (!err) err = atomerr;
 
 
     // Process 'hnti' atoms
