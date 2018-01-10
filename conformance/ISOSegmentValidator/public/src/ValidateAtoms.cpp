@@ -621,6 +621,34 @@ bail:
 
 //==========================================================================================
 
+OSErr Validate_elng_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+        OSErr err = noErr;
+        UInt32 version;
+        UInt32 flags;
+        UInt64 offset;
+        char* extended_languages;
+        
+        // Get version/flags
+        BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+        atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+        
+        // Get related attributes
+        BAILIFERR( GetFileCString( aoe, &extended_languages, offset, aoe->maxOffset - offset, &offset ) );
+        atomprint("extended_languages=\"%s\"\n", extended_languages);
+        
+        atomprint(">\n"); 
+        
+        // All done
+        aoe->aoeflags |= kAtomValidated;
+
+bail:
+
+        return err;
+}
+
+//==========================================================================================
+
 typedef struct VideoMediaInfoHeader {
     UInt16	graphicsMode;               /* for QD - transfer mode */
     UInt16	opColorRed;                 /* opcolor for transfer mode */
@@ -3808,6 +3836,38 @@ bail:
 		free(esDataP);
 
 	return err;
+}
+
+//==========================================================================================
+
+OSErr Validate_kind_Atom( atomOffsetEntry *aoe, void *refcon )
+{       
+        OSErr err = noErr;
+        UInt32 version;
+        UInt32 flags;
+        UInt64 offset;
+        char *schemeURI;    // null terminated C string
+        char *value;        // null terminated C string
+        
+        
+        // Get version/flags
+        BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+        atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+        
+        // Get related attributes
+        BAILIFERR( GetFileCString( aoe, &schemeURI, offset, aoe->maxOffset - offset, &offset ) );
+        atomprint("schemeURI=\"%s\"\n", schemeURI);
+        BAILIFERR( GetFileCString( aoe, &value, offset, aoe->maxOffset - offset, &offset ) );
+        atomprint("value=\"%s\"\n", value);
+        
+        atomprint(">\n"); 
+        
+        // All done
+        aoe->aoeflags |= kAtomValidated;
+
+bail:
+
+        return err;
 }
 
 //==========================================================================================

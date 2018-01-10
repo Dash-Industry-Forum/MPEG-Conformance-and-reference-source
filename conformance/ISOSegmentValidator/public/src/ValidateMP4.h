@@ -984,6 +984,7 @@ OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mvex_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_cprt_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_loci_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_kind_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_moovhnti_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_Movie_SDP( char *inSDP );
@@ -998,6 +999,7 @@ OSErr Validate_mp4s_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mdhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_hdlr_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_elng_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_tkhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_tref_Atom( atomOffsetEntry *aoe, void *refcon );
