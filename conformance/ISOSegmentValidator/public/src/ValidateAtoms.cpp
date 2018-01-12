@@ -190,9 +190,6 @@ OSErr Validate_mvhd_Atom( atomOffsetEntry *aoe, void *refcon )
     mvhdHeadCommon.nextTrackID = EndianS32_BtoN(mvhdHeadCommon.nextTrackID);
 	
 	if(vg.cmaf){
-		if(mvhdHead.duration != 0){
-			errprint("CMAF check violated: Section 7.5.1. \"The value of the duration field SHALL be set to zero\", found %llu\n", mvhdHead.duration);
-		}
 		if(mvhdHeadCommon.preferredRate != 0x00010000){
 			errprint("CMAF check violated: Section 7.5.1. \"The field rate SHALL be set to its default value\", found 0x%lx\n", mvhdHeadCommon.preferredRate);
 		}
@@ -461,10 +458,6 @@ OSErr Validate_mdhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	tir->mediaTimeScale = mdhdHead.timescale;
 	tir->mediaDuration = mdhdHead.duration;
         vg.mediaHeaderTimescale=mdhdHead.timescale;
-	
-	if(vg.cmaf && mdhdHead.duration != 0){
-		errprint("CMAF check violated: Section 7.5.5. \"The value of the duration field SHALL be set to a value of zero\", found %d\n",mdhdHead.duration);
-	}
 
 	BAILIFERR( GetFileData( aoe, &mdhdHeadCommon, offset, sizeof(mdhdHeadCommon), &offset ) );
 	mdhdHeadCommon.language = EndianU16_BtoN(mdhdHeadCommon.language); 
@@ -741,7 +734,7 @@ OSErr Validate_smhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	FieldMustBe( smhdInfo.rsrvd,   0, "'smhd' rsrvd must be %d not 0x%lx" );
 
         if(vg.cmaf && smhdInfo.balance !=0)
-            errprint("CMAF check violated: Section 10.2.4. \"The balance field in SoundMediaHeaderBox SHALL be set to its default value 0\", found %d\n",smhdInfo.balance);
+            errprint("CMAF check violated: Section 7.5.7. \"The balance field in SoundMediaHeaderBox SHALL be set to its default value 0\", found %d\n",smhdInfo.balance);
         
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -800,6 +793,32 @@ bail:
 	return err;
 }
 
+//==========================================================================================
+
+OSErr Validate_sthd_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+#pragma unused(refcon)
+        OSErr err = noErr;
+        UInt32 version;
+        UInt32 flags;
+        UInt64 offset;
+        
+        // Get version/flags
+        BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+        
+        // Print atom contents non-required fields
+        atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+        atomprint(">\n"); 
+        
+        // Check required field values
+        FieldMustBe( flags, 0, "'sthd' flags must be %d not 0x%lx" );
+        
+        // All done
+        aoe->aoeflags |= kAtomValidated;
+
+bail:
+        return err;
+}
 
 //==========================================================================================
 
@@ -1949,6 +1968,10 @@ OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
 				if(strcmp(fixed32str(listP[i].mediaRate), "1.000000")!=0){
 					errprint("CMAF check violated: Section 7.5.12. \"A start offset edit list SHALL be defined as a single Edit List Box with media-rate = 1\", found %s\n", fixed32str(listP[i].mediaRate));
 				}
+				
+				if( strstr(fixed32str(listP[i].mediaRate), ".000000") == NULL ){
+                                        errprint("CMAF check violated: Section 7.5.13. \"The value of media_rate_fraction field SHALL be set to 0\", media_rate found %s\n", fixed32str(listP[i].mediaRate));
+                                }
 			}
 		}
 
@@ -2554,7 +2577,7 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     if(trafInfo->default_sample_flags_present)
         BAILIFERR( GetFileDataN32( aoe, &trafInfo->default_sample_flags, offset, &offset ) );
 	else
-		trafInfo->default_sample_flags = tir->default_sample_flags;
+            trafInfo->default_sample_flags = tir->default_sample_flags;
     
     if(vg.cmaf){
  	if(trafInfo->track_ID != tir->trackID){
@@ -2857,6 +2880,57 @@ bail:
 
 }
 
+//==========================================================================================
+
+OSErr Validate_subs_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+        OSErr err = noErr;
+        UInt32 version;
+        UInt32 flags;
+        UInt64 offset;
+        UInt32 entry_count;
+        UInt32 i, j;
+        
+        // Get version/flags
+        BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+        
+        BAILIFERR( GetFileDataN32( aoe, &entry_count, offset, &offset ));
+        for(i = 0; i < entry_count; i++){
+                UInt32 sample_delta;
+                UInt16 subsample_count;
+                BAILIFERR( GetFileDataN32( aoe, &sample_delta, offset, &offset ));
+                BAILIFERR( GetFileDataN16( aoe, &subsample_count, offset, &offset ));
+                
+                for(j=0; j < subsample_count; j++){
+                        if(version == 1){
+                                UInt32 subsample_size;
+                                BAILIFERR( GetFileDataN32( aoe, &subsample_size, offset, &offset ));
+                        }
+                        else if(version == 0){
+                                UInt16 subsample_size;
+                                BAILIFERR( GetFileDataN16( aoe, &subsample_size, offset, &offset ));
+                        }
+                        
+                        UInt16 subsample_priority_and_discardable;
+                        UInt32 codec_specific_parameters;
+                        BAILIFERR( GetFileDataN16( aoe, &subsample_priority_and_discardable, offset, &offset ));
+                        BAILIFERR( GetFileDataN32( aoe, &codec_specific_parameters, offset, &offset ));
+                }
+        }
+        
+        atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+        atomprint("entryCount=\"%ld\"\n", entry_count);
+        
+        //CMAF check
+        if(vg.cmaf && entry_count != 1){
+                errprint("CMAF check violated: Section 7.5.20. \"The field entry_count in 'subs' box SHALL equal 1.\", instead found %d", entry_count);
+        }
+        
+        // All done
+        aoe->aoeflags |= kAtomValidated;
+bail:
+        return err;
+}
 
 //==========================================================================================
 

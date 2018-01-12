@@ -995,6 +995,7 @@ OSErr Validate_dref_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_vmhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_smhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_hmhd_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_sthd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mp4s_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mdhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon );
@@ -1015,6 +1016,7 @@ OSErr Validate_stsz_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_stz2_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_stco_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_padb_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_subs_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_trex_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mehd_Atom( atomOffsetEntry *aoe, void *refcon );
