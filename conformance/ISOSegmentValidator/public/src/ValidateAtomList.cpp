@@ -1052,9 +1052,9 @@ OSErr ValidateAtomOfType( OSType theType, long flags, ValidateAtomTypeProcPtr va
 			if ((flags & kTypeAtomFlagMustBeFirst) && (i>0)) {
                                 if(vg.cmaf){
                                     if(theType=='ftyp')
-                                        errprint("CMAF check violated: Section 7.3.1.1. \"The CMAF Header SHALL start with a FileTypeBox.\", but actually found at position %d", i+1);
+                                        errprint("CMAF check violated: Section 7.3.1. \"The CMAF Header SHALL start with a FileTypeBox.\", but actually found at position %d", i+1);
                                     if(theType =='mvhd')
-                                        errprint("CMAF check violated: Section 7.3.1.1. \"The MovieBox SHALL start with a MovieHeaderBox.\", but actually found at position %d", i+1);
+                                        errprint("CMAF check violated: Section 7.3.1. \"The MovieBox SHALL start with a MovieHeaderBox.\", but actually found at position %d", i+1);
                                 }
 				if (i==1) warnprint("Warning: atom %s before ftyp atom MUST be a signature\n",ostypetostr((&list[0])->type));
 				else errprint("Atom %s must be first and is actually at position %d\n",ostypetostr(theType),i+1);
@@ -1070,7 +1070,7 @@ OSErr ValidateAtomOfType( OSType theType, long flags, ValidateAtomTypeProcPtr va
 					if(typeCnt - traf_cnt == 0)
 						traf_exists = false;
 					else
-						errprint("CMAF check violated: Section 7.5.15. \"Every Track Fragment Box SHALL contain a Track Fragment Decode Time Box\", but 'traf' at position %d has none.\n", i);
+						errprint("CMAF check violated: Section 7.5.16. \"Every Track Fragment Box SHALL contain a Track Fragment Decode Time Box\", but 'traf' at position %d has none.\n", i);
 				}
 			}
 			  
@@ -1107,15 +1107,15 @@ OSErr ValidateAtomOfType( OSType theType, long flags, ValidateAtomTypeProcPtr va
 		
 		if( vg.cmaf){
                     if(theType =='moov')
-			errprint("CMAF check violated: Section 7.3.1.1. \"CMAF Header SHALL include one MovieBox.\", found %d 'moov' box\n", typeCnt);
+			errprint("CMAF check violated: Section 7.3.1. \"CMAF Header SHALL include one MovieBox.\", found %d 'moov' box\n", typeCnt);
                     if(theType =='trex')
-			errprint("CMAF check violated: Section 7.5.13. \"Track Extends Boxes SHALL be present in a CMAF Track\", found %d\n", typeCnt);
+			errprint("CMAF check violated: Section 7.5.14. \"Track Extends Boxes SHALL be present in a CMAF Track\", found %d\n", typeCnt);
                     if(theType =='trak')
-			errprint("CMAF check violated: Section 7.3.1.1. \"The MovieBox SHALL contain exactly one track containing media data.\", found %d\n", typeCnt);
+			errprint("CMAF check violated: Section 7.3.1. \"The MovieBox SHALL contain exactly one track containing media data.\", found %d\n", typeCnt);
                     if(theType =='mfhd')
-                        errprint("CMAF check violated: Section 7.3.1.3. \"Each CMAF Fragment SHALL contain a MovieFragmentHeaderBox.\", found %d\n", typeCnt);
+                        errprint("CMAF check violated: Section 7.3.2.4. \"Each CMAF Fragment SHALL contain a MovieFragmentHeaderBox.\", found %d\n", typeCnt);
                     if(theType =='mvex')
-                        errprint("CMAF check violated: Section 7.3.1.1. \"The MovieBox SHALL contain a MovieExtendsBox.\", found %d\n", typeCnt);
+                        errprint("CMAF check violated: Section 7.3.1. \"The MovieBox SHALL contain a MovieExtendsBox.\", found %d\n", typeCnt);
                     if(theType =='tenc')
                         errprint("CMAF check violated: Section 7.3.1. \"The SchemeInformationbox SHALL contain a TrackEncryptionBox.\", found %d\n", typeCnt);
                     if(theType =='dref')
@@ -1133,13 +1133,13 @@ OSErr ValidateAtomOfType( OSType theType, long flags, ValidateAtomTypeProcPtr va
 	} else if ((flags & kTypeAtomFlagCanHaveAtMostOne) && (typeCnt > 1)) {
                 if(vg.cmaf){
                     if(theType =='moov')
-			errprint("CMAF check violated: Section 7.3.1.1. \"CMAF Header SHALL include one MovieBox.\", found %d 'moov' box\n", typeCnt);
+			errprint("CMAF check violated: Section 7.3.1. \"CMAF Header SHALL include one MovieBox.\", found %d 'moov' box\n", typeCnt);
                     if(theType =='trak')
-                        errprint("CMAF check violated: Section 7.3.1.1. \"The MovieBox SHALL contain exactly one track containing media data.\", found %d\n", typeCnt);
+                        errprint("CMAF check violated: Section 7.3.1. \"The MovieBox SHALL contain exactly one track containing media data.\", found %d\n", typeCnt);
                     if(theType =='mfhd')
-                        errprint("CMAF check violated: Section 7.3.1.3. \"Each CMAF Fragment SHALL contain a MovieFragmentHeaderBox.\", found %d\n", typeCnt);
+                        errprint("CMAF check violated: Section 7.3.2.3. \"Each CMAF Chunk/Fragment SHALL contain a MovieFragmentHeaderBox.\", found %d\n", typeCnt);
                     if(theType =='mvex')
-                        errprint("CMAF check violated: Section 7.3.1.1 \"The MovieBox SHALL contain a MovieExtendsBox.\", found %d\n", typeCnt);
+                        errprint("CMAF check violated: Section 7.3.1 \"The MovieBox SHALL contain a MovieExtendsBox.\", found %d\n", typeCnt);
                     if(theType =='tenc')
                         errprint("CMAF check violated: Section 7.3.1. \"The SchemeInformationbox SHALL contain a TrackEncryptionBox.\", found %d\n", typeCnt);
                     if(theType =='dref')
