@@ -141,6 +141,9 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
 		    
 		if(vg.tencInInit && !vg.dash264enc)
 		    errprint("For an encrypted content, ContentProtection Descriptor shall always be present and DASH264 profile shall also be present");
+                
+                if(vg.cmaf && !vg.tencInInit && !vg.tencFoundInSegment[index])
+                    errprint("CMAF check violated: Section 8.2.2.2 \"A TrackEncryptionBox SHALL be present in a CMAF header if any media samples in the track are encrypted\", but no tenc found in initialization segment and also missing in media Segment %d.\n",index);
             }
 
             if (boxAtSegmentStartFound == true) {
@@ -1115,6 +1118,10 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir) {
                     if(list[j].type == 'udta' || list[j].type == 'meta')
                         errprint("CMAF check violated: Section 7.5.2. \"If UserDataBox or MetaBoxes present, SHALL NOT occur at file level, i.e. they can only be contained in a box.\"");
                     
+                }
+                
+                if(!cmafFragmentInCMAFSegmentFound){
+                    errprint("CMAF check violated: Section 7.3.3.1. \"A CMAF segment shall contain one or more complete and consecutive CMAF fragments in decode order.\", none found.");
                 }
             }
         }

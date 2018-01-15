@@ -370,6 +370,15 @@ OSErr Validate_minf_Atom( atomOffsetEntry *aoe, void *refcon )
 			if (!err) err = atomerr;
 			break;
 		
+                case 'subt':
+			// Process 'sthd' atoms
+                        if(vg.cmaf){
+                            atomerr = ValidateAtomOfType( 'sthd',kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
+                                    Validate_sthd_Atom, cnt, list, nil );
+                            if (!err) err = atomerr;
+                        }
+			break;
+                
 		case 'odsm':
 		case 'sdsm':
 			// Process 'nmhd' atoms
@@ -461,6 +470,13 @@ OSErr Validate_mdia_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomerr = ValidateAtomOfType( 'hdlr', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_mdia_hdlr_Atom, cnt, list, tir );
 	if (!err) err = atomerr;
+        
+        // Process 'elng' atoms
+        if(vg.cmaf){
+            atomerr = ValidateAtomOfType( 'elng', kTypeAtomFlagCanHaveAtMostOne, 
+                    Validate_elng_Atom, cnt, list, tir );
+            if (!err) err = atomerr;
+        }
 
 	// Process 'minf' atoms
 	atomerr = ValidateAtomOfType( 'minf', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
@@ -848,7 +864,13 @@ OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomerr = ValidateAtomOfType( 'padb', kTypeAtomFlagCanHaveAtMostOne, 
 		Validate_padb_Atom, cnt, list, tir );
 	if (!err) err = atomerr;
-
+        
+        // Process 'subs' atoms
+        if(vg.cmaf){
+            atomerr = ValidateAtomOfType( 'subs', 0, 
+                    Validate_subs_Atom, cnt, list, tir );
+            if (!err) err = atomerr;
+        }
 	//
 	for (i = 0; i < cnt; i++) {
 		entry = &list[i];
@@ -1342,6 +1364,9 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
                         }
             else if(currentBrand == 'cmfl'){
                             vg.cmafChunk = true;// To be used for CMAF Chunk conformances.
+                        }
+            else if(currentBrand == 'cmff'){
+                            vg.cmafFragment = true; // To be used for CMAF Fragment conformances
                         }
 						
 		}
@@ -1944,10 +1969,16 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
         Validate_sgpd_Atom, cnt, list, trafInfo );
     if (!err) err = atomerr;
 
-    atomerr = ValidateAtomOfType( 'sgpd', 0, 
+    atomerr = ValidateAtomOfType( 'sbgp', 0, 
         Validate_sbgp_Atom, cnt, list, trafInfo );
     if (!err) err = atomerr;
-
+    
+    if(vg.cmaf){
+        atomerr = ValidateAtomOfType( 'subs', 0, 
+            Validate_subs_Atom, cnt, list, trafInfo );
+        if (!err) err = atomerr;
+    }
+    
     long flags;
 
     flags = kTypeAtomFlagCanHaveAtMostOne;
@@ -2233,7 +2264,13 @@ OSErr Validate_udta_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomerr = ValidateAtomOfType( 'loci', 0,		// can have multiple copyright atoms 
 								 Validate_loci_Atom, cnt, list, nil );
 	if (!err) err = atomerr;
-
+        
+        // Process 'kind' atoms
+        if(vg.cmaf){
+                atomerr = ValidateAtomOfType( 'kind', 0,		// can have multiple track kind atoms 
+                        Validate_kind_Atom, cnt, list, nil );
+                if (!err) err = atomerr;
+        }
 
     // Process 'hnti' atoms
 	atomerr = ValidateAtomOfType( 'hnti', kTypeAtomFlagCanHaveAtMostOne,
