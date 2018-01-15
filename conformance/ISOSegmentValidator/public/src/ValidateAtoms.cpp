@@ -2326,6 +2326,13 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 						//goto bail;
 					}
 				}
+				else if ( (entry->type == 'pasp') && vg.cmaf) 
+				{
+					// Process 'pasp' atoms
+					atomprint("<pasp"); vg.tabcnt++;
+					BAILIFERR( Validate_pasp_Atom( entry, refcon ) );
+					--vg.tabcnt; atomprint("</pasp>\n");
+				}
 				else { 
 					err = badAtomErr;
 					warnprint("Warning: Unknown atom found \"%s\": video sample descriptions would not normally contain this\n",ostypetostr(entry->type));
@@ -3574,7 +3581,8 @@ OSErr Validate_colr_Atom( atomOffsetEntry *aoe, void *refcon )
 
 	BAILIFERR( GetFileData( aoe, &colrHeader.colrtype, offset, colrHeader.start.atomSize - sizeof( AtomSizeType ), &offset ) );
 	colrHeader.colrtype = EndianU32_BtoN( colrHeader.colrtype );
-	
+        atomprint("colrtype=\"%s\"\n", ostypetostr(colrHeader.colrtype));
+
 	if ((colrHeader.colrtype == 'nclc') && ( 18 == colrHeader.start.atomSize )) {
 		colrHeader.primaries = EndianU16_BtoN( colrHeader.primaries );
 		if (colrHeader.primaries < 11) prim = primaries[colrHeader.primaries]; else prim = (char *)"unknown";
@@ -4581,5 +4589,30 @@ OSErr Validate_hvcC_Atom( atomOffsetEntry *aoe, void *refcon, char *esname )
 	
 bail:
 	--vg.tabcnt; atomprint("</%s>\n", esname);
+	return err;
+}
+
+OSErr Validate_pasp_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+    OSErr err = noErr;
+    UInt32 version;
+    UInt32 flags;
+    UInt64 offset;
+    
+    // Get version/flags
+    BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+    
+    // Get data 
+    UInt32 hSpacing;
+    UInt32 vSpacing;
+    BAILIFERR( GetFileData( aoe,&hSpacing, offset, 4 , &offset ) );
+    BAILIFERR( GetFileData( aoe,&vSpacing, offset, 4 , &offset ) );
+
+    // All done
+	aoe->aoeflags |= kAtomValidated;
+       
+	
+bail:
 	return err;
 }

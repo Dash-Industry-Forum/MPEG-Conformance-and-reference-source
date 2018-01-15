@@ -1065,6 +1065,8 @@ OSErr Validate_uuid_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_colr_Atom( atomOffsetEntry *aoe, void *refcon );
 
+OSErr Validate_pasp_Atom( atomOffsetEntry *aoe, void *refcon );
+
 enum { 
 	kTypeAtomFlagMustHaveOne = 1<<0,
 	kTypeAtomFlagCanHaveAtMostOne = 1<<1,
