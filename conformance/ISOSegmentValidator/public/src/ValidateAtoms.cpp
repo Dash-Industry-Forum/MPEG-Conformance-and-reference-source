@@ -2722,7 +2722,7 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
                 else{
 			    trunInfo->sample_flags[i] = trafInfo->default_sample_flags;
                             if(vg.cmaf && !trafInfo->default_sample_flags_present)
-                                errprint("CMAF check violated: Section 7.5.14. \"default_sample_flags, sample_flags and first_sample_flags SHALL be set in the TrackFragmentBoxHeader and/or TrackRunBox to provide sample dependency iformation within each CMAF chunk and CMAF fragment\", not found in any of them.\n");
+                                errprint("CMAF check violated: Section 7.5.14. \"default_sample_flags, sample_flags and first_sample_flags SHALL be set in the TrackFragmentBoxHeader and/or TrackRunBox to provide sample dependency information within each CMAF chunk and CMAF fragment\", not found in any of them.\n");
                     }
                 }
        
