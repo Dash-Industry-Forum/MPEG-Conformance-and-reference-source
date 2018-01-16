@@ -1,12 +1,10 @@
 /*
-
 This file contains Original Code and/or Modifications of Original Code
 as defined in and that are subject to the Apple Public Source License
 Version 2.0 (the 'License'). You may not use this file except in
 compliance with the License. Please obtain a copy of the License at
 http://www.opensource.apple.com/apsl/ and read it before using this
 file.
-
 The Original Code and all software distributed under the License are
 distributed on an 'AS IS' basis, WITHOUT WARRANTY OF ANY KIND, EITHER
 EXPRESS OR IMPLIED, AND APPLE HEREBY DISCLAIMS ALL SUCH WARRANTIES,
@@ -14,7 +12,6 @@ INCLUDING WITHOUT LIMITATION, ANY WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE, QUIET ENJOYMENT OR NON-INFRINGEMENT.
 Please see the License for the specific language governing rights and
 limitations under the License.
-
 */
 
 
@@ -2566,7 +2563,7 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
         BAILIFERR( GetFileDataN32( aoe, &trafInfo->sample_description_index, offset, &offset ) );
     else{
         if(vg.cmaf)
-            errprint("CMAF check violated: Section 7.5.14. \"Default values or per sample values SHALL be stored in each CMAF chunk's TrackFragmentBoxHeader and/or TrackRunBox\", sample_description_index not found in TrackFragmentBoxHeader of CMAF track %ld\n", trafInfo->track_ID);
+            errprint("CMAF check violated: Section 7.5.14. \"Default values or per sample values SHALL be stored in each CMAF chunk's TrackFragmentBoxHeader and/or TrackRunBox\", 'description_index' not found.\n");
     }
     
     if(trafInfo->default_sample_duration_present)
@@ -2700,7 +2697,7 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
             trunInfo->sample_duration[i] = trafInfo->default_sample_duration;
             currentSampleDecodeDelta = trafInfo->default_sample_duration;
             if(vg.cmaf && !trafInfo->default_sample_duration_present)
-                errprint("CMAF check violated: Section 7.5.14. \"Default values or per sample values SHALL be stored in each CMAF chunk's TrackFragmentBoxHeader and/or TrackRunBox\", found in neither of them belonging to CMAF track %ld\n", trafInfo->track_ID);
+                errprint("CMAF check violated: Section 7.5.14. \"Default values or per sample values SHALL be stored in each CMAF chunk's TrackFragmentBoxHeader and/or TrackRunBox\", 'duration' not found in any of them. \n");
         }
 
         trunInfo->cummulatedSampleDuration += currentSampleDecodeDelta;
@@ -2710,7 +2707,7 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
 		else{
 			trunInfo->sample_size[i] = trafInfo->default_sample_size;
                         if(vg.cmaf && !trafInfo->default_sample_size_present)
-                            errprint("CMAF check violated: Section 7.5.14. \"Default values or per sample values SHALL be stored in each CMAF chunk's TrackFragmentBoxHeader and/or TrackRunBox\", found in neither of them belonging to CMAF track %ld\n", trafInfo->track_ID);
+                            errprint("CMAF check violated: Section 7.5.14. \"Default values or per sample values SHALL be stored in each CMAF chunk's TrackFragmentBoxHeader and/or TrackRunBox\", 'size' not found in any of them. \n");
                 }
 
         if(trunInfo->sample_flags_present)
@@ -2718,11 +2715,12 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
 		else
 		{
 		    if(trunInfo->first_sample_flags_present && (i == 0))
-                trunInfo->sample_flags[0] = trunInfo->first_sample_flags;
-            else
+                        trunInfo->sample_flags[0] = trunInfo->first_sample_flags;
+                    else{
 			    trunInfo->sample_flags[i] = trafInfo->default_sample_flags;
                             if(vg.cmaf && !trafInfo->default_sample_flags_present)
-                                errprint("CMAF check violated: Section 7.5.14. \"default_sample_flags, sample_flags and first_sample_flags SHALL be set in the TrackFragmentBoxHeader and/or TrackRunBox to provide sample dependency information within each CMAF chunk and CMAF fragment\", found in neither of them belonging to CMAF track %ld\n", trafInfo->track_ID);
+                                errprint("CMAF check violated: Section 7.5.14. \"default_sample_flags, sample_flags and first_sample_flags SHALL be set in the TrackFragmentBoxHeader and/or TrackRunBox to provide sample dependency iformation within each CMAF chunk and CMAF fragment\", not found in any of them.\n");
+                    }
 		}
        
         //Use it as a signed int when version is non-zero
@@ -4754,4 +4752,4 @@ OSErr Validate_pasp_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 bail:
 	return err;
-}
+} 
