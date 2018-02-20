@@ -659,6 +659,7 @@ typedef struct {
          //To validate CMAF segment and chunk level checks.
          Boolean cmafSegment;
          Boolean cmafChunk;
+         Boolean cmafFragment;
          Boolean sencFound;
 	 
 } ValidateGlobals;
@@ -984,6 +985,7 @@ OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mvex_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_cprt_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_loci_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_kind_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_moovhnti_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_Movie_SDP( char *inSDP );
@@ -994,10 +996,12 @@ OSErr Validate_dref_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_vmhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_smhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_hmhd_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_sthd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mp4s_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mdhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_hdlr_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_elng_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_tkhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_tref_Atom( atomOffsetEntry *aoe, void *refcon );
@@ -1013,6 +1017,7 @@ OSErr Validate_stsz_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_stz2_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_stco_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_padb_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_subs_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_trex_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mehd_Atom( atomOffsetEntry *aoe, void *refcon );
@@ -1065,6 +1070,8 @@ OSErr Validate_Random_Descriptor(BitBuffer *bb, char* dname);
 OSErr Validate_uuid_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_colr_Atom( atomOffsetEntry *aoe, void *refcon );
+
+OSErr Validate_pasp_Atom( atomOffsetEntry *aoe, void *refcon );
 
 enum { 
 	kTypeAtomFlagMustHaveOne = 1<<0,

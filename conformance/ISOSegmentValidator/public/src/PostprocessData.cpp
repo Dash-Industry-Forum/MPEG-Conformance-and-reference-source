@@ -92,10 +92,10 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                         if (j == (cnt - 1) || list[j + 1].offset >= (offset + segmentSizes[index]) || list[j + 1].type != 'mdat'){
                             errprint("mdat not found following a moof in segment %d (at file absolute offset %lld), violating: Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): Each Media Segment shall contain one or more whole self-contained movie fragments. A whole, self-contained movie fragment is a movie fragment ('moof') box and a media data ('mdat') box that contains all the media samples that do not use external data references referenced by the track runs in the movie fragment box.\n", index, list[j].offset);
 			    if(vg.cmaf){
-				errprint("CMAF check violated: Section 7.5.18. \"Each CMAF Fragment SHALL contain one or more Media Data Box(es)\", not found in Segment/Fragment %d (at file absolute offset %lld).\n",index, list[j].offset);
-                                errprint("CMAF check violated: Section 7.3.1.3. \"A CMAF Fragment SHALL consist of one or more ISO Base Media segments that contains one MovieFragmentBox followed by one or more Media Data Box(es) containing the samples it references\", but mdat not found following a moof in Segment/Fragment %d (at file absolute offset %lld).\n",index, list[j].offset);
+				errprint("CMAF check violated: Section 7.5.19. \"Each CMAF Fragment SHALL contain one or more Media Data Box(es)\", not found in Segment/Fragment %d (at file absolute offset %lld).\n",index, list[j].offset);
+                                errprint("CMAF check violated: Section 7.3.2.4. \"A CMAF Fragment SHALL consist of one or more ISO Base Media segments that contains one MovieFragmentBox followed by one or more Media Data Box(es) containing the samples it references\", but mdat not found following a moof in Segment/Fragment %d (at file absolute offset %lld).\n",index, list[j].offset);
                                 if(vg.cmafChunk)
-                                    errprint("CMAF check violated: Section 7.3.2.2 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but mdat not found following a moof in Chunk %d (at file absolute offset %lld).\n", index, list[j].offset);
+                                    errprint("CMAF check violated: Section 7.3.2.3 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but mdat not found following a moof in Chunk %d (at file absolute offset %lld).\n", index, list[j].offset);
                             }
 			}
 
@@ -125,9 +125,9 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                 if (!fragmentInSegmentFound && !initializationSegment){
                     errprint("No fragment found in segment %d\n", index + 1);
                     if(vg.cmaf){
-                        errprint("CMAF check violated: Section 7.3.1.3 \"A CMAF Fragment SHALL consist of one or more ISO Base Media segments that contains one MovieFragmentBox followed by one or more Media Data Box(es)\", but moof not found in Segment/Fragment %d (at file absolute offset %lld).\n",index, list[j].offset);
+                        errprint("CMAF check violated: Section 7.3.2.4 \"A CMAF Fragment SHALL consist of one or more ISO Base Media segments that contains one MovieFragmentBox followed by one or more Media Data Box(es)\", but moof not found in Segment/Fragment %d (at file absolute offset %lld).\n",index, list[j].offset);
                         if(vg.cmafChunk)
-                            errprint("CMAF check violated: Section 7.3.2.2 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but moof not found in Chunk %d (at file absolute offset %lld).\n", index);
+                            errprint("CMAF check violated: Section 7.3.2.3 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but moof not found in Chunk %d (at file absolute offset %lld).\n", index, list[j].offset);
                     }
                 }
 
@@ -142,6 +142,9 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
 		    
 		if(vg.tencInInit && !vg.dash264enc)
 		    errprint("For an encrypted content, ContentProtection Descriptor shall always be present and DASH264 profile shall also be present");
+                
+                if(vg.cmaf && vg.dash264enc && !vg.tencInInit)
+                    errprint("CMAF check violated: Section 8.2.2.2 \"A TrackEncryptionBox SHALL be present in a CMAF header if any media samples in the track are encrypted\", but no tenc found in initialization segment.\n");
             }
 
             if (boxAtSegmentStartFound == true) {
@@ -1116,6 +1119,10 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir) {
                     if(list[j].type == 'udta' || list[j].type == 'meta')
                         errprint("CMAF check violated: Section 7.5.2. \"If UserDataBox or MetaBoxes present, SHALL NOT occur at file level, i.e. they can only be contained in a box.\"");
                     
+                }
+                
+                if(!cmafFragmentInCMAFSegmentFound){
+                    errprint("CMAF check violated: Section 7.3.3.1. \"A CMAF segment shall contain one or more complete and consecutive CMAF fragments in decode order.\", none found.");
                 }
             }
         }

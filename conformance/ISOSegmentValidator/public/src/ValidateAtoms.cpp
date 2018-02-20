@@ -190,9 +190,6 @@ OSErr Validate_mvhd_Atom( atomOffsetEntry *aoe, void *refcon )
     mvhdHeadCommon.nextTrackID = EndianS32_BtoN(mvhdHeadCommon.nextTrackID);
 	
 	if(vg.cmaf){
-		if(mvhdHead.duration != 0){
-			errprint("CMAF check violated: Section 7.5.1. \"The value of the duration field SHALL be set to zero\", found %llu\n", mvhdHead.duration);
-		}
 		if(mvhdHeadCommon.preferredRate != 0x00010000){
 			errprint("CMAF check violated: Section 7.5.1. \"The field rate SHALL be set to its default value\", found 0x%lx\n", mvhdHeadCommon.preferredRate);
 		}
@@ -461,10 +458,6 @@ OSErr Validate_mdhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	tir->mediaTimeScale = mdhdHead.timescale;
 	tir->mediaDuration = mdhdHead.duration;
         vg.mediaHeaderTimescale=mdhdHead.timescale;
-	
-	if(vg.cmaf && mdhdHead.duration != 0){
-		errprint("CMAF check violated: Section 7.5.5. \"The value of the duration field SHALL be set to a value of zero\", found %d\n",mdhdHead.duration);
-	}
 
 	BAILIFERR( GetFileData( aoe, &mdhdHeadCommon, offset, sizeof(mdhdHeadCommon), &offset ) );
 	mdhdHeadCommon.language = EndianU16_BtoN(mdhdHeadCommon.language); 
@@ -621,6 +614,34 @@ bail:
 
 //==========================================================================================
 
+OSErr Validate_elng_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+        OSErr err = noErr;
+        UInt32 version;
+        UInt32 flags;
+        UInt64 offset;
+        char* extended_languages;
+        
+        // Get version/flags
+        BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+        atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+        
+        // Get related attributes
+        BAILIFERR( GetFileCString( aoe, &extended_languages, offset, aoe->maxOffset - offset, &offset ) );
+        atomprint("extended_languages=\"%s\"\n", extended_languages);
+        
+        atomprint(">\n"); 
+        
+        // All done
+        aoe->aoeflags |= kAtomValidated;
+
+bail:
+
+        return err;
+}
+
+//==========================================================================================
+
 typedef struct VideoMediaInfoHeader {
     UInt16	graphicsMode;               /* for QD - transfer mode */
     UInt16	opColorRed;                 /* opcolor for transfer mode */
@@ -713,7 +734,7 @@ OSErr Validate_smhd_Atom( atomOffsetEntry *aoe, void *refcon )
 	FieldMustBe( smhdInfo.rsrvd,   0, "'smhd' rsrvd must be %d not 0x%lx" );
 
         if(vg.cmaf && smhdInfo.balance !=0)
-            errprint("CMAF check violated: Section 10.2.4. \"The balance field in SoundMediaHeaderBox SHALL be set to its default value 0\", found %d\n",smhdInfo.balance);
+            errprint("CMAF check violated: Section 7.5.7. \"The balance field in SoundMediaHeaderBox SHALL be set to its default value 0\", found %d\n",smhdInfo.balance);
         
 	// All done
 	aoe->aoeflags |= kAtomValidated;
@@ -772,6 +793,32 @@ bail:
 	return err;
 }
 
+//==========================================================================================
+
+OSErr Validate_sthd_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+#pragma unused(refcon)
+        OSErr err = noErr;
+        UInt32 version;
+        UInt32 flags;
+        UInt64 offset;
+        
+        // Get version/flags
+        BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+        
+        // Print atom contents non-required fields
+        atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+        atomprint(">\n"); 
+        
+        // Check required field values
+        FieldMustBe( flags, 0, "'sthd' flags must be %d not 0x%lx" );
+        
+        // All done
+        aoe->aoeflags |= kAtomValidated;
+
+bail:
+        return err;
+}
 
 //==========================================================================================
 
@@ -872,7 +919,7 @@ OSErr Validate_url_Entry( atomOffsetEntry *aoe, void *refcon )
 //���	FieldMustBe( flags, 0, "'mp4s' flags must be 0" );
 //���   need to check that the atom has ended.
         if(vg.cmaf && flags != 0x000001){
-		errprint("CMAF check violated: Section 7.5.8. \"The Data Reference Box ('dref') SHALL contain a single entry with the entry_flags set to 0x000001 \", found 0x%lx\n", flags); //Single entry has been checked in 'dref' validation.
+		errprint("CMAF check violated: Section 7.5.9. \"The Data Reference Box ('dref') SHALL contain a single entry with the entry_flags set to 0x000001 \", found 0x%lx\n", flags); //Single entry has been checked in 'dref' validation.
 	}
 	
 	// All done
@@ -919,7 +966,7 @@ OSErr Validate_urn_Entry( atomOffsetEntry *aoe, void *refcon )
 //���	FieldMustBe( flags, 0, "'mp4s' flags must be 0" );
 //���   need to check that the atom has ended.
         if(vg.cmaf && flags != 0x000001){
-		errprint("CMAF check violated: Section 7.5.8. \"The Data Reference Box ('dref') SHALL contain a single entry with the entry_flags set to 0x000001 \", found 0x%lx\n", flags); //Single entry has been checked in 'dref' validation.
+		errprint("CMAF check violated: Section 7.5.9. \"The Data Reference Box ('dref') SHALL contain a single entry with the entry_flags set to 0x000001 \", found 0x%lx\n", flags); //Single entry has been checked in 'dref' validation.
 	}
 	
 	// All done
@@ -949,7 +996,7 @@ OSErr Validate_dref_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFERR( GetFileDataN32( aoe, &entryCount, offset, &offset ) );
 	
 	if(vg.cmaf && entryCount != 1){
-		errprint("CMAF check violated: Section 7.5.8. \"The Data Reference Box ('dref') SHALL contain a single entry \", found %ld\n", entryCount);
+		errprint("CMAF check violated: Section 7.5.9. \"The Data Reference Box ('dref') SHALL contain a single entry \", found %ld\n", entryCount);
 	}
 	
 	// Print atom contents non-required fields
@@ -991,8 +1038,6 @@ OSErr Validate_dref_Atom( atomOffsetEntry *aoe, void *refcon )
 				// �� should warn
 					warnprint("WARNING: unknown/unexpected dref entry '%s'\n",ostypetostr(entry->type));
 					atomprint("???? />\n");
-                                        if(vg.cmaf)
-                                            errprint("CMAF check violated: Section 7.5.8. \"The Data Reference Box ('dref') SHALL contain DataEntryUrnBox ('urn') or DataEntryUrlBox ('url') \", found %s", ostypetostr(entry->type));
 					break;
 			}
 			--vg.tabcnt; 
@@ -1054,7 +1099,7 @@ OSErr Validate_stts_Atom( atomOffsetEntry *aoe, void *refcon )
         errprint("stts atom, entry_count %d, violating\nSection 6.3.3. of ISO/IEC 23009-1:2012(E): The tracks in the \"moov\" box shall contain no samples \n(i.e. the entry_count in the \"stts\", \"stsc\", and \"stco\" boxes shall be set to 0)\n",entryCount);
     
 	if(vg.cmaf && entryCount != 0){
-		errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+		errprint("CMAF check violated: Section 7.5.12. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
 	}
     
 		//  changes to i stuff where needed to make it 1 based
@@ -1200,12 +1245,8 @@ OSErr Validate_stsz_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
 	
 	if(vg.cmaf){
-		if(sampleSize != 0){
-			errprint("CMAF check violated: Section 7.5.11. \"The sample_size field of the 'stsz' box SHALL be set to zero\", found %d\n", sampleSize);
-		}
-	
 		if(entryCount != 0){
-			errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+			errprint("CMAF check violated: Section 7.5.12. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
 		}
 	}
 	
@@ -1265,7 +1306,7 @@ OSErr Validate_stz2_Atom( atomOffsetEntry *aoe, void *refcon )
 	BAILIFNIL( listP = (SampleSizeRecord *)malloc(listSize + sizeof(SampleSizeRecord) + sizeof(SampleSizeRecord)), allocFailedErr );
 	
 	if(vg.cmaf && entryCount != 0){
-		errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+		errprint("CMAF check violated: Section 7.5.12. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
 	}
 	
 	if (entryCount) switch (fieldSize) {
@@ -1372,7 +1413,7 @@ OSErr Validate_stsc_Atom( atomOffsetEntry *aoe, void *refcon )
 	vg.tabcnt++;
 	
 	if(vg.cmaf && entryCount != 0){
-		errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+		errprint("CMAF check violated: Section 7.5.12. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
 	}
 	
 	listP[0].firstChunk = listP[0].samplesPerChunk = listP[0].sampleDescriptionIndex = 0;
@@ -1428,7 +1469,7 @@ OSErr Validate_stco_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
 	
 	if(vg.cmaf && entryCount != 0){
-		errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+		errprint("CMAF check violated: Section 7.5.12. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
 	}
 	
 	// Print atom contents non-required fields
@@ -1554,7 +1595,7 @@ OSErr Validate_stss_Atom( atomOffsetEntry *aoe, void *refcon )
 	vg.tabcnt++;
 	
 	if(vg.cmaf && entryCount != 0){
-		errprint("CMAF check violated: Section 7.5.11. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
+		errprint("CMAF check violated: Section 7.5.12. \"All boxes in SampleTableBox SHALL have or compute a sample count of 0\", found %d\n", entryCount);
 	}
 	
 	for ( i = 0; i < entryCount; i++ ) {
@@ -1899,7 +1940,7 @@ OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
         if(vg.cmaf)
         {
             if(entryCount!=1)
-                errprint("CMAF check violated: Section 7.5.12. \"An offset edit list SHALL be a single EditListBox in an EditBox, i.e., entryCount SHALL be 1\", found %ld\n", entryCount);
+                errprint("CMAF check violated: Section 7.5.13. \"An offset edit list SHALL be a single EditListBox in an EditBox, i.e., entryCount SHALL be 1\", found %ld\n", entryCount);
         }
         
 	vg.tabcnt++;
@@ -1913,14 +1954,18 @@ OSErr Validate_elst_Atom( atomOffsetEntry *aoe, void *refcon )
 		if(vg.cmaf){
 			if(version == 0 || version == 1){
 				if(listP[i].duration != 0){
-					errprint("CMAF check violated: Section 7.5.12. \"A start offset edit list SHALL be defined as a single Edit List Box with segment-duration = 0\", found %s\n", int64todstr(listP[i].duration));
+					errprint("CMAF check violated: Section 7.5.13. \"A start offset edit list SHALL be defined as a single Edit List Box with segment-duration = 0\", found %s\n", int64todstr(listP[i].duration));
 				}
 				//if(listP[i].mediaTime != tir->mediaTimeScale){
 				//	errprint("CMAF check violated: Section 7.5.12. \"A start offset edit list SHALL be defined as a single Edit List Box with media-time = offset from the start of the first Fragment measured in the Track timescale\", found %ld\n", listP[i].mediaTime);
 				//}
 				if(strcmp(fixed32str(listP[i].mediaRate), "1.000000")!=0){
-					errprint("CMAF check violated: Section 7.5.12. \"A start offset edit list SHALL be defined as a single Edit List Box with media-rate = 1\", found %s\n", fixed32str(listP[i].mediaRate));
+					errprint("CMAF check violated: Section 7.5.13. \"A start offset edit list SHALL be defined as a single Edit List Box with media-rate = 1\", found %s\n", fixed32str(listP[i].mediaRate));
 				}
+				
+				if( strstr(fixed32str(listP[i].mediaRate), ".000000") == NULL ){
+                                        errprint("CMAF check violated: Section 7.5.13. \"The value of media_rate_fraction field SHALL be set to 0\", media_rate found %s\n", fixed32str(listP[i].mediaRate));
+                                }
 			}
 		}
 
@@ -2053,7 +2098,7 @@ OSErr Validate_stsd_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	if(vg.cmaf){
 		if(version != 0){
-			errprint("CMAF check violated: Section 7.5.9. \"Sample Description Boxes in a CMAF Track SHALL conform to verion 0\", found %d\n", version);
+			errprint("CMAF check violated: Section 7.5.10. \"Sample Description Boxes in a CMAF Track SHALL conform to verion 0\", found %d\n", version);
 		}
 	
 		//if(entryCount != 0){
@@ -2326,6 +2371,13 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 						//goto bail;
 					}
 				}
+				else if ( (entry->type == 'pasp') && vg.cmaf) 
+				{
+					// Process 'pasp' atoms
+					atomprint("<pasp"); vg.tabcnt++;
+					BAILIFERR( Validate_pasp_Atom( entry, refcon ) );
+					--vg.tabcnt; atomprint("</pasp>\n");
+				}
 				else { 
 					err = badAtomErr;
 					warnprint("Warning: Unknown atom found \"%s\": video sample descriptions would not normally contain this\n",ostypetostr(entry->type));
@@ -2334,9 +2386,9 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 				
 			}
 			if(vg.cmaf && is_protected && sinfFound!=1)
-                            errprint("CMAF check violated: Section 7.5.9. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", but 'sinf' not found. \n");
+                            errprint("CMAF check violated: Section 7.5.10. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", but 'sinf' not found. \n");
 			if(vg.cmaf && vg.dash264enc && sinfFound!=1)
-                            errprint("CMAF check violated: Section 7.5.10. \"An encrypted CMAF Track SHALL include at least one Protection Scheme Information Box ('sinf') \", found %d\n", 0);
+                            errprint("CMAF check violated: Section 7.5.11. \"An encrypted CMAF Track SHALL include at least one Protection Scheme Information Box ('sinf') \", found %d\n", 0);
 		}
 	
 	// All done
@@ -2512,6 +2564,10 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     
     if(trafInfo->sample_description_index_present)
         BAILIFERR( GetFileDataN32( aoe, &trafInfo->sample_description_index, offset, &offset ) );
+    else{
+        if(vg.cmaf)
+            errprint("CMAF check violated: Section 7.5.14. \"Default values or per sample values SHALL be stored in each CMAF chunk's TrackFragmentBoxHeader and/or TrackRunBox\", 'description_index' not found.\n");
+    }
     
     if(trafInfo->default_sample_duration_present)
         BAILIFERR( GetFileDataN32( aoe, &trafInfo->default_sample_duration, offset, &offset ) );
@@ -2526,17 +2582,17 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
     if(trafInfo->default_sample_flags_present)
         BAILIFERR( GetFileDataN32( aoe, &trafInfo->default_sample_flags, offset, &offset ) );
 	else
-		trafInfo->default_sample_flags = tir->default_sample_flags;
+            trafInfo->default_sample_flags = tir->default_sample_flags;
     
     if(vg.cmaf){
  	if(trafInfo->track_ID != tir->trackID){
- 		errprint("CMAF check violated: Section 7.5.15. \"The track_ID field SHALL contain the same value as the track_ID in the matching CMAF Header\", found %ld\n", trafInfo->track_ID);
+ 		errprint("CMAF check violated: Section 7.5.16. \"The track_ID field SHALL contain the same value as the track_ID in the matching CMAF Header\", found %ld\n", trafInfo->track_ID);
  	}
 	if(trafInfo->base_data_offset_present != 0){
-		errprint("CMAF check violated: Section 7.5.15. \"The base-data-offset-present flag SHALL be set to zero\", found %d\n", trafInfo->base_data_offset_present);
+		errprint("CMAF check violated: Section 7.5.16. \"The base-data-offset-present flag SHALL be set to zero\", found %d\n", trafInfo->base_data_offset_present);
 	}
 	if(trafInfo->default_base_is_moof != 1){
-		errprint("CMAF check violated: Section 7.5.15. \"The default-base-is-moof flag SHALL be set to one\", found %d\n", trafInfo->default_base_is_moof);
+		errprint("CMAF check violated: Section 7.5.16. \"The default-base-is-moof flag SHALL be set to one\", found %d\n", trafInfo->default_base_is_moof);
 	}
     }
 	
@@ -2643,14 +2699,19 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
         {
             trunInfo->sample_duration[i] = trafInfo->default_sample_duration;
             currentSampleDecodeDelta = trafInfo->default_sample_duration;
+            if(vg.cmaf && !trafInfo->default_sample_duration_present)
+                errprint("CMAF check violated: Section 7.5.14. \"Default values or per sample values SHALL be stored in each CMAF chunk's TrackFragmentBoxHeader and/or TrackRunBox\", 'duration' not found in any of them. \n");
         }
 
         trunInfo->cummulatedSampleDuration += currentSampleDecodeDelta;
         
         if(trunInfo->sample_size_present)
             BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_size[i], offset, &offset ) );
-		else
+		else{
 			trunInfo->sample_size[i] = trafInfo->default_sample_size;
+                        if(vg.cmaf && !trafInfo->default_sample_size_present)
+                            errprint("CMAF check violated: Section 7.5.14. \"Default values or per sample values SHALL be stored in each CMAF chunk's TrackFragmentBoxHeader and/or TrackRunBox\", 'size' not found in any of them. \n");
+                }
 
         if(trunInfo->sample_flags_present)
             BAILIFERR( GetFileDataN32( aoe, &trunInfo->sample_flags[i], offset, &offset ) );
@@ -2658,9 +2719,12 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
 		{
 		    if(trunInfo->first_sample_flags_present && (i == 0))
                 trunInfo->sample_flags[0] = trunInfo->first_sample_flags;
-            else
+                else{
 			    trunInfo->sample_flags[i] = trafInfo->default_sample_flags;
-		}
+                            if(vg.cmaf && !trafInfo->default_sample_flags_present)
+                                errprint("CMAF check violated: Section 7.5.14. \"default_sample_flags, sample_flags and first_sample_flags SHALL be set in the TrackFragmentBoxHeader and/or TrackRunBox to provide sample dependency information within each CMAF chunk and CMAF fragment\", not found in any of them.\n");
+                    }
+                }
        
         //Use it as a signed int when version is non-zero
         if(trunInfo->sample_composition_time_offsets_present)
@@ -2684,7 +2748,7 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
     }
     
 	if(vg.cmaf && trunInfo->data_offset_present != true){
-		errprint("CMAF check violated: Section 7.5.16. \"The data-offset-present flag SHALL be set to true\", found %d\n", trunInfo->data_offset_present);
+		errprint("CMAF check violated: Section 7.5.17. \"The data-offset-present flag SHALL be set to true\", found %d\n", trunInfo->data_offset_present);
 	}
     
     vg.tabcnt++;
@@ -2829,6 +2893,57 @@ bail:
 
 }
 
+//==========================================================================================
+
+OSErr Validate_subs_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+        OSErr err = noErr;
+        UInt32 version;
+        UInt32 flags;
+        UInt64 offset;
+        UInt32 entry_count;
+        UInt32 i, j;
+        
+        // Get version/flags
+        BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+        
+        BAILIFERR( GetFileDataN32( aoe, &entry_count, offset, &offset ));
+        for(i = 0; i < entry_count; i++){
+                UInt32 sample_delta;
+                UInt16 subsample_count;
+                BAILIFERR( GetFileDataN32( aoe, &sample_delta, offset, &offset ));
+                BAILIFERR( GetFileDataN16( aoe, &subsample_count, offset, &offset ));
+                
+                for(j=0; j < subsample_count; j++){
+                        if(version == 1){
+                                UInt32 subsample_size;
+                                BAILIFERR( GetFileDataN32( aoe, &subsample_size, offset, &offset ));
+                        }
+                        else if(version == 0){
+                                UInt16 subsample_size;
+                                BAILIFERR( GetFileDataN16( aoe, &subsample_size, offset, &offset ));
+                        }
+                        
+                        UInt16 subsample_priority_and_discardable;
+                        UInt32 codec_specific_parameters;
+                        BAILIFERR( GetFileDataN16( aoe, &subsample_priority_and_discardable, offset, &offset ));
+                        BAILIFERR( GetFileDataN32( aoe, &codec_specific_parameters, offset, &offset ));
+                }
+        }
+        
+        atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+        atomprint("entryCount=\"%ld\"\n", entry_count);
+        
+        //CMAF check
+        if(vg.cmaf && entry_count != 1){
+                errprint("CMAF check violated: Section 7.5.20. \"The field entry_count in 'subs' box SHALL equal 1.\", instead found %d", entry_count);
+        }
+        
+        // All done
+        aoe->aoeflags |= kAtomValidated;
+bail:
+        return err;
+}
 
 //==========================================================================================
 
@@ -3271,9 +3386,9 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 			
 		}
 		if(vg.cmaf && ((sdh.sdType == 'drmi' ) || (( (sdh.sdType & 0xFFFFFF00) | ' ') == 'enc ' )) && sinfFound!=1)
-                    errprint("CMAF check violated: Section 7.5.9. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", but 'sinf' not found. \n");
+                    errprint("CMAF check violated: Section 7.5.10. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", but 'sinf' not found. \n");
 		if(vg.cmaf && vg.dash264enc && sinfFound!=1)
-                    errprint("CMAF check violated: Section 7.5.10. \"An encrypted CMAF Track SHALL include at least one Protection Scheme Information Box ('sinf') \", found %d\n", 0);
+                    errprint("CMAF check violated: Section 7.5.11. \"An encrypted CMAF Track SHALL include at least one Protection Scheme Information Box ('sinf') \", found %d\n", 0);
 	}
 
 	// All done
@@ -3311,7 +3426,7 @@ OSErr Validate_hint_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 		entry_type_name[1] = (aoe->type >> 16) & 0xff;
 		entry_type_name[2] = (aoe->type >>  8) & 0xff;
 		entry_type_name[3] = (aoe->type >>  0) & 0xff;
-		errprint("CMAF check violated: Section 7.5.9. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", found %s\n", entry_type_name);
+		errprint("CMAF check violated: Section 7.5.10. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", found %s\n", entry_type_name);
 	}
 	// Check required field values
 	FieldMustBe( sdh.resvd1, 0, "SampleDescription resvd1 must be %d not 0x%lx" );
@@ -3380,7 +3495,7 @@ OSErr Validate_mp4_SD_Entry( atomOffsetEntry *aoe, void *refcon, ValidateBitstre
 				entry_type_name[1] = (entry->type >> 16) & 0xff;
 				entry_type_name[2] = (entry->type >>  8) & 0xff;
 				entry_type_name[3] = (entry->type >>  0) & 0xff;
-				errprint("CMAF check violated: Section 7.5.9. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", found %s\n", entry_type_name);
+				errprint("CMAF check violated: Section 7.5.10. \"Sample Entries for encrypted tracks SHALL encapsulate the existing sample entry with a Protection Scheme Information Box ('sinf')\", found %s\n", entry_type_name);
 			}
 			
 			BAILIFERR( Validate_ESDAtom( entry, refcon, validateBitstreamProc, esname) );
@@ -3574,7 +3689,8 @@ OSErr Validate_colr_Atom( atomOffsetEntry *aoe, void *refcon )
 
 	BAILIFERR( GetFileData( aoe, &colrHeader.colrtype, offset, colrHeader.start.atomSize - sizeof( AtomSizeType ), &offset ) );
 	colrHeader.colrtype = EndianU32_BtoN( colrHeader.colrtype );
-	
+        atomprint("colrtype=\"%s\"\n", ostypetostr(colrHeader.colrtype));
+
 	if ((colrHeader.colrtype == 'nclc') && ( 18 == colrHeader.start.atomSize )) {
 		colrHeader.primaries = EndianU16_BtoN( colrHeader.primaries );
 		if (colrHeader.primaries < 11) prim = primaries[colrHeader.primaries]; else prim = (char *)"unknown";
@@ -3812,6 +3928,38 @@ bail:
 
 //==========================================================================================
 
+OSErr Validate_kind_Atom( atomOffsetEntry *aoe, void *refcon )
+{       
+        OSErr err = noErr;
+        UInt32 version;
+        UInt32 flags;
+        UInt64 offset;
+        char *schemeURI;    // null terminated C string
+        char *value;        // null terminated C string
+        
+        
+        // Get version/flags
+        BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+        atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+        
+        // Get related attributes
+        BAILIFERR( GetFileCString( aoe, &schemeURI, offset, aoe->maxOffset - offset, &offset ) );
+        atomprint("schemeURI=\"%s\"\n", schemeURI);
+        BAILIFERR( GetFileCString( aoe, &value, offset, aoe->maxOffset - offset, &offset ) );
+        atomprint("value=\"%s\"\n", value);
+        
+        atomprint(">\n"); 
+        
+        // All done
+        aoe->aoeflags |= kAtomValidated;
+
+bail:
+
+        return err;
+}
+
+//==========================================================================================
+
 OSErr Validate_loci_Atom( atomOffsetEntry *aoe, void *refcon )
 {
 #pragma unused(refcon)
@@ -3947,10 +4095,10 @@ OSErr Validate_schm_Atom( atomOffsetEntry *aoe, void *refcon )
         
 	if(vg.cmaf){
          if( scheme!= 'cenc' && scheme!='cbc1' && scheme!='cens' && scheme!='cbcs')
-            errprint("CMAF check violated: Section 7.5.10. \"CMAF SHALL use Common Encryption for Tracks containing encrypted Segments.\",Scheme type 'cenc/cbc1/cens/cbcs' expected, but found %s\n",ostypetostr(scheme));
+            errprint("CMAF check violated: Section 7.5.11. \"CMAF SHALL use Common Encryption for Tracks containing encrypted Segments.\",Scheme type 'cenc/cbc1/cens/cbcs' expected, but found %s\n",ostypetostr(scheme));
          
          if(s_version !=0x00010000)
-             errprint("CMAF check violated: Section 7.5.10. \"CMAF SHALL use Common Encryption for Tracks containing encrypted Segments, scheme version SHALL be set to 0x00010000 \", but found %d\n",s_version);
+             errprint("CMAF check violated: Section 7.5.11. \"CMAF SHALL use Common Encryption for Tracks containing encrypted Segments, scheme version SHALL be set to 0x00010000 \", but found %d\n",s_version);
         }
         
 	// All done
@@ -4581,5 +4729,30 @@ OSErr Validate_hvcC_Atom( atomOffsetEntry *aoe, void *refcon, char *esname )
 	
 bail:
 	--vg.tabcnt; atomprint("</%s>\n", esname);
+	return err;
+}
+
+OSErr Validate_pasp_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+    OSErr err = noErr;
+    UInt32 version;
+    UInt32 flags;
+    UInt64 offset;
+    
+    // Get version/flags
+    BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+    atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+    
+    // Get data 
+    UInt32 hSpacing;
+    UInt32 vSpacing;
+    BAILIFERR( GetFileData( aoe,&hSpacing, offset, 4 , &offset ) );
+    BAILIFERR( GetFileData( aoe,&vSpacing, offset, 4 , &offset ) );
+
+    // All done
+	aoe->aoeflags |= kAtomValidated;
+       
+	
+bail:
 	return err;
 }
