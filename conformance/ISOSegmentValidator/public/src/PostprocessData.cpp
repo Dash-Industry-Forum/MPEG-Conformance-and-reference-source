@@ -124,9 +124,9 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                 if (!fragmentInSegmentFound && !initializationSegment){
                     errprint("No fragment found in segment %d\n", index + 1);
                     if(vg.cmaf){
-                        errprint("CMAF check violated: Section 7.3.2.4 \"A CMAF Fragment SHALL consist of one or more ISO Base Media segments that contains one MovieFragmentBox followed by one or more Media Data Box(es)\", but moof not found in Segment/Fragment %d (at file absolute offset %lld).\n",index, list[j].offset);
+                        errprint("CMAF check violated: Section 7.3.2.4 \"A CMAF Fragment SHALL consist of one or more ISO Base Media segments that contains one MovieFragmentBox followed by one or more Media Data Box(es)\", but moof not found in Segment/Fragment %d .\n",index+1);
                         if(vg.cmafChunk)
-                            errprint("CMAF check violated: Section 7.3.2.3 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but moof not found in Chunk %d (at file absolute offset %lld).\n", index, list[j].offset);
+                            errprint("CMAF check violated: Section 7.3.2.3 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but moof not found in Chunk %d .\n", index+1);
                     }
                 }
 
