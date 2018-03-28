@@ -2360,7 +2360,6 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 					else { 
 						err = badAtomErr;
 						warnprint("Warning: Unknown atom found \"%s\": video sample descriptions would not normally contain this\n",ostypetostr(entry->type));
-                                                errprint("%s\n", "Helooooooooo");
 						//goto bail;
 					}
 				}
