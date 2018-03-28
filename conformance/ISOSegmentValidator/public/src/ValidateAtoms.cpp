@@ -2353,7 +2353,10 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 					else if ( entry->type == 'm4ds' ){
 						BAILIFERR( Validate_m4ds_Atom( entry, refcon, (char *)"m4ds" ) );
 					}
-
+					else if (entry->type == 'pasp') 
+                                        {
+                                            BAILIFERR( Validate_pasp_Atom( entry, refcon, (char *)"pasp" ) );
+                                        }
 					else { 
 						err = badAtomErr;
 						warnprint("Warning: Unknown atom found \"%s\": video sample descriptions would not normally contain this\n",ostypetostr(entry->type));
@@ -2370,13 +2373,6 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 						warnprint("Warning: Unknown atom found \"%s\": video sample descriptions would not normally contain this\n",ostypetostr(entry->type));
 						//goto bail;
 					}
-				}
-				else if ( (entry->type == 'pasp') && vg.cmaf) 
-				{
-					// Process 'pasp' atoms
-					atomprint("<pasp"); vg.tabcnt++;
-					BAILIFERR( Validate_pasp_Atom( entry, refcon ) );
-					--vg.tabcnt; atomprint("</pasp>\n");
 				}
 				else { 
 					err = badAtomErr;
@@ -4732,12 +4728,14 @@ bail:
 	return err;
 }
 
-OSErr Validate_pasp_Atom( atomOffsetEntry *aoe, void *refcon )
+OSErr Validate_pasp_Atom( atomOffsetEntry *aoe, void *refcon, char *esName )
 {
     OSErr err = noErr;
     UInt32 version;
     UInt32 flags;
     UInt64 offset;
+    
+    atomprint("<pasp"); vg.tabcnt++;
     
     // Get version/flags
     BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
@@ -4748,7 +4746,9 @@ OSErr Validate_pasp_Atom( atomOffsetEntry *aoe, void *refcon )
     UInt32 vSpacing;
     BAILIFERR( GetFileData( aoe,&hSpacing, offset, 4 , &offset ) );
     BAILIFERR( GetFileData( aoe,&vSpacing, offset, 4 , &offset ) );
-
+    
+    --vg.tabcnt; atomprint("/>\n");
+    
     // All done
 	aoe->aoeflags |= kAtomValidated;
        
