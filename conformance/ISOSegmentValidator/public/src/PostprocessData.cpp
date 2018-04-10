@@ -1059,7 +1059,7 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir) {
     //In this function,all top level boxes like ftyp, moov , moof etc are checked for order. Other lower level boxes have separate functions.
     bool ord_err=false;
     char err_order[50];
-    strcat(err_order, '\0');//err_order[0]={'\0'};
+    err_order[0]={'\0'};
     
     if (CMAFHeader) {
         for (int i= 0; i < cnt; i++) {
@@ -1133,7 +1133,7 @@ void checkCMAFBoxOrder_moov(long cnt,atomOffsetEntry *list)
 {
     bool ord_err=false;
     char err_order[50];
-    strcat(err_order, '\0');//err_order[0]={'\0'};
+    err_order[0]={'\0'};
     //Check the order of boxes inside 'moov'.
     for (int i= 0; i < cnt; i++) {
         if (i==0 && list[i].type != 'mvhd')
@@ -1160,7 +1160,7 @@ void checkCMAFBoxOrder_trak(long cnt,atomOffsetEntry *list)
     int edts_flag=0;
     bool ord_err=false;
     char err_order[50];
-    strcat(err_order, '\0');//err_order[0]={'\0'};
+    err_order[0]={'\0'};
     //Check the order of boxes inside 'trak'.
     for (int i= 0; i < cnt; i++) {
         if (i==0 && list[i].type != 'tkhd') 
@@ -1189,7 +1189,7 @@ void checkCMAFBoxOrder_mdia(long cnt,atomOffsetEntry *list)
     int elng_flag=0;
     bool ord_err=false;
     char err_order[50];
-    strcat(err_order, '\0');//err_order[0]={'\0'};
+    err_order[0]={'\0'};
     for (int i= 0; i < cnt; i++) {
         if (i==0 && list[i].type != 'mdhd')
            ord_err=true;
@@ -1217,7 +1217,7 @@ void checkCMAFBoxOrder_minf(long cnt,atomOffsetEntry *list)
 {
     bool ord_err=false;
     char err_order[50];
-    strcat(err_order, '\0');//err_order[0]={'\0'};
+    err_order[0]={'\0'};
     for (int i= 0; i < cnt; i++) {
         if (i==0 && list[i].type != 'vmhd' && list[i].type !='smhd' && list[i].type !='sthd')
            ord_err=true;
@@ -1240,7 +1240,7 @@ void checkCMAFBoxOrder_stbl(long cnt,atomOffsetEntry *list)
 {
     bool ord_err=false;
     char err_order[50];
-    strcat(err_order, '\0');//err_order[0]={'\0'};
+    err_order[0]={'\0'};
     for (int i= 0; i < cnt; i++) {
         if (i==0 && list[i].type != 'stsd')
             ord_err=true;
@@ -1267,7 +1267,7 @@ void checkCMAFBoxOrder_sinf(long cnt,atomOffsetEntry *list)
 {
     bool ord_err=false;
     char err_order[50];
-    strcat(err_order, '\0');//err_order[0]={'\0'};
+    err_order[0]={'\0'};
     for (int i= 0; i < cnt; i++) {
         if (i==0 && list[i].type != 'frma')
            ord_err=true;
@@ -1289,7 +1289,7 @@ void checkCMAFBoxOrder_moof(long cnt,atomOffsetEntry *list)
 {
     bool ord_err=false;
     char err_order[50];
-    strcat(err_order, '\0');//err_order[0]={'\0'};
+    err_order[0]={'\0'};
     for (int i= 0; i < cnt; i++) {
         if (i==0 && list[i].type != 'mfhd')
            ord_err=true;
@@ -1310,7 +1310,7 @@ void checkCMAFBoxOrder_traf(long cnt,atomOffsetEntry *list)
 {
     bool ord_err=false;
     char err_order[50];
-    strcat(err_order, '\0');//err_order[0]={'\0'};
+    err_order[0]={'\0'};
     for (int i= 0; i < cnt; i++) {
         if (i==0 && list[i].type != 'tfhd')
            ord_err=true;

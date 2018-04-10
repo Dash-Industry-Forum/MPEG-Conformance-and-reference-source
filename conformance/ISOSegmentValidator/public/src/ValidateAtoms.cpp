@@ -4198,8 +4198,8 @@ OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon )
     atomprint("default_IV_size=\"%d\"\n", default_IV_size);
     //Adjust KID before printing, ascii to integer.
     char tenc_KID[50], KID_char[20];
-    strcat(tenc_KID, '\0');//tenc_KID[0]={'\0'};
-    strcat(KID_char,'\0');//KID_char[0]={'\0'};
+    tenc_KID[0]={'\0'};
+    KID_char[0]={'\0'};
     for(int z=0;z<16;z++)
     {
         sprintf(KID_char,"%d",default_KID[z]);
@@ -4219,7 +4219,7 @@ OSErr Validate_tenc_Atom( atomOffsetEntry *aoe, void *refcon )
      char *st;
      //st[0]={'\0'};
      char mpd_kid[50],buf;
-     strcat(mpd_kid,'\0');//mpd_kid[0]={'\0'};
+     mpd_kid[0]={'\0'};
      st= vg.default_KID;
      if(st[0]!= '\0'){
 	remove_all_chars(st, '-'); //
