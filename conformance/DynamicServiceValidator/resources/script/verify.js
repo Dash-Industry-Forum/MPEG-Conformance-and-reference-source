@@ -797,6 +797,65 @@ function getChildByTagName(parent,tagName)
     return null;
 }
 
+/******************************Time Parsing******************************************/
+function getTiming(timeval)
+{
+    var movingIndex = timeval.indexOf("P")+1;
+    var Y = 0;
+    var M = 0;
+    var W = 0;
+    var D = 0;
+    var H = 0;
+    var Min = 0;
+    var S = 0;
+    
+    var year = timeval.indexOf("Y", movingIndex);
+    if(year != -1){
+        Y = timeval.substring(movingIndex, year);
+        movingIndex = year+1;
+    }
+    
+    var month = timeval.indexOf("M", movingIndex);
+    if(month != -1 && month < timeval.indexOf("T", movingIndex)){
+        M = timeval.substring(movingIndex, month);
+        movingIndex = month+1;
+    }
+    
+    var week = timeval.indexOf("W", movingIndex);
+    if(week != -1){
+        W = timeval.substring(movingIndex, week);
+        movingIndex = week+1;
+    }
+    
+    var day = timeval.indexOf("D", movingIndex);
+    if(day != -1){
+        D = timeval.substring(movingIndex, day);
+        movingIndex = day+1;
+    }
+    
+    movingIndex = timeval.indexOf("T", movingIndex)+1;
+    
+    var hour = timeval.indexOf("H", movingIndex);
+    if(hour != -1){
+        H = timeval.substring(movingIndex, hour);
+        movingIndex = hour+1;
+    }
+    
+    var minute = timeval.indexOf("M", movingIndex);
+    if(minute != -1){
+        Min = timeval.substring(movingIndex, minute);
+        movingIndex = minute+1;
+    }
+    
+    var second = timeval.indexOf("S", movingIndex);
+    if(second != -1){
+        S = timeval.substring(movingIndex, second);
+        movingIndex = second+1;
+    }
+    
+    return (Y*365*24*60*60 + M*30*24*60*60 + W*7*24*60*60 + D*24*60*60 + H*60*60 + Min*60 + S*1);
+}
+
 /******************************get MediaPresentationDuration******************************************/
 function getMediaPresentationDuration(mpd){
 //case 1:mediaPresentationDuration="PT9M57S"
@@ -871,11 +930,12 @@ var r1=/[-+]?[0-9]*\.?[0-9]+/g;
 var tsbd=0;
 //s.match(r):object, Number(s.match(r)):number  
 if(mpd.getAttribute("timeShiftBufferDepth")){
-   var tsbd_string=mpd.getAttribute("timeShiftBufferDepth").match(r1);
-   var tsbd_len=tsbd_string.length;   
-   for(i=tsbd_len-1;i>=0;i--){
-	tsbd=tsbd+parseFloat(tsbd_string[i])*Math.pow(60,tsbd_len-i-1);
-   }
+//   var tsbd_string=mpd.getAttribute("timeShiftBufferDepth").match(r1);
+//   var tsbd_len=tsbd_string.length;   
+//   for(i=tsbd_len-1;i>=0;i--){
+//	tsbd=tsbd+parseFloat(tsbd_string[i])*Math.pow(60,tsbd_len-i-1);
+//   }
+    tsbd = getTiming(mpd.getAttribute("timeShiftBufferDepth"));
 }else{
    tsbd=veryLargeDuration;
 }
@@ -885,16 +945,17 @@ return tsbd;
 
 // MPD@suggestedPresentationDelay, it is just a value
 function getSPD(mpd){
-var r1=/[-+]?[0-9]*\.?[0-9]+/g;
+//var r1=/[-+]?[0-9]*\.?[0-9]+/g;
 //Case 2:sometimes they are in the form of "PT7200S"
 var spd=0;
 //s.match(r):object, Number(s.match(r)):number  
 if(mpd.getAttribute("suggestedPresentationDelay")){
-   var spd_string=mpd.getAttribute("suggestedPresentationDelay").match(r1);
-   var spd_len=spd_string.length;   
-   for(i=spd_len-1;i>=0;i--){
-	spd=spd+parseFloat(spd_string[i])*Math.pow(60,spd_len-i-1);
-   }
+//   var spd_string=mpd.getAttribute("suggestedPresentationDelay").match(r1);
+//   var spd_len=spd_string.length;   
+//   for(i=spd_len-1;i>=0;i--){
+//	spd=spd+parseFloat(spd_string[i])*Math.pow(60,spd_len-i-1);
+//   }
+    spd = getTiming(mpd.getAttribute("suggestedPresentationDelay"));
 }else{
    spd=5;
 }
@@ -903,16 +964,17 @@ return spd;
 
  //MPD@minimumUpdatePeriod, it is just a value
 function getMUP(mpd){
-var r1=/[-+]?[0-9]*\.?[0-9]+/g;
+//var r1=/[-+]?[0-9]*\.?[0-9]+/g;
 //Case 2:sometimes they are in the form of "PT7200S"
 var mup=0;
 //s.match(r):object, Number(s.match(r)):number  
 if(mpd.getAttribute("minimumUpdatePeriod")){
-   var mup_string=mpd.getAttribute("minimumUpdatePeriod").match(r1);
-   var mup_len=mup_string.length;   
-   for(i=mup_len-1;i>=0;i--){
-	mup=mup+parseFloat(mup_string[i])*Math.pow(60,mup_len-i-1);
-   }
+//   var mup_string=mpd.getAttribute("minimumUpdatePeriod").match(r1);
+//   var mup_len=mup_string.length;   
+//   for(i=mup_len-1;i>=0;i--){
+//	mup=mup+parseFloat(mup_string[i])*Math.pow(60,mup_len-i-1);
+//   }
+    mup = getTiming(mpd.getAttribute("minimumUpdatePeriod"));
 }else{
    mup=maxMUP;
 }
@@ -920,16 +982,17 @@ return mup;
 }
 // MPD@minBufferTime, it is just a value
 function getMBT(mpd){
-var r1=/[-+]?[0-9]*\.?[0-9]+/g;
+//var r1=/[-+]?[0-9]*\.?[0-9]+/g;
 //Case 2:sometimes they are in the form of "PT7200S"
 var mbt=0;
 //s.match(r):object, Number(s.match(r)):number  
 if(mpd.getAttribute("minBufferTime")){
-   var mbt_string=mpd.getAttribute("minBufferTime").match(r1);
-   var mbt_len=mbt_string.length;   
-   for(i=mbt_len-1;i>=0;i--){
-	mbt=mbt+parseFloat(mbt_string[i])*Math.pow(60,mbt_len-i-1);
-   }
+//   var mbt_string=mpd.getAttribute("minBufferTime").match(r1);
+//   var mbt_len=mbt_string.length;   
+//   for(i=mbt_len-1;i>=0;i--){
+//	mbt=mbt+parseFloat(mbt_string[i])*Math.pow(60,mbt_len-i-1);
+//   }
+    mbt = getTiming(mpd.getAttribute("minBufferTime"));
 }else{
    mbt=10;
 }
