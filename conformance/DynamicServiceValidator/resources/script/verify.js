@@ -458,6 +458,48 @@ function dispatchChecks()
 }
 
 /*******************************************************************************************************************************
+Merge the high level information with the low level information.
+This is done for preventing the loss of possible extra information provided in higher layers.
+Lower level information takes precedence for the information provided for same functionalities.
+This holds for SegmentTemplate and SegmentTimeline existing on different levels in MPD.
+********************************************************************************************************************************/
+
+function hierarchyLevelInfoGathering(higherLevel, lowerLevel)
+{
+    if(higherLevel.SegmentTemplate != null){
+        var highSegmentTemplate = higherLevel.SegmentTemplate;
+        var highAttributes = highSegmentTemplate.attributes;
+        var highAttributesLen = highAttributes.length;
+        var i, j;
+        
+        if(lowerLevel.SegmentTemplate != null){
+            var lowSegmentTemplate = lowerLevel.SegmentTemplate;
+            var lowAttribute;
+            
+            for(i=0; i<highAttributesLen; i++){
+                lowAttribute = lowSegmentTemplate.getAttribute(highAttributes[i].nodeName);
+                if(!lowAttribute){
+                    var newAttribute = document.createAttribute(highAttributes[i].nodeName);
+                    newAttribute.value = highAttributes[i].nodeValue;
+                    lowerLevel.SegmentTemplate.attributes.setNamedItem(newAttribute);
+                }
+            }
+            
+            if(higherLevel.SegmentTemplate.getElementsByTagName("SegmentTimeline").length != 0){
+                var highSegmentTimeline = higherLevel.SegmentTemplate.getElementsByTagName("SegmentTimeline")[0];
+                
+                if(lowerLevel.SegmentTemplate.getElementsByTagName("SegmentTimeline").length == 0){
+                    lowerLevel.SegmentTemplate.appendChild(highSegmentTimeline);
+                }
+            }
+        }
+        else{
+            lowerLevel.SegmentTemplate = highSegmentTemplate;
+        }
+    }
+}
+
+/*******************************************************************************************************************************
 Generate URLs and availability times for segment timeline based template.
 ********************************************************************************************************************************/
 
@@ -651,7 +693,7 @@ function processSegmentTemplate(Representation, Period)
 Process all data pertaining a representation, mainly SAEs and SASs of all the segments for different addressing methods
 ********************************************************************************************************************************/
 
-function processRepresentation(Representation, Period)
+function processRepresentation(Representation, AdaptationSet, Period)
 {
     var id = Representation.xmlData.getAttribute('id');
 
@@ -666,6 +708,7 @@ function processRepresentation(Representation, Period)
     
     if( SegmentTemplate != null )
         Representation.SegmentTemplate = SegmentTemplate;
+    hierarchyLevelInfoGathering(AdaptationSet, Representation);
     
     var SegmentBase = getChildByTagName(Representation,"SegmentBase");
     
@@ -692,7 +735,8 @@ function processAdaptationSet(AdaptationSet,Period)
     
     if( SegmentTemplate != null )
         AdaptationSet.SegmentTemplate = SegmentTemplate;
-
+    hierarchyLevelInfoGathering(Period, AdaptationSet);
+    
     var SegmentBase = getChildByTagName(AdaptationSet,"SegmentBase");
     
     if( SegmentBase != null )
@@ -711,7 +755,7 @@ function processAdaptationSet(AdaptationSet,Period)
         AdaptationSet.Representations[repIndex].SegmentTemplate = AdaptationSet.SegmentTemplate;
         AdaptationSet.Representations[repIndex].SegmentBase = AdaptationSet.SegmentBase;
 
-        processRepresentation(AdaptationSet.Representations[repIndex],Period);
+        processRepresentation(AdaptationSet.Representations[repIndex],AdaptationSet,Period);
     }
 }
 
