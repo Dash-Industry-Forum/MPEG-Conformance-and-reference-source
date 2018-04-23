@@ -776,14 +776,8 @@ function processPeriod(Period)
     
     var numAdaptationSets = Period.xmlData.getElementsByTagName("AdaptationSet").length;
 
-    var r1=/[-+]?[0-9]*\.?[0-9]+/g; //sometimes they are in the form of "PT5M8S"
     if(Period.xmlData.getAttribute("start")){
-       var ps_string = Period.xmlData.getAttribute("start").match(r1);
-       var ps_len=ps_string.length; 
-
-       for(i=ps_len-1;i>=0;i--){
-          Period.PeriodStart=Period.PeriodStart+parseFloat(ps_string[i])*Math.pow(60,ps_len-i-1);
-       }
+       Period.PeriodStart = getTiming(Period.xmlData.getAttribute("start"));
     }	
 
     for(var asIndex = 0; asIndex < numAdaptationSets ; asIndex++)
@@ -804,21 +798,26 @@ function processPeriod(Period)
 function processMPD(MPDxmlData)
 {
     var numPeriods = MPDxmlData.getElementsByTagName("Period").length;
+    var currentPeriod = 0;
     
-    if(numPeriods > 1)
-        alert("Found " + numPeriods + "periods, current implementation will only handle the first one!");
-
+    if(numPeriods > 1){
+        currentPeriod = determineCurrentPeriod(MPD, periodInformation(MPD));
+        alert("Found " + numPeriods + "periods, current implementation will only handle Period " + currentPeriod + "!");
+    }
+    
     MPD.updatedSegments = 0;
 
     MPD.MUP = getMUP(MPD.xmlData);
+    
+    
 
-    for(var periodIndex = 0; periodIndex < 1/*numPeriods*/ ; periodIndex++) //Currently only first period
+    for(var periodIndex = 0; periodIndex < 1/*numPeriods*/; periodIndex++) //Currently only first period
     {
         if(MPD.Periods[periodIndex] == null)
             MPD.Periods[periodIndex] = {xmlData: null, PeriodStart: 0, id: "", SegmentTemplate: null, SegmentBase: null, AdaptationSets: new Array()};
 
         //Initializations
-        MPD.Periods[periodIndex].xmlData = MPDxmlData.getElementsByTagName("Period")[periodIndex];
+        MPD.Periods[periodIndex].xmlData = MPDxmlData.getElementsByTagName("Period")[currentPeriod];
         
         processPeriod(MPD.Periods[periodIndex]);
     }
@@ -839,6 +838,88 @@ function getChildByTagName(parent,tagName)
     }
 
     return null;
+}
+
+/******************************Determine Current Period******************************************/
+function determineCurrentPeriod(MPD, periodsInfo)
+{
+    var ast = new Date(MPD.xmlData.getAttribute("availabilityStartTime")).getTime();
+    var numPeriods = MPD.xmlData.getElementsByTagName("Period").length;
+    var starts = periodsInfo[0];
+    var durations = periodsInfo[1];
+    var timeNow = new Date();
+    var i;
+    
+    for(i=0; i<numPeriods; i++){
+        if((timeNow.getTime() > ast + starts[i]*1000) && (timeNow.getTime() < ast + starts[i]*1000 + durations[i]*1000))
+            return i;
+    }
+    
+    throw("According to timing, no period is available, exiting!");
+}
+
+function periodInformation(MPD)
+{
+    var periods = MPD.xmlData.getElementsByTagName("Period");
+    var numPeriods = periods.length;
+    
+    var returnInfo = new Array();
+    var starts = new Array();
+    var durations = new Array();
+    var period;
+    var start;
+    var duration;
+    var i;
+    
+    for(i=0; i<numPeriods; i++){
+        period = periods[i];
+        
+        // determine period start
+        if(period.getAttribute("start")){
+            start = getTiming(period.getAttribute("start"));
+        }
+        else{
+            if(i > 0){
+                if(periods[i-1].getAttribute("duration"))
+                    start = getTiming(starts[i-1]) + getTiming(periods[i-1].getAttribute("duration"));
+            }
+            else{
+                if(MPD.xmlData.getAttribute("type") == "static"){
+                    start = 0;
+                }
+            }
+        }
+        starts[i] = start;
+        
+        // determine period duration
+        if(i != numPeriods-1){
+            if(periods[i+1].getAttribute("start")){
+                duration = getTiming(periods[i+1].getAttribute("start")) - start;
+            }
+            else if(period.getAttribute("duration")){
+                duration = getTiming(period.getAttribute("duration"));
+            }
+        }
+        else{
+            var endTime;
+            if(MPD.xmlData.getAttribute("mediaPresentationDuration"))
+                endTime = getTiming(MPD.xmlData.getAttribute("mediaPresentationDuration"));
+            else if(period.getAttribute("duration"))
+                endTime = getTiming(period.getAttribute("duration"));
+            else if(MPD.xmlData.getAttribute("type") == "dynamic")
+                endTime = Number.POSITIVE_INFINITY;
+            else
+                throw("Must have @mediaPresentationDuratio on MPD or an explicit @duration on the last period, exiting!");
+            
+            duration = endTime - start;
+        }
+        durations[i] = duration;
+    }
+    
+    returnInfo[0] = starts;
+    returnInfo[1] = durations;
+    
+    return returnInfo;
 }
 
 /******************************Time Parsing******************************************/
