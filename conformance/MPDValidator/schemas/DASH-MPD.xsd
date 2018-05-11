@@ -81,6 +81,7 @@
     </xs:sequence>
     <xs:attribute ref="xlink:href"/>
     <xs:attribute ref="xlink:actuate" default="onRequest"/>
+    <xs:attribute name="messageData" type="xs:anyURI"/>
     <xs:attribute name="schemeIdUri" type="xs:anyURI" use="required"/>
     <xs:attribute name="value" type="xs:string"/>
     <xs:attribute name="timescale" type="xs:unsignedInt"/>
@@ -223,6 +224,7 @@
       <xs:element name="EssentialProperty" type="DescriptorType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="SupplementalProperty" type="DescriptorType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="InbandEventStream" type="EventStreamType" minOccurs="0" maxOccurs="unbounded"/>
+	  <xs:element name="Switching" type="SwitchingType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="profiles" type="xs:string"/>
@@ -266,6 +268,22 @@
     <xs:anyAttribute namespace="##other" processContents="lax"/>
   </xs:complexType>
 
+  <!-- Switching  -->
+  <xs:complexType name="SwitchingType">
+    <xs:attribute name="interval" type="xs:unsignedInt" use="required"/>
+    <xs:attribute name="type" type="SwitchingTypeType"/>
+    <xs:anyAttribute namespace="##other" processContents="lax"/>
+  </xs:complexType>
+
+  <!-- Switching Type type enumeration -->
+  <xs:simpleType name="SwitchingTypeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="media"/>
+      <xs:enumeration value="bitstream"/>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  
   <!-- Segment information base -->
   <xs:complexType name="SegmentBaseType">
     <xs:sequence>
