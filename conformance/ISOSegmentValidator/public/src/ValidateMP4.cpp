@@ -216,6 +216,8 @@ int main(void)
     vg.bandwidth = -1;
     vg.width = 0;
     vg.height = 0;
+    vg.sarx = 1;
+    vg.sary = 1;
     vg.audioChValue = 0;
     vg.suggestBandwidth = false;
     vg.isoLive = false;
@@ -341,7 +343,11 @@ int main(void)
                           getNextArgStr( &temp, "width" ); vg.width = atoi(temp);
                 } else if ( keymatch( arg, "height", 6 ) ) {
                           getNextArgStr( &temp, "height" ); vg.height = atoi(temp);
-		} else if ( keymatch( arg, "codecs", 6 ) ) {
+		} else if( keymatch( arg, "sarx", 4 ) ) {
+                    getNextArgStr( &temp, "sarx" ); vg.sarx = atoi(temp);
+                } else if( keymatch( arg, "sary", 4 ) ) {
+                    getNextArgStr( &temp, "sary" ); vg.sary = atoi(temp);
+                } else if ( keymatch( arg, "codecs", 6 ) ) {
                           getNextArgStr( &vg.codecs, "codecs" ); 
 	        } else if ( keymatch( arg, "audiochvalue", 12 ) ) {
                          getNextArgStr( &temp, "audiochvalue" ); vg.audioChValue = atoi(temp);

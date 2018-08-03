@@ -381,16 +381,6 @@ OSErr Validate_tkhd_Atom( atomOffsetEntry *aoe, void *refcon )
 
 
 	// All done
-		// Check whether height and width are matching with those from MPD
-		if(EndianS16_BtoN(EndianS32_NtoB(tkhdHeadCommon.trackWidth)) != vg.width)
-		{ 
-		  errprint("Width in TrackHeaderBox is not matching with out of box width information \n");
-		}
-		if(EndianS16_BtoN(EndianS32_NtoB(tkhdHeadCommon.trackHeight))!= vg.height)
-		{ 
-		  errprint("Height in TrackHeaderBox is not matching with out of box height information \n");
-		}
-		
 	aoe->aoeflags |= kAtomValidated;
 
 bail:
@@ -2221,15 +2211,23 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	char vsdi_name[strlen(vsdi.name)];
 	
 	tir->sampleDescWidth = vsdi.width; tir->sampleDescHeight = vsdi.height;
-	if ((tir->trackWidth>>16) != vsdi.width) {
+	/*if ((tir->trackWidth>>16) != vsdi.width) {
 		warnprint("WARNING: Sample description width %d not the same as track width %s\n",vsdi.width,fixedU32str(tir->trackWidth));
 	}
 	if ((tir->trackHeight>>16) != vsdi.height) {
 		warnprint("WARNING: Sample description height %d not the same as track height %s\n",vsdi.height,fixedU32str(tir->trackHeight));
-	}
+	}*/
 	if ((vsdi.width==0) || (vsdi.height==0)) {
 		errprint("Visual Sample description height (%d) or width (%d) zero\n",vsdi.height,vsdi.width);
 	}
+	
+	if(vg.width != 0 && vg.height != 0){
+            float mpd_ratio = ((float)(vg.width * vg.sarx))/((float)(vg.height * vg.sary));
+            float tkhd_ratio = ((float)(tir->trackWidth>>16))/((float)(tir->trackHeight>>16));
+            if(mpd_ratio != tkhd_ratio){
+                errprint("Track header box width:height %f:%f is not matching the MPD width:height %d:%d on a grid determined by the @sar attribute %d:%d.\n",((float)(tir->trackWidth>>16)), ((float)(tir->trackHeight>>16)), vg.width, vg.height, vg.sarx, vg.sary);
+            }
+        }
 	
 	vsdi.hRes = EndianU32_BtoN(vsdi.hRes);
 	vsdi.vRes = EndianU32_BtoN(vsdi.vRes);
@@ -2285,6 +2283,16 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	FieldMustBe( vsdi.name[0], 0, "ImageDescription name must be ''" );
 	FieldMustBe( vsdi.depth, 24, "ImageDescription depth must be %d not %d" );
 	FieldMustBe( vsdi.clutID, -1, "ImageDescription clutID must be %d not %d" );
+        
+        // Check whether height and width are matching with those from MPD
+        if(vsdi.width != vg.width)
+        { 
+            errprint("Width in video sample description (%d) is not matching with the width in the MPD (%d) \n",vsdi.width, vg.width);
+        }
+        if(vsdi.height != vg.height)
+        { 
+            errprint("Height in video sample description (%d) is not matching with othe width in the MPD (%d) \n",vsdi.height, vg.height);
+        }
 
 		// Now we have the Sample Extensions
 		{
