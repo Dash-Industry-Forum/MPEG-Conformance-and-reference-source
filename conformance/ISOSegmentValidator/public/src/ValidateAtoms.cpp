@@ -2158,7 +2158,10 @@ OSErr Validate_stsd_Atom( atomOffsetEntry *aoe, void *refcon )
 				case 'odsm':
 					err = Validate_mp4_SD_Entry( entry, refcon, Validate_odsm_ES_Bitstream, (char *)"odsm_ES" );
 					break;
-					
+                                        
+                                case 'subt':
+                                        err = Validate_subt_SD_Entry( entry, refcon );
+                                        break;
 					
 				default:
 					// why does MP4 say it must be an MpegSampleEntry?
@@ -3447,6 +3450,55 @@ bail:
 
 //==========================================================================================
 
+OSErr Validate_subt_SD_Entry( atomOffsetEntry *aoe, void *refcon )
+{
+    OSErr err = noErr;
+    UInt64 offset;
+    SampleDescriptionHead sdh;
+    
+    offset = aoe->offset;
+    
+    // Get data 
+    BAILIFERR( GetFileData( aoe, &sdh, offset, sizeof(sdh), &offset ) );
+    EndianSampleDescriptionHead_BtoN( &sdh );
+    
+    atomprint("sdType=\"%s\"\n", ostypetostr(sdh.sdType));
+    atomprint("dataRefIndex=\"%ld\"\n", sdh.dataRefIndex);
+    atomprint(">\n"); //vg.tabcnt++; 
+    
+    {
+        UInt64 minOffset, maxOffset;
+        atomOffsetEntry *entry;
+        atomOffsetEntry *list;
+        long cnt;
+        int i;
+        
+        minOffset = offset;
+        maxOffset = aoe->offset + aoe->size;
+        
+        BAILIFERR( FindAtomOffsets( aoe, minOffset, maxOffset, &cnt, &list ) );
+        
+        for(i=0; i<cnt; i++)
+        {
+            entry = &list[i];
+            
+            if(sdh.sdType == 'stpp')
+            {
+                BAILIFERR( Validate_stpp_Atom( entry, refcon, (char *)"stpp" ) );
+            }
+        }
+    }
+    
+    // All done
+	aoe->aoeflags |= kAtomValidated;
+
+bail:
+	return err;
+    
+}
+
+//==========================================================================================
+
 OSErr Validate_mp4_SD_Entry( atomOffsetEntry *aoe, void *refcon, ValidateBitstreamProcPtr validateBitstreamProc, char *esname )
 {
 	OSErr err = noErr;
@@ -3829,6 +3881,40 @@ bail:
 		free(esDataP);
 
 	return err;
+}
+
+//==========================================================================================
+
+OSErr Validate_stpp_Atom( atomOffsetEntry *aoe, void *refcon, char *esname )
+{
+    OSErr err = noErr;
+    UInt64 offset;
+    unsigned long esSize;
+    char *name_space;
+    char *schema_location;
+    char *auxiliary_mime_types;
+    
+    atomprint("<%s", esname); vg.tabcnt++;
+    
+    offset = aoe->offset;
+    
+    // Get data
+    BAILIFERR( GetFileCString( aoe, &name_space, offset, aoe->maxOffset - offset, &offset ) );
+    atomprint("namespace=\"%s\"\n", name_space);
+    BAILIFERR( GetFileCString( aoe, &schema_location, offset, aoe->maxOffset - offset, &offset ) );
+    atomprint("schema_location=\"%s\"\n", schema_location);
+    BAILIFERR( GetFileCString( aoe, &auxiliary_mime_types, offset, aoe->maxOffset - offset, &offset ) );
+    atomprint("auxiliary_mime_types=\"%s\"\n", auxiliary_mime_types);
+    
+    atomprint("/>\n"); vg.tabcnt--;
+    
+    // All done
+	aoe->aoeflags |= kAtomValidated;
+
+bail:
+	return err;
+        
+        
 }
 
 //==========================================================================================
