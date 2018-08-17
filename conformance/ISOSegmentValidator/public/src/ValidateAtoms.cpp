@@ -2573,7 +2573,7 @@ OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon )
         BAILIFERR( GetFileDataN32( aoe, &trafInfo->sample_description_index, offset, &offset ) );
     else{
         if(vg.cmaf)
-            errprint("CMAF check violated: Section 7.5.14. \"Default values or per sample values SHALL be stored in each CMAF chunk's TrackFragmentBoxHeader and/or TrackRunBox\", 'description_index' not found.\n");
+            errprint("CMAF check violated: Section 7.5.14. \"Default values or per sample values SHALL be stored in each CMAF chunk's TrackFragmentBoxHeader and/or TrackRunBox\", 'sample_description_index' not found.\n");
     }
     
     if(trafInfo->default_sample_duration_present)
