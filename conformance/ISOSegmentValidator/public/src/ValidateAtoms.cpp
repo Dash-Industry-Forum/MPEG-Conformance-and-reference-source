@@ -529,7 +529,7 @@ OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 	
 	// Get Handler Info Name
 	BAILIFERR( GetFileCString( aoe, &nameP, offset, aoe->maxOffset - offset, &offset ) );
-	atomprint("name=\"%s\"\n", nameP);
+	//atomprint("name=\"%s\"\n", nameP);
 
 	// Check required field values
 	FieldMustBe( hdlrInfo->componentType, 0, "'hdlr' componentType (reserved in mp4) must be %d not 0x%lx" );
@@ -537,9 +537,9 @@ OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 	FieldMustBe( hdlrInfo->componentFlags, 0, "'hdlr' componentFlags (reserved in mp4) must be %d not 0x%lx" );
 	FieldMustBe( hdlrInfo->componentFlagsMask, 0, "'hdlr' componentFlagsMask (reserved in mp4) must be %d not 0x%lx" );
 
-		FieldMustBeOneOf10( hdlrInfo->componentSubType, OSType, 
+		FieldMustBeOneOf11( hdlrInfo->componentSubType, OSType, 
 			"'hdlr' handler type must be be one of ", 
-			('odsm', 'crsm', 'sdsm', 'vide', 'soun', 'm7sm', 'ocsm', 'ipsm', 'mjsm', 'hint') );
+			('odsm', 'crsm', 'sdsm', 'vide', 'soun', 'm7sm', 'ocsm', 'ipsm', 'mjsm', 'hint', 'subt') );
 
 		//Explicit check for ac-4
 		if(!strcmp(vg.codecs, "ac-4") && strcmp(ostypetostr(hdlrInfo->componentSubType),"soun"))
@@ -1026,7 +1026,7 @@ OSErr Validate_dref_Atom( atomOffsetEntry *aoe, void *refcon )
 					
 				default:
 				// �� should warn
-					warnprint("WARNING: unknown/unexpected dref entry '%s'\n",ostypetostr(entry->type));
+					warnprint("WARNING: In %s unknown/unexpected dref entry '%s'\n",vg.curatompath, ostypetostr(entry->type));
 					atomprint("???? />\n");
 					break;
 			}
@@ -2158,7 +2158,7 @@ OSErr Validate_stsd_Atom( atomOffsetEntry *aoe, void *refcon )
 				case 'odsm':
 					err = Validate_mp4_SD_Entry( entry, refcon, Validate_odsm_ES_Bitstream, (char *)"odsm_ES" );
 					break;
-                                        
+					
                                 case 'subt':
                                         err = Validate_subt_SD_Entry( entry, refcon );
                                         break;
@@ -2194,7 +2194,7 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	UInt64 offset;
 	SampleDescriptionHead sdh;
 	VideoSampleDescriptionInfo vsdi;
-	
+	OSErr atomerr = noErr;
 	offset = aoe->offset;
 
 	// Get data 
@@ -2258,11 +2258,11 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint("vRes=\"%s\"\n", fixedU32str(vsdi.vRes));
 	atomprint("dataSize=\"%ld\"\n", vsdi.dataSize);
 	atomprint("frameCount=\"%hd\"\n", vsdi.frameCount);
-	atomprint("name=\"%s\"\n", vsdi_name);
+	//atomprint("name=\"%s\"\n", vsdi_name);//This creates problems in xml printing and crashes Rep processing.
 	atomprint("depth=\"%hd\"\n", vsdi.depth);
 	atomprint("clutID=\"%hd\"\n", vsdi.clutID);
 	atomprint(">\n");
-		FieldMustBeOneOf6( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4v', 'avc1', 'encv', 'hev1','hvc1', or 'vp09'", ('mp4v', 'avc1', 'encv', 'hev1','hvc1','vp09') );
+		FieldMustBeOneOf8( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4v', 'avc1', 'avc3', 'avc4', 'encv', 'hev1','hvc1', or 'vp09'", ('mp4v', 'avc1', 'avc3', 'avc4', 'encv', 'hev1','hvc1','vp09') );
 		
 	FieldMustBe( sdh.resvd1, 0, "SampleDescription resvd1 must be %d not %d" );
 	FieldMustBe( sdh.resvdA, 0, "SampleDescription resvd1 must be %d not %d" );
@@ -2283,7 +2283,7 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	FieldMustBe( vsdi.dataSize, 0, "ImageDescription dataSize must be %d not %d" );
 	FieldMustBe( vsdi.frameCount, 1, "ImageDescription frameCount must be %d not %d" );
 	// should check the whole string
-	FieldMustBe( vsdi.name[0], 0, "ImageDescription name must be ''" );
+	FieldMustBe( vsdi.name[0], 0, "ImageDescription name must be '%d' not '%d'" );
 	FieldMustBe( vsdi.depth, 24, "ImageDescription depth must be %d not %d" );
 	FieldMustBe( vsdi.clutID, -1, "ImageDescription clutID must be %d not %d" );
         
@@ -2347,10 +2347,11 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 					--vg.tabcnt; atomprint("</colr>\n");
 				}				
 
-				else if (( sdh.sdType == 'avc1' ) || is_protected) 
+				else if ((sdh.sdType == 'avc1' || sdh.sdType == 'avc3') || (is_protected && entry->type != 'hvcC')) 
 				{
 					if (entry->type == 'avcC') {
-						BAILIFERR( Validate_avcC_Atom( entry, refcon, (char *)"avcC" ) );
+						atomerr= Validate_avcC_Atom( entry, refcon, (char *)"avcC" );
+                                                if (!err) err = atomerr;
 					}
 					else if (entry->type == 'svcC') {
 						BAILIFERR( Validate_avcC_Atom( entry, refcon, (char *)"svcC" ) );
@@ -2370,24 +2371,25 @@ OSErr Validate_vide_SD_Entry( atomOffsetEntry *aoe, void *refcon )
                                         }
 					else { 
 						err = badAtomErr;
-						warnprint("Warning: Unknown atom found \"%s\": video sample descriptions would not normally contain this\n",ostypetostr(entry->type));
+						warnprint("Warning: In %s - unknown atom found \"%s\": video sample descriptions would not normally contain this\n",vg.curatompath, ostypetostr(entry->type));
 						//goto bail;
 					}
 				}
-				else if ((( sdh.sdType == 'hev1' ) || ( sdh.sdType == 'hvc1' )) && vg.cmaf)
+				else if (((( sdh.sdType == 'hev1' ) || ( sdh.sdType == 'hvc1' )) || is_protected) && (vg.cmaf || vg.dvb || vg.hbbtv))
 				{
 					if (entry->type == 'hvcC') {
-						BAILIFERR( Validate_hvcC_Atom( entry, refcon, (char *)"hvcC" ) );
+						atomerr= Validate_hvcC_Atom( entry, refcon, (char *)"hvcC" );
+                                                if (!err) err = atomerr;
 					}
 					else { 
 						err = badAtomErr;
-						warnprint("Warning: Unknown atom found \"%s\": video sample descriptions would not normally contain this\n",ostypetostr(entry->type));
+						warnprint("Warning: In %s - unknown atom found \"%s\": video sample descriptions would not normally contain this\n",vg.curatompath, ostypetostr(entry->type));
 						//goto bail;
 					}
 				}
 				else { 
 					err = badAtomErr;
-					warnprint("Warning: Unknown atom found \"%s\": video sample descriptions would not normally contain this\n",ostypetostr(entry->type));
+					warnprint("Warning: %s - unknown atom found \"%s\": video sample descriptions would not normally contain this\n",vg.curatompath, ostypetostr(entry->type));
 					// goto bail;
 				}
 				
@@ -2490,6 +2492,34 @@ OSErr Validate_mehd_Atom( atomOffsetEntry *aoe, void *refcon )
             errprint("CMAF checks violated: Section 7.3.2.1. \"If 'mehd' is present, SHALL provide the overall duration of a fragmented movie. If duration \
             is unknown, this box SHALL be omitted.\", but duration found as %d",mir->fragment_duration);
 
+	// All done
+	aoe->aoeflags |= kAtomValidated;
+bail:
+	return err;
+
+
+}
+
+
+//==========================================================================================
+
+
+OSErr Validate_trep_Atom( atomOffsetEntry *aoe, void *refcon )
+{
+	OSErr err = noErr;
+	UInt32 version;
+	UInt32 flags;
+	UInt64 offset;
+        UInt32 track_id;
+        
+	// Get version/flags
+	BAILIFERR( GetFullAtomVersionFlags( aoe, &version, &flags, &offset ) );
+        BAILIFERR( GetFileDataN32( aoe, &track_id, offset, &offset ) );
+        
+	atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
+	atomprint("track_id=\"%lld\"\n", track_id);
+	atomprint(">\n");
+        
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
@@ -2757,6 +2787,8 @@ OSErr Validate_trun_Atom( atomOffsetEntry *aoe, void *refcon )
 	if(vg.cmaf && trunInfo->data_offset_present != true){
 		errprint("CMAF check violated: Section 7.5.17. \"The data-offset-present flag SHALL be set to true\", found %d\n", trunInfo->data_offset_present);
 	}
+	if(vg.hbbtv && trunInfo->version ==0)
+            errprint("### HbbTV check violated: Section E.3.1.1. \"The track run box (trun) shall allow negative composition offsets in order to maintain audio visual presentation synchronization\", but unsigned offsets found \n");
     
     vg.tabcnt++;
     for(int i=0; i<trunInfo->sample_count; i++){
@@ -3188,8 +3220,10 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
 
     tir = check_track(sidxInfo->reference_ID);
     
-    if(tir == 0)
+    if(tir == 0){
+        atomprint(">\n");
         return badAtomErr;
+    }
     
     
     atomprintnotab("\tversion=\"%d\" flags=\"%d\"\n", version, flags);
@@ -3255,7 +3289,7 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
     mir->processedSdixs++;
     
     atomprint("cumulatedDuration=\"%Lf\"\n", sidxInfo->cumulatedDuration);
-    atomprint(">\n");
+    //atomprint(">\n");
     vg.tabcnt++;
 	for ( i = 0; i < sidxInfo->reference_count; i++ ) {
 	    sampleprint("<subsegment subsegment_duration=\"%ld\"", sidxInfo->references[i].subsegment_duration);
@@ -3268,6 +3302,7 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
 	// All done
 	aoe->aoeflags |= kAtomValidated;
 bail:
+        atomprint(">\n");
 	return err;
 
 
@@ -3327,9 +3362,9 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 	atomprint(">\n"); //vg.tabcnt++; 
 
 	// Check required field values
-	FieldMustBeOneOf4( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4a' or 'enca' or 'ac-4' or 'mha1' ", ( 'mp4a', 'enca','ac-4', 'mha1' ) );
+	FieldMustBeOneOf9( sdh.sdType, OSType, "SampleDescription sdType must be 'mp4a' or 'enca' or 'ac-4' or 'mha1' or 'ec-3' or 'dtsc' or 'dtsh', 'dtse', 'dtsl' ", ( 'mp4a', 'enca','ac-4', 'mha1','ec-3','dtsc','dtsh','dtse','dtsl' ) );
 	
-	if( (sdh.sdType != 'mp4a') && (sdh.sdType != 'enca') && (sdh.sdType != 'ac-4') && (sdh.sdType != 'mha1') && !fileTypeKnown ){	
+	if( (sdh.sdType != 'mp4a') && (sdh.sdType != 'enca') && (sdh.sdType != 'ac-4') && (sdh.sdType != 'mha1') && (sdh.sdType != 'ec-3') && (sdh.sdType != 'dtsc') && (sdh.sdType != 'dtsh') && (sdh.sdType != 'dtse') && (sdh.sdType != 'dtsl') && !fileTypeKnown ){	
 			warnprint("WARNING: Don't know about this sound descriptor type \"%s\"\n", 
 				ostypetostr(sdh.sdType));
 			// goto bail;
@@ -3389,7 +3424,7 @@ OSErr Validate_soun_SD_Entry( atomOffsetEntry *aoe, void *refcon )
 			        BAILIFERR( Validate_mhaC_Atom( entry, refcon)); 
 			}
 			
-			else warnprint("Warning: Unknown atom found \"%s\": audio sample descriptions would not normally contain this\n",ostypetostr(entry->type));
+			else warnprint("Warning: In %s - unknown atom found \"%s\": audio sample descriptions would not normally contain this\n",vg.curatompath, ostypetostr(entry->type));
 			
 		}
 		if(vg.cmaf && ((sdh.sdType == 'drmi' ) || (( (sdh.sdType & 0xFFFFFF00) | ' ') == 'enc ' )) && sinfFound!=1)
@@ -3651,7 +3686,7 @@ OSErr Validate_ESDAtom( atomOffsetEntry *aoe, void *refcon, ValidateBitstreamPro
 	atomprint(">\n");
 	
 	// Get the ObjectDescriptor
-	atomprint("<%s>", esname); vg.tabcnt++;
+	//atomprint("<%s>", esname); vg.tabcnt++;
 	BAILIFERR( GetFileBitStreamDataToEndOfAtom( aoe, &esDataP, &esSize, offset, &offset ) );
 	
 	BitBuffer_Init(&bb, (UInt8 *)esDataP, esSize);
@@ -3662,13 +3697,14 @@ OSErr Validate_ESDAtom( atomOffsetEntry *aoe, void *refcon, ValidateBitstreamPro
 		err = tooMuchDataErr;
 	}
 		
-	--vg.tabcnt; atomprint("</%s>\n", esname);
+	//--vg.tabcnt; atomprint("</%s>\n", esname);
 	
 	// All done
 	aoe->aoeflags |= kAtomValidated;
-	--vg.tabcnt; atomprint("</ESD>\n");
+	
 	
 bail:
+        --vg.tabcnt; atomprint("</ESD>\n");
 	if (esDataP)
 		free(esDataP);
 
@@ -4244,7 +4280,7 @@ OSErr Validate_schi_Atom( atomOffsetEntry *aoe, void *refcon )
             break;
             
 			default:
-				warnprint("WARNING: unknown schi atom '%s' length %ld\n",ostypetostr(entry->type), entry->size);
+				warnprint("WARNING: In %s - unknown schi atom '%s' length %ld\n",vg.curatompath, ostypetostr(entry->type), entry->size);
 				break;
 		}
 
@@ -4569,7 +4605,7 @@ OSErr Validate_ipro_Atom( atomOffsetEntry *aoe, void *refcon )
 				--vg.tabcnt; atomprint("</sinf>\n");
 			}				
 			
-			else warnprint("Warning: Unknown atom found \"%s\": ipro atoms would not normally contain this\n",ostypetostr(entry->type));
+			else warnprint("Warning: In %s - unknown atom found \"%s\": ipro atoms would not normally contain this\n",vg.curatompath, ostypetostr(entry->type));
 			
 		}
 	}
@@ -4675,7 +4711,7 @@ OSErr Validate_iinf_Atom( atomOffsetEntry *aoe, void *refcon )
 				--vg.tabcnt; atomprint("</infe>\n");
 			}				
 			
-			else warnprint("Warning: Unknown atom found \"%s\": iinf atoms would not normally contain this\n",ostypetostr(entry->type));
+			else warnprint("Warning: In %s - unknown atom found \"%s\": iinf atoms would not normally contain this\n",vg.curatompath, ostypetostr(entry->type));
 			
 		}
 	}
@@ -4822,7 +4858,7 @@ bail:
 	return err;
 }
 
-OSErr Validate_pasp_Atom( atomOffsetEntry *aoe, void *refcon, char *esName )
+OSErr Validate_pasp_Atom( atomOffsetEntry *aoe, void *refcon, char *esname )
 {
     OSErr err = noErr;
     UInt32 version;

@@ -205,7 +205,7 @@ int main(void)
 //	vg.print_sample = true;
 //	vg.print_sampleraw = true;
 //	vg.print_hintpayload = true;
-    vg.visualProfileLevelIndication = 255;
+    //vg.visualProfileLevelIndication = 255;
     // this is simply the wrong place for this;  it's not a program parameter, it's the mpeg-4
     //   profile/level indication as found in the video stream.
     // But neither movie info nor track info are available at the right points.  Ugh [dws]
@@ -218,6 +218,8 @@ int main(void)
     vg.height = 0;
     vg.sarx = 1;
     vg.sary = 1;
+    vg.framerate = 0;
+    vg.codecprofile = 0;
     vg.audioChValue = 0;
     vg.suggestBandwidth = false;
     vg.isoLive = false;
@@ -236,6 +238,8 @@ int main(void)
     vg.higherindexRange=-1;
     vg.atomxml=false;
     vg.cmaf=false;
+    vg.dvb=false;
+    vg.hbbtv=false;
     //vg.indexRange='\0';
     vg.pssh_count = 0;
     vg.sencFound=false;
@@ -347,9 +351,33 @@ int main(void)
                     getNextArgStr( &temp, "sarx" ); vg.sarx = atoi(temp);
                 } else if( keymatch( arg, "sary", 4 ) ) {
                     getNextArgStr( &temp, "sary" ); vg.sary = atoi(temp);
+                } else if ( keymatch( arg, "framerate", 9 ) ) {
+                          getNextArgStr( &temp, "framerate" );
+                          if(strstr(temp, "/")){
+                              char * pch;
+                              pch = strstr(temp, "/");
+                              strncpy (pch," ",1);
+                              puts(temp);
+                              
+                              char * pEnd;
+                              vg.framerate = strtof(temp, &pEnd)/strtof(pEnd, NULL);
+                          }
+                          else{
+                              vg.framerate = strtof(temp, NULL);
+                          }
                 } else if ( keymatch( arg, "codecs", 6 ) ) {
                           getNextArgStr( &vg.codecs, "codecs" ); 
-	        } else if ( keymatch( arg, "audiochvalue", 12 ) ) {
+	        } else if ( keymatch( arg, "codecprofile", 12 ) ) {
+                          getNextArgStr( &temp, "codecprofile" ); vg.codecprofile = atoi(temp);
+                } else if ( keymatch( arg, "codeclevel", 10 ) ) {
+                          getNextArgStr( &temp, "codeclevel" ); vg.codeclevel = atoi(temp);
+                } else if ( keymatch( arg, "codectier", 9 ) ) {
+                          getNextArgStr( &temp, "codectier" );
+                          if(strstr(temp, "L"))
+                              vg.codectier = 0;
+                          else if(strstr(temp, "H"))
+                              vg.codectier = 1;
+                } else if ( keymatch( arg, "audiochvalue", 12 ) ) {
                          getNextArgStr( &temp, "audiochvalue" ); vg.audioChValue = atoi(temp);
                  		  			  
 		} else if ( keymatch( arg, "default_kid", 11 ) ) { //Related to the case of encrypted content.
@@ -368,7 +396,11 @@ int main(void)
 			 vg.atomxml = true;
 		} else if ( keymatch( arg, "cmaf", 1)) {
 			 vg.cmaf = true;
-		}else {
+		} else if ( keymatch( arg, "dvb", 1)) {
+                         vg.dvb = true;
+                } else if ( keymatch( arg, "hbbtv", 1)) {
+                         vg.hbbtv = true;
+                } else {
 			fprintf( stderr, "Unexpected option \"%s\"\n", arg);
 			err = -1;
 			goto usageError;
@@ -619,7 +651,7 @@ int main(void)
 
 usageError:
 	fprintf( stderr, "Usage: %s [-filetype <type>] "
-								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap TYPE] [-level] [-bss] [-isolive] [-isoondemand] [-isomain] [-dynamic] [-dash264base] [-dashifbase] [-dash264enc] [-repIndex] [-atomxml] [-cmaf]", "ValidateMP4" );
+								"[-printtype <options>] [-checklevel <level>] [-infofile <Segment Info File>] [-leafinfo <Leaf Info File>] [-segal] [-ssegal] [-startwithsap TYPE] [-level] [-bss] [-isolive] [-isoondemand] [-isomain] [-dynamic] [-dash264base] [-dashifbase] [-dash264enc] [-repIndex] [-atomxml] [-cmaf] [-dvb] [-hbbtv]", "ValidateMP4" );
 	fprintf( stderr, " [-samplenumber <number>] [-verbose <options>] [-offsetinfo <Offset Info File>] [-logconsole ] [-help] inputfile\n" );
 	fprintf( stderr, "    -a[tompath]      <atompath> - limit certain operations to <atompath> (e.g. moov-1:trak-2)\n" );
 	fprintf( stderr, "                     this effects -checklevel and -printtype (default is everything) \n" );
@@ -658,6 +690,10 @@ usageError:
 	fprintf( stderr, "    -indexrange       Byte range where sidx is expected\n");
 	fprintf( stderr, "    -width            Expected width of the video track\n");
 	fprintf( stderr, "    -height           Expected height of the video track\n");
+        fprintf( stderr, "    -framerate        Expected framerate of the video track\n");
+        fprintf( stderr, "    -codecprofile     Expected codec profile of the video track\n");
+        fprintf( stderr, "    -codectier        Expected codec tier of the video track\n");
+        fprintf( stderr, "    -codeclevel       Expected codec level of the video track\n");
 	fprintf( stderr, "    -default_kid      Expected default_KID for the mp4 content protection\n");
 	fprintf( stderr, "    -s[amplenumber]   <number> - limit sample checking or printing operations to sample <number> \n" );
 	fprintf( stderr, "                      most effective in combination with -atompath (default is all samples) \n" );
@@ -665,6 +701,8 @@ usageError:
 	fprintf( stderr, "    -logconsole       Redirect stdout and stderr to stdout.txt and stderr.txt, respectively \n");
 	fprintf( stderr, "    -atomxml          Output the contents of each atom into an xml \n" );
 	fprintf( stderr, "    -cmaf             Check for CMAF conformance \n" );
+        fprintf( stderr, "    -dvb              Check for DVB conformance \n" );
+        fprintf( stderr, "    -hbbtv            Check for HbbTV conformance \n" );
 	fprintf( stderr, "    -h[elp] - print this usage message \n" );
 
 
@@ -1057,6 +1095,36 @@ void errprint(const char *formatStr, ...)
 	vfprintf( _stderr, formatStr, ap );
 	
 	va_end(ap);
+}
+
+void bailprint(const char *level, OSErr errcode)
+{
+    switch(errcode){
+        case -50:
+            errprint("%s: Parameter-related error (out-of-range value, non-conformant type, etc.) for attribute validation\n", level);
+            break;
+        case -2019:
+            errprint("%s: Memory allocation error encountered in attribute validation\n", level);
+            break;
+        case -2020:
+            errprint("%s: Not enough bits left in the bitstream for further attribute validation\n", level);
+            break;
+        case -2021:
+            errprint("%s: Too many bits left in the bitstream after the complete validation\n", level);
+            break;
+        case -2022:
+            errprint("%s: Cannot handle the bad attribute length for attribute validation\n", level);
+            break;
+        case -2023:
+            errprint("%s: Bad attribute size for attribute validation\n", level);
+            break;
+        case -2024:
+            errprint("%s: Bad attribute value for attribute validation\n", level);
+            break;
+        default:
+            errprint("%s: %d\n",level, errcode);
+            break;
+    }
 }
 
 int my_stricmp(const char* p, const char* q)

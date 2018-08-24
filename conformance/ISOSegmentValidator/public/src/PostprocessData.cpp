@@ -61,7 +61,7 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
             if (list[i].offset == offset) {
                 boxAtSegmentStartFound = true;
 
-                if (list[i].type != 'styp' && list[i].type != 'sidx' && list[i].type != 'moof' && (list[i].type != 'ftyp' || initializationSegment)) {
+                if (list[i].type != 'styp' && list[i].type != 'sidx' && list[i].type != 'moof' && list[i].type != 'emsg' && (list[i].type != 'ftyp' || initializationSegment)) {
                     if (list[i].type == 'ftyp' && initializationSegment)
                         warnprint("ftyp box found in the begining of a media segment while initializatioin segment is provided!\n");
                     else
@@ -96,6 +96,8 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                                 if(vg.cmafChunk)
                                     errprint("CMAF check violated: Section 7.3.2.3 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but mdat not found following a moof in Chunk %d (at file absolute offset %lld).\n", index, list[j].offset);
                             }
+                            if(vg.hbbtv)
+                                errprint("### HbbTV check violated Section E.3.2: 'Each Segment shall consists of a whole self-contained movie fragment', mdat not found following a moof in segment %d (at file absolute offset %lld),\n", index, list[j].offset);
 			}
 
                         fragmentInSegmentFound = true;

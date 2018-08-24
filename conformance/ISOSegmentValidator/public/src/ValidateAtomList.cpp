@@ -197,7 +197,7 @@ OSErr ValidateFileAtoms( atomOffsetEntry *aoe, void *refcon )
             
 			default:
 				if (!(entry->aoeflags & kAtomValidated)) 
-					warnprint("WARNING: unknown file atom '%s'\n",ostypetostr(entry->type));
+					warnprint("WARNING: In %s - unknown file atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -271,7 +271,7 @@ OSErr Validate_dinf_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {
 			default:
-				warnprint("WARNING: unknown data information atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown data information atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -315,7 +315,7 @@ OSErr Validate_edts_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {
 			default:
-				warnprint("WARNING: unknown edit list atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown edit list atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -372,7 +372,7 @@ OSErr Validate_minf_Atom( atomOffsetEntry *aoe, void *refcon )
 		
                 case 'subt':
 			// Process 'sthd' atoms
-                        if(vg.cmaf){
+                        if(vg.cmaf || vg.dvb || vg.hbbtv){
                             atomerr = ValidateAtomOfType( 'sthd',kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
                                     Validate_sthd_Atom, cnt, list, nil );
                             if (!err) err = atomerr;
@@ -387,7 +387,7 @@ OSErr Validate_minf_Atom( atomOffsetEntry *aoe, void *refcon )
 			if (!err) err = atomerr;
 			break;
 		default:
-			warnprint("WARNING: unknown media type '%s'\n",ostypetostr(tir->mediaType));
+			warnprint("WARNING: In %s - unknown media type '%s'\n",vg.curatompath, ostypetostr(tir->mediaType));
 	}
                  //Explicit check for ac-4
 		if(!strcmp(vg.codecs, "ac-4") && strcmp(ostypetostr(tir->mediaType),"soun"))
@@ -418,14 +418,14 @@ OSErr Validate_minf_Atom( atomOffsetEntry *aoe, void *refcon )
 			case 'iphd':
 			case 'mjhd':
 				errprint("'%s' media type is reserved but not currently used\n", ostypetostr(entry->type));				
-				atomprint("<%s *****>\n",ostypetostr(entry->type));
-				atomprint("</%s>\n",ostypetostr(entry->type));
+				//atomprint("<%s *****>\n",ostypetostr(entry->type));
+				//atomprint("</%s>\n",ostypetostr(entry->type));
 				break;
 				
 			default:
-				warnprint("WARNING: unknown/unexpected atom '%s'\n",ostypetostr(entry->type));
-				atomprint("<%s *****>\n",ostypetostr(entry->type));
-				atomprint("</%s>\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown/unexpected atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
+				//atomprint("<%s *****>\n",ostypetostr(entry->type));
+				//atomprint("</%s>\n",ostypetostr(entry->type));
 				break;
 		}
 		
@@ -496,7 +496,7 @@ OSErr Validate_mdia_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {
 			default:
-				warnprint("WARNING: unknown media atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In unknown media atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -616,7 +616,7 @@ OSErr Validate_trak_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {
 			default:
-				warnprint("WARNING: unknown trak atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown trak atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -879,7 +879,7 @@ OSErr Validate_stbl_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {
 			default:
-				warnprint("WARNING: unknown sample table atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown sample table atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -989,6 +989,13 @@ OSErr Validate_mvex_Atom( atomOffsetEntry *aoe, void *refcon )
 	atomerr = ValidateAtomOfType( 'trex', kTypeAtomFlagMustHaveOne, 
 		Validate_trex_Atom, cnt, list, tir );
 	if (!err) err = atomerr;
+        
+        // Process 'trep' atoms
+        if(vg.dvb || vg.hbbtv){
+            atomerr = ValidateAtomOfType( 'trep', 0, 
+                    Validate_trep_Atom, cnt, list, tir );
+            if (!err) err = atomerr;
+        }
 
     /*Now check if any track information is missing*/
     for(i = 0 ; i < vg.mir->numTIRs ; i++)
@@ -1005,7 +1012,7 @@ OSErr Validate_mvex_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {
 			default:
-				warnprint("WARNING: unknown mvex atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown mvex atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -1588,7 +1595,7 @@ OSErr Validate_moov_Atom( atomOffsetEntry *aoe, void *refcon )
 				break;
 				
 			default:
-				warnprint("WARNING: unknown movie atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown movie atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -1854,7 +1861,10 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
 
     if(vg.dashSegment && moofInfo->numTrackFragments == 0)
         errprint("Section 6.3.4.2. of ISO/IEC 23009-1:2012(E): 16: Each 'moof' box shall contain at least one track fragment.\n");
-        
+    if(vg.hbbtv && moofInfo->numTrackFragments != 1)
+        errprint("###HbbTV check violated Section E.3.1.1: 'The movie fragment boxx (moof) shall contain only one track fragment box(traf)', but found %d\n",moofInfo->numTrackFragments);
+
+    
     atomerr = ValidateAtomOfType( 'traf', 0, 
         Validate_traf_Atom, cnt, list, moofInfo );
     if (!err) err = atomerr;
@@ -1873,7 +1883,7 @@ OSErr Validate_moof_Atom( atomOffsetEntry *aoe, void *refcon )
 		switch (entry->type) {
                 
 			default:
-				warnprint("WARNING: unknown moof atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown moof atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -2010,7 +2020,7 @@ OSErr Validate_traf_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {            
 			default:
-				warnprint("WARNING: unknown traf atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown traf atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -2223,7 +2233,7 @@ OSErr Validate_tref_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {
 			default:
-				warnprint("WARNING: unknown track reference atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown track reference atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -2285,7 +2295,7 @@ OSErr Validate_udta_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {
 			default:
-				warnprint("WARNING: unknown/unexpected atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown/unexpected atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -2426,7 +2436,7 @@ OSErr Validate_sinf_Atom( atomOffsetEntry *aoe, void *refcon, UInt32 flags )
 
 		switch (entry->type) {				
 			default:
-				warnprint("WARNING: unknown security information atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown security information atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		
@@ -2517,7 +2527,7 @@ OSErr Validate_meta_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		switch (entry->type) {				
 			default:
-				warnprint("WARNING: unknown meta atom '%s'\n",ostypetostr(entry->type));
+				warnprint("WARNING: In %s - unknown meta atom '%s'\n",vg.curatompath, ostypetostr(entry->type));
 				break;
 		}
 		

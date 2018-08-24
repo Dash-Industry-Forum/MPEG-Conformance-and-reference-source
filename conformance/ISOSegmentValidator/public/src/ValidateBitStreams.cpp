@@ -220,12 +220,12 @@ OSErr Validate_iods_OD_Bits( Ptr odDataP, unsigned long odSize, Boolean fileForm
 			(visualProfileLevelIndication!=0xF7) &&
 			(visualProfileLevelIndication!=0x7F))
 			warnprint("Validate_IODS: ISMA expects no-capability(0xFF) or Simple@L0-3 (0x08,01-03) or AdvSimple@L0-3b (0xF0-3,0xF7), or AVC (0x7f) for visualProfileLevelIndication\n");
-		if( visualProfileLevelIndication != vg.visualProfileLevelIndication) {
+		/*if( visualProfileLevelIndication != vg.visualProfileLevelIndication) {
 		  if( vg.visualProfileLevelIndication == 0xFF )
 			errprint("Validate_IODS: visualProfileLevelIndication ( IOD: %lu (0x%2.2x) ) signalled .. but there seems to be no video track\n",visualProfileLevelIndication, visualProfileLevelIndication);
 		  else
 			errprint("Validate_IODS: visualProfileLevelIndication ( IOD: %lu (0x%2.2x )) does not correspond to indication in sample description: %lu (0x%2.2x)\n",visualProfileLevelIndication, visualProfileLevelIndication, vg.visualProfileLevelIndication, vg.visualProfileLevelIndication);
-		}
+		}*/
 
 		VALIDATE_FIELD  ("%2.2x",  graphicsProfileLevelIndication, 8 );
 		if (graphicsProfileLevelIndication!=0xFF)
@@ -276,7 +276,7 @@ OSErr Validate_iods_OD_Bits( Ptr odDataP, unsigned long odSize, Boolean fileForm
 	
 bail:
 	if (err) {
-		errprint("ValidateIODSAtom: %d\n",err);
+            bailprint("ValidateIODSAtom", err);
 	}
 	return err;
 }
@@ -308,7 +308,7 @@ OSErr Validate_ES_INC_Descriptor(BitBuffer *bb)
 
 bail:
 	if (err) {
-		errprint("Validate_ES_INC_Descriptor: %d\n",err);
+            bailprint("Validate_ES_INC_Descriptor", err);
 	}
 	return err;
 }
@@ -340,7 +340,7 @@ OSErr Validate_ES_REF_Descriptor(BitBuffer *bb)
 
 bail:
 	if (err) {
-		errprint("Validate_ES_REF_Descriptor: %d\n",err);
+            bailprint("Validate_ES_REF_Descriptor", err);
 	}
 	return err;
 }
@@ -426,7 +426,7 @@ OSErr Validate_Dec_conf_Descriptor(BitBuffer *inbb, UInt8 Expect_ObjectType, UIn
 
 bail:
 	if (err) {
-		errprint("Validate_DecConf_Descriptor: %d\n",err);
+            bailprint("Validate_DecConf_Descriptor", err);
 	}
 	return err;
 }
@@ -550,7 +550,7 @@ OSErr Validate_ES_Descriptor(BitBuffer *inbb, UInt8 Expect_ObjectType, UInt8 Exp
 
 bail:
 	if (err) {
-		errprint("Validate_ES_Descriptor: %d\n",err);
+            bailprint("Validate_ES_Descriptor", err);
 	}
 	return err;
 }
@@ -633,7 +633,7 @@ OSErr Validate_Object_Descriptor(BitBuffer *inbb)
 
 bail:
 	if (err) {
-		errprint("Validate_Object_Descriptor: %d\n",err);
+            bailprint("Validate_Object_Descriptor", err);
 	}
 	return err;
 }
@@ -755,7 +755,7 @@ OSErr Validate_SLconf_Descriptor( BitBuffer *inbb, Boolean fileForm)
 
 bail:
 	if (err) {
-		errprint("Validate SLConfigDescriptor: %d\n",err);
+            bailprint("Validate_SLConfigDescriptor", err);
 	}
 	return err;
 }
@@ -822,7 +822,7 @@ OSErr Validate_BIFSSpecificInfo(  BitBuffer *bb, UInt8 objectType )
 	
 bail:
 	if (err) {
-		errprint("Validate_BIFSSpecificInfo: %d\n",err);
+            bailprint("Validate_BIFSSpecificInfo", err);
 	}
 	return err;
 }
@@ -832,7 +832,7 @@ bail:
 OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 {
 	OSErr err;
-	UInt8 ext_audioObjectType = 0, audioObjectType, sbr_present = -1;
+	UInt8 ext_audioObjectType = 0, audioObjectType, sbr_present = -1,temp_audioObjectType;
 	UInt8 ext_samplingFreqIndex, samplingFreqIndex;
 	UInt32 ext_samplingFreq, samplingFreq;
 	UInt8 channelConfig;
@@ -876,7 +876,8 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 			VALIDATE_FIELD("%d",  ext_samplingFreq, 24);
 		}
 		else atomprint("comment%ld=\"freq is %s\"\n", counter++, freqs[ext_samplingFreqIndex]);
-		VALIDATE_FIELD("0x%02x",  audioObjectType, 5);
+		VALIDATE_FIELD("0x%02x",  temp_audioObjectType, 5);
+                audioObjectType=temp_audioObjectType;
 		if (audioObjectType<28) {
 			atomprint("comment%ld=\"audio is %s\"\n", counter++, audiotype[audioObjectType]);
 		}
@@ -1146,7 +1147,7 @@ OSErr Validate_SoundSpecificInfo(  BitBuffer *bb )
 	
 bail:
 	if (err) {
-		errprint("Validate_SoundSpecificInfo: %d\n",err);
+            bailprint("Validate_SoundSpecificInfo", err);
 	}
 	return err;
 }
@@ -1693,7 +1694,7 @@ OSErr Validate_VideoSpecificInfo(  BitBuffer *bb, UInt32 expect_startcode, UInt8
 
 bail:
 	if (err) {
-		errprint("Validate_VideoSpecificInfo: %d\n",err);
+            bailprint("Validate_VideoSpecificInfo", err);
 	}
 	return err;
 }
@@ -1784,12 +1785,19 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 	avcHeader.level 		= GetBits(bb, 8, &err); if (err) goto bail;
 	atomprint("level=\"%d\"\n", avcHeader.level);
 	
+        if(vg.dvb || vg.hbbtv){
+            if(vg.codecprofile != avcHeader.profile)
+                errprint( "HbbTV-DVB DASH Validation Requirements check violated: Section 'Codec information' - Validate_AVCConfigRecord: The codec profile is not matching with out of box codec profile value.\n");
+            if(vg.codeclevel != avcHeader.level)
+                errprint( "HbbTV-DVB DASH Validation Requirements check violated: Section 'Codec information' - Validate_AVCConfigRecord: The codec level is not matching with out of box codec level value.\n");
+        }
+        
 	Validate_level_IDC(avcHeader.profile, avcHeader.level, constraint_set3_flag);
 
 	avcHeader.lengthsize = GetBits(bb, 8, &err); if (err) goto bail;
 
 	if ((avcHeader.lengthsize & 0xFC) != 0xFC) {
-		errprint( "reserved 1 bits are not 1 %x", avcHeader.lengthsize && 0xFC );
+		errprint( "Validate_AVCConfigRecord: reserved 1 bits are not 1 %x", avcHeader.lengthsize && 0xFC );
 	}
 	avcHeader.lengthsize = avcHeader.lengthsize & 3;
 	codec_specific[0] = avcHeader.lengthsize + 1;
@@ -1797,11 +1805,11 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 	atomprint("lengthsizeminusone=\"%d\"\n", avcHeader.lengthsize);
 	atomprint("COMMENT=\"length fields are %d bytes\"\n",avcHeader.lengthsize+1);
 	
-	if (avcHeader.lengthsize==2) errprint("AVC NALU lengths must be 1,2 or 4, not 3 bytes\n");
+	if (avcHeader.lengthsize==2) errprint("Validate_AVCConfigRecord: AVC NALU lengths must be 1,2 or 4, not 3 bytes\n");
 	
 	avcHeader.sps_count = GetBits(bb, 8, &err); if (err) goto bail;
 	if ((avcHeader.sps_count & 0xE0) != 0xE0) {
-		errprint( "reserved 1 bits are not 1 %x", avcHeader.sps_count && 0xE0 );
+		errprint( "Validate_AVCConfigRecord: reserved 1 bits are not 1 %x", avcHeader.sps_count && 0xE0 );
 	}
 	avcHeader.sps_count = avcHeader.sps_count & 0x1F;
 //	atomprint("sps_count=\"%d\"\n", avcHeader.sps_count  );
@@ -1821,7 +1829,8 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 	for (i=0; i< avcHeader.pps_count;  i++) {
 		nal_length = GetBits(bb, 16, &err); if (err) goto bail;
 //		atomprint("nal_length=\"%d\"\n", nal_length  );
-//		
+		if(avcHeader.sps_count == 0)
+                    atomprint(">\n");
 //		/* then call the NALU validate proc */
 		BAILIFERR( Validate_NAL_Unit( bb, nal_PPS, nal_length) );
 		GetBits( bb, nal_length*8, & err);
@@ -1830,20 +1839,21 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 	if ( (avcHeader.profile  ==  100)  ||  (avcHeader.profile  ==  110)  ||
 		 (avcHeader.profile  ==  122)  ||  (avcHeader.profile  ==  144) ) {		
 		UInt8 reserved1, reserved2, reserved3;
-                //atomprint("<Comment\n");
-		VALIDATE_FIELD_V("%d", reserved1, 6, 0x3F, "AVCConfigRecord");
-		VALIDATE_FIELD("%d", avcHeader.chroma_format, 2);
-
-		VALIDATE_FIELD_V("%d", reserved2, 5, 0x1F, "AVCConfigRecord");
-		VALIDATE_FIELD("%d", avcHeader.bit_depth_luma_minus8, 3);
+                if(avcHeader.sps_count == 0 && avcHeader.pps_count == 0)
+                    atomprint(">\n");
+                
+                reserved1 = GetBits(bb, 6, &err); if (err) goto bail;
+                avcHeader.chroma_format = GetBits(bb, 2, &err); if(err) goto bail;
+        
+                reserved2 = GetBits(bb, 5, &err); if (err) goto bail;
+                avcHeader.bit_depth_luma_minus8 = GetBits(bb, 3, &err); if(err) goto bail;
+        
+                reserved3 = GetBits(bb, 5, &err); if (err) goto bail;
+                avcHeader.bit_depth_chroma_minus8 = GetBits(bb, 3, &err); if(err) goto bail;
 		
-		VALIDATE_FIELD_V("%d", reserved3, 5, 0x1F, "AVCConfigRecord");
-		VALIDATE_FIELD("%d", avcHeader.bit_depth_chroma_minus8, 3);
-
 		avcHeader.sps_ext_count = GetBits(bb, 8, &err); if (err) goto bail;
 		//atomprint("sps_ext_count=\"%d\"\n", avcHeader.sps_ext_count );
-		//atomprint(">\n");
-
+                
 		for (i=0; i< avcHeader.sps_ext_count;  i++) {
 			nal_length = GetBits(bb, 16, &err); if (err) goto bail;
 			//atomprint("nal_length=\"%d\"\n", nal_length  );
@@ -1861,7 +1871,7 @@ OSErr Validate_AVCConfigRecord( BitBuffer *bb, void *refcon )
 bail:
 	atomprint("</Comment>\n");
 	if (err) {
-		errprint("Validate_AVCConfigRecord: %d\n",err);
+            bailprint("Validate_AVCConfigRecord", err);
 	}
 	return err;
 }
@@ -1898,7 +1908,7 @@ static OSErr Validate_HRD( BitBuffer *bb )
 
 bail:
 	if (err) {
-		errprint("Validate_HRD: %d\n",err);
+            bailprint("Validate_HRD", err);
 	}
 	return err;
 }
@@ -1968,7 +1978,7 @@ static OSErr Validate_HEVC_hrd_parameters( BitBuffer *bb, UInt32 commonInfPresen
 
 bail:
 	if (err) {
-		errprint("Validate_HEVC_hrd_parameters: %d\n",err);
+            bailprint("Validate_HEVC_hrd_parameters", err);
 	}
 	return err;
 }
@@ -2217,6 +2227,12 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 					
 					VALIDATE_FIELD  ("%d", num_units_in_tick, 32);
 					VALIDATE_FIELD  ("%d", time_scale, 32);
+                                        if(vg.dvb || vg.hbbtv){
+                                            float framerate = ((float)time_scale)/((float)(2*num_units_in_tick));
+                                            if(vg.framerate != framerate){
+                                                errprint( "HbbTV-DVB DASH Validation Requirements check violated: Section 'Codec information' - Validate_NAL_Unit: The framerate %f is not matching with MPD framerate %f.\n", framerate, vg.framerate);
+                                            }
+                                        }
 					VALIDATE_FIELD  ("0x%01x", fixed_frame_rate_flag, 1);
 				}
 				VALIDATE_FIELD  ("0x%01x", nal_hrd_parameters_present_flag, 1);
@@ -2248,7 +2264,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			/* rbsp_trailing_bits( )	0 */	
 			VALIDATE_FIELD_V("0x%01x",  one_bit, 1, 1, "NALUnit");
 			zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
-			if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d",zero_bit);
+			if (zero_bit != 0) errprint("\tValidate_NAL_Unit: Trailing zero bits not zero %d",zero_bit);
 			atomprint("/>\n");
 			}		
 
@@ -2354,7 +2370,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			
 			VALIDATE_FIELD_V("0x%01x",  one_bit, 1, 1, "NALUnit");
 			zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
-			if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d",zero_bit);
+			if (zero_bit != 0) errprint("\tValidate_NAL_Unit: Trailing zero bits not zero %d",zero_bit);
 			atomprint(">\n");
 
 		}
@@ -2380,7 +2396,7 @@ OSErr Validate_NAL_Unit(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_length 
 			
 			VALIDATE_FIELD_V("0x%01x",  one_bit, 1, 1, "NALUnit");
 			zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
-			if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d",zero_bit);
+			if (zero_bit != 0) errprint("\tValidate_NAL_Unit: Trailing zero bits not zero %d",zero_bit);
 			atomprint(">\n");
 		}
 		break;
@@ -2438,7 +2454,7 @@ bail:
 	--vg.tabcnt; atomprint("</NALUnit>\n");
 
 	if (err) {
-		errprint("Validate_NalUnit: %d\n",err);
+            bailprint("Validate_NalUnit", err);
 	}
 	return err;
 }
@@ -2672,7 +2688,7 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
                                 VALIDATE_UEV( "%d", conf_win_bottom_offset);
                             }
                             
-                            VALIDATE_UEV( "%d", bit_depth_luma_minus8);
+                            VALIDATE_UEV( "%lu", bit_depth_luma_minus8);
                             VALIDATE_UEV( "%d", bit_depth_chroma_minus8);
                             VALIDATE_UEV( "%d", log2_max_pic_order_cnt_lsb_minus4);
                             VALIDATE_FIELD  ("%d", sps_sub_layer_ordering_info_present_flag, 1);
@@ -2830,8 +2846,14 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
                                 }
                                 VALIDATE_FIELD  ("%d", vui_timing_info_present_flag, 1);
                                 if(vui_timing_info_present_flag){
-                                    VALIDATE_FIELD  ("%d", vui_num_units_in_tick, 32);
-                                    VALIDATE_FIELD  ("%d", vui_time_scale, 32);
+                                    VALIDATE_FIELD  ("%lu", vui_num_units_in_tick, 32);
+                                    VALIDATE_FIELD  ("%ld", vui_time_scale, 32);
+                                    if(vg.dvb || vg.hbbtv){
+                                        float framerate = ((float)vui_time_scale)/((float)(vui_num_units_in_tick));
+                                        if(vg.framerate != framerate){
+                                            errprint( "HbbTV-DVB DASH Validation Requirements check violated: Section 'Codec information' - Validate_NAL_Unit_HEVC: The framerate %f is not matching with MPD framerate %f.\n", framerate, vg.framerate);
+                                        }
+                                    }
                                     VALIDATE_FIELD  ("%d", vui_poc_proportional_to_timing_flag, 1);
                                     if(vui_poc_proportional_to_timing_flag)
                                         VALIDATE_UEV  ("%d", vui_num_ticks_poc_diff_one_minus1);
@@ -2920,7 +2942,7 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
                             }
                             
                             zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
-                            if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d \n",zero_bit);
+                            if (zero_bit != 0) errprint("\tValidate_NAL_Unit_HEVC: Trailing zero bits not zero %d \n",zero_bit);
                             atomprint(">\n");
                         }
                         break;
@@ -3165,7 +3187,7 @@ OSErr Validate_NAL_Unit_HEVC(  BitBuffer *inbb, UInt8 expect_type, UInt32 nal_le
                             }
 
                              zero_bit = GetBits(bb,(bb->bits_left & 7),nil);	/* we ought to be out of bits, whereupon this will return zero anyway */
-                            if (zero_bit != 0) errprint("\tTrailing zero bits not zero %d \n",zero_bit);
+                            if (zero_bit != 0) errprint("\tValidate_NAL_Unit_HEVC: Trailing zero bits not zero %d \n",zero_bit);
                             atomprint(">\n");
                         }
                         
@@ -3195,7 +3217,7 @@ bail:
 	if (err) {
                 atomprint(">\n");
                 --vg.tabcnt; atomprint("</NALUnit>\n");
-		errprint("Validate_NAL_Unit_HEVC: %d\n",err);
+                bailprint("Validate_NAL_Unit_HEVC", err);
 	}
 	else{
             --vg.tabcnt; atomprint("</NALUnit>\n");
@@ -3237,7 +3259,7 @@ OSErr Validate_colour_mapping_octants(BitBuffer *bb, UInt32 inpDepth,UInt32 idxY
         }
 bail:
 	if (err) {
-		errprint("Validate_colour_mapping_octants: %d\n",err);
+            bailprint("Validate_colour_mapping_octants", err);
 	}
 	return err;
             
@@ -3306,7 +3328,7 @@ OSErr Validate_DecSpecific_Descriptor( BitBuffer *inbb, UInt8 ObjectType, UInt8 
 
 bail:
 	if (err) {
-		errprint("Validate_DecSpecific_Descriptor: %d\n",err);
+            bailprint("Validate_DecSpecific_Descriptor", err);
 	}
 	return err;
 }
@@ -3413,7 +3435,7 @@ OSErr Validate_Random_Descriptor(BitBuffer *bb, char* dname)
 
 bail:
 	if (err) {
-		errprint("Validate %s: %d\n",dname,err);
+            bailprint(dname, err);
 	}
 	return err;
 }
@@ -3444,7 +3466,7 @@ OSErr Validate_soun_ES_Bitstream( BitBuffer *bb, void *refcon )
 				
 bail:
 	if (err) {
-		errprint("Validate_soun_ES_Bitstream: %d\n",err);
+            bailprint("Validate_soun_ES_Bitstream", err);
 	}
 	return err;
 }
@@ -3467,7 +3489,7 @@ OSErr Validate_vide_ES_Bitstream( BitBuffer *bb, void *refcon )
 	
 bail:
 	if (err) {
-		errprint("Validate_vide_ES_Bitstream: %d\n",err);
+            bailprint("Validate_vide_ES_Bitstream", err);
 	}
 	return err;
 }
@@ -3486,7 +3508,7 @@ OSErr Validate_mp4s_ES_Bitstream( BitBuffer *bb, void *refcon )
 				
 bail:
 	if (err) {
-		errprint("Validate_mp4s_ES_Bitstream: %d\n",err);
+            bailprint("Validate_mp4s_ES_Bitstream", err);
 	}
 	return err;
 }
@@ -3504,7 +3526,7 @@ OSErr Validate_sdsm_ES_Bitstream( BitBuffer *bb, void *refcon )
 				
 bail:
 	if (err) {
-		errprint("Validate_sdsm_ES_Bitstream: %d\n",err);
+            bailprint("Validate_sdsm_ES_Bitstream", err);
 	}
 	return err;
 }
@@ -3522,7 +3544,7 @@ OSErr Validate_odsm_ES_Bitstream( BitBuffer *bb, void *refcon )
 				
 bail:
 	if (err) {
-		errprint("Validate_odsm_ES_Bitstream: %d\n",err);
+            bailprint("Validate_odsm_ES_Bitstream", err);
 	}
 	return err;
 }
@@ -3553,7 +3575,7 @@ OSErr Validate_sdsm_sample_Bitstream( BitBuffer *bb, void *refcon )
 	
 bail:
 	if (err) {
-		errprint("Validate_sdsm_sample_Bitstream: %d\n",err);
+            bailprint("Validate_sdsm_sample_Bitstream", err);
 	}
 	return err;
 }
@@ -3654,7 +3676,7 @@ OSErr Validate_odsm_sample_Bitstream( BitBuffer *bb, void *refcon )
 	
 bail:
 	if (err) {
-		errprint("Validate_odsm_sample_Bitstream: %d\n",err);
+            bailprint("Validate_odsm_sample_Bitstream", err);
 	}
 	return err;
 }
@@ -3696,7 +3718,7 @@ OSErr Validate_vide_sample_Bitstream( BitBuffer *bb, void *refcon )
 	
 bail:
 	if (err) {
-		errprint("Validate_vide_ES_Bitstream: %d\n",err);
+            bailprint("Validate_vide_ES_Bitstream", err);
 	}
 	return err;
 }
@@ -3722,7 +3744,7 @@ OSErr Validate_soun_sample_Bitstream( BitBuffer *bb, void *refcon )
 	
 bail:
 	if (err) {
-		errprint("Validate_soun_ES_Bitstream: %d\n",err);
+            bailprint("Validate_soun_ES_Bitstream", err);
 	}
 	return err;
 }
@@ -3869,37 +3891,44 @@ OSErr Validate_HEVCConfigRecord( BitBuffer *bb, void *refcon )
         hevcHeader.level_idc      = GetBits(bb, 8, &err); if (err) goto bail;
         atomprint("level_idc=\"%d\"\n",hevcHeader.level_idc);
         
+        if(vg.dvb || vg.hbbtv){
+            if(vg.codecprofile != hevcHeader.profile_idc)
+                errprint( "HbbTV-DVB DASH Validation Requirements check violated: Section 'Codec information' - Validate_HEVCConfigRecord: The codec profile is not matching with out of box codec profile value.\n");
+            if(vg.codectier != hevcHeader.tier_flag || vg.codeclevel != hevcHeader.level_idc)
+                errprint( "HbbTV-DVB DASH Validation Requirements check violated: Section 'Codec information' - Validate_HEVCConfigRecord: The codec level is not matching with out of box codec level value.\n");
+        }
+        
         hevcHeader.min_spatial_segmentation_idc      = GetBits(bb, 16, &err); if (err) goto bail;
         if ((hevcHeader.min_spatial_segmentation_idc & 0xF000) != 0xF000) {
-		errprint( "reserved 1 bits are not 1 %x", hevcHeader.min_spatial_segmentation_idc & 0xF000 );
+		errprint( "Validate_HEVCConfigRecord: reserved 1 bits are not 1 %x", hevcHeader.min_spatial_segmentation_idc & 0xF000 );
 	}
 	hevcHeader.min_spatial_segmentation_idc = hevcHeader.min_spatial_segmentation_idc & 0x0FFF;
 	atomprint("min_spatial_segmentation_idc=\"%d\"\n", hevcHeader.min_spatial_segmentation_idc);
         
         hevcHeader.parallelismType      = GetBits(bb, 8, &err); if (err) goto bail;
         if ((hevcHeader.parallelismType & 0xFC) != 0xFC) {
-		errprint( "reserved 1 bits are not 1 %x", hevcHeader.parallelismType & 0xFC );
+		errprint( "Validate_HEVCConfigRecord: reserved 1 bits are not 1 %x", hevcHeader.parallelismType & 0xFC );
 	}
 	hevcHeader.parallelismType = hevcHeader.parallelismType & 3;
 	atomprint("parallelismType=\"%d\"\n", hevcHeader.parallelismType);
         
         hevcHeader.chroma_format_idc      = GetBits(bb, 8, &err); if (err) goto bail;
         if ((hevcHeader.chroma_format_idc & 0xFC) != 0xFC) {
-		errprint( "reserved 1 bits are not 1 %x", hevcHeader.chroma_format_idc & 0xFC );
+		errprint( "Validate_HEVCConfigRecord: reserved 1 bits are not 1 %x", hevcHeader.chroma_format_idc & 0xFC );
 	}
 	hevcHeader.chroma_format_idc = hevcHeader.chroma_format_idc & 3;
 	atomprint("chroma_format_idc=\"%d\"\n", hevcHeader.chroma_format_idc);
         
         hevcHeader.bit_depth_luma_minus8      = GetBits(bb, 8, &err); if (err) goto bail;
         if ((hevcHeader.bit_depth_luma_minus8 & 0xF8) != 0xF8) {
-		errprint( "reserved 1 bits are not 1 %x", hevcHeader.bit_depth_luma_minus8 & 0xF8 );
+		errprint( "Validate_HEVCConfigRecord: reserved 1 bits are not 1 %x", hevcHeader.bit_depth_luma_minus8 & 0xF8 );
 	}
 	hevcHeader.bit_depth_luma_minus8 = hevcHeader.bit_depth_luma_minus8 & 7;
 	atomprint("bit_depth_luma_minus8=\"%d\"\n", hevcHeader.bit_depth_luma_minus8);
         
         hevcHeader.bit_depth_chroma_minus8      = GetBits(bb, 8, &err); if (err) goto bail;
         if ((hevcHeader.bit_depth_chroma_minus8 & 0xF8) != 0xF8) {
-		errprint( "reserved 1 bits are not 1 %x", hevcHeader.bit_depth_chroma_minus8 & 0xF8 );
+		errprint( "Validate_HEVCConfigRecord: reserved 1 bits are not 1 %x", hevcHeader.bit_depth_chroma_minus8 & 0xF8 );
 	}
 	hevcHeader.bit_depth_chroma_minus8 = hevcHeader.bit_depth_chroma_minus8 & 7;
 	atomprint("bit_depth_chroma_minus8=\"%d\"\n", hevcHeader.bit_depth_chroma_minus8);
@@ -3940,7 +3969,7 @@ bail:
 	
 	if (err) {
              atomprint("</NAL_Unit_Array_%d>\n",j);
-		errprint("Validate_HEVCConfigRecord: %d\n",err);
+             bailprint("Validate_HEVCConfigRecord", err);
 	}
 	return err;
 }
