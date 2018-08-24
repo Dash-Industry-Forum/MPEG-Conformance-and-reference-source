@@ -601,6 +601,10 @@ typedef struct {
     unsigned int  height;
     unsigned int sarx;
     unsigned int sary;
+    float framerate;
+    unsigned int codecprofile;
+    unsigned int codeclevel;
+    unsigned int codectier;
     argstr codecs;
     argstr indexRange;
     int lowerindexRange;
@@ -619,6 +623,8 @@ typedef struct {
     bool    RepresentationIndex;
     bool    atomxml;
     bool    cmaf;
+    bool    dvb;
+    bool    hbbtv;
     unsigned int  numControlTracks;
     unsigned int  *numControlLeafs;
     LeafInfo **controlLeafInfo;
@@ -691,6 +697,7 @@ typedef struct ValidateAtomDispatch {
 
 void warnprint(const char *formatStr, ...);
 void errprint(const char *formatStr, ...);
+void bailprint(const char *level, OSErr errcode);
 void atomprinttofile(const char* formatStr, va_list ap);
 void atomprint(const char *formatStr, ...);
 void atomprintnotab(const char *formatStr, ...);
@@ -1022,6 +1029,7 @@ OSErr Validate_subs_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_trex_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_mehd_Atom( atomOffsetEntry *aoe, void *refcon );
+OSErr Validate_trep_Atom( atomOffsetEntry *aoe, void *refcon );
 
 OSErr Validate_mfhd_Atom( atomOffsetEntry *aoe, void *refcon );
 OSErr Validate_tfhd_Atom( atomOffsetEntry *aoe, void *refcon );
@@ -1097,7 +1105,10 @@ do { if ((num) != (value)) { err = badAtomErr; warnprint(errstr "\n", (value), n
 #define FieldList2(t1,t2) {t1,t2};
 #define FieldList3(t1,t2,t3) {t1,t2,t3};
 #define FieldList4(t1,t2,t3,t4) {t1,t2,t3,t4};
+#define FieldList5(t1,t2,t3,t4,t5) {t1,t2,t3,t4,t5};
 #define FieldList6(t1,t2,t3,t4,t5,t6){t1,t2,t3,t4,t5,t6};
+#define FieldList8(t1,t2,t3,t4,t5,t6,t7,t8){t1,t2,t3,t4,t5,t6,t7,t8};
+#define FieldList9(t1,t2,t3,t4,t5,t6,t7,t8,t9) {t1,t2,t3,t4,t5,t6,t7,t8,t9};
 #define FieldList10(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10) {t1,t2,t3,t4,t5,t6,t7,t8,t9,t10};
 #define FieldList11(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11) {t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11};
 
@@ -1128,9 +1139,21 @@ do { if ((num) != (value)) { err = badAtomErr; warnprint(errstr "\n", (value), n
 	FieldOneOfBegin( _value_, _valtype_, _errstr_, _list_ ) \
 	FieldList4 _list_ \
 	FieldOneOfEnd( _value_, _valtype_, _errstr_, _list_ )
+#define FieldMustBeOneOf5( _value_, _valtype_, _errstr_, _list_ ) \
+	FieldOneOfBegin( _value_, _valtype_, _errstr_, _list_ ) \
+	FieldList5 _list_ \
+	FieldOneOfEnd( _value_, _valtype_, _errstr_, _list_ )
 #define FieldMustBeOneOf6( _value_, _valtype_, _errstr_, _list_ ) \
 	FieldOneOfBegin( _value_, _valtype_, _errstr_, _list_ ) \
 	FieldList6 _list_ \
+	FieldOneOfEnd( _value_, _valtype_, _errstr_, _list_ )
+#define FieldMustBeOneOf8( _value_, _valtype_, _errstr_, _list_ ) \
+	FieldOneOfBegin( _value_, _valtype_, _errstr_, _list_ ) \
+	FieldList8 _list_ \
+	FieldOneOfEnd( _value_, _valtype_, _errstr_, _list_ )
+#define FieldMustBeOneOf9( _value_, _valtype_, _errstr_, _list_ ) \
+	FieldOneOfBegin( _value_, _valtype_, _errstr_, _list_ ) \
+	FieldList9 _list_ \
 	FieldOneOfEnd( _value_, _valtype_, _errstr_, _list_ )
 #define FieldMustBeOneOf10( _value_, _valtype_, _errstr_, _list_ ) \
 	FieldOneOfBegin( _value_, _valtype_, _errstr_, _list_ ) \
