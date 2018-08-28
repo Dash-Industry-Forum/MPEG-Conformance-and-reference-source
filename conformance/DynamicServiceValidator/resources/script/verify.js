@@ -7,7 +7,7 @@ All rights reserved.
 
 //Main MPD structure with all relevant information
 var MPD = {xmlHttpMPD: createXMLHttpRequestObject(), xmlData: null, FT: null, Periods: new Array(), MUP: null, segmentsDispatch: null, mpdDispatch: null, totalSegmentCount: 0, updatedSegments: 0, mpdEvents: new Array(), mpdEventCount: 5, RTTs: new Array(), numRTTs: 10, 
-clockSkew: new Array(), numClockSkew: 10, numSuccessfulChecksSAS: 0, numSuccessfulChecksSAE: 0};
+clockSkew: new Array(), numClockSkew: 10, numSuccessfulChecksSAS: 0, numSuccessfulChecksSAE: 0, UTCTiming:new Array()};
 
 //Past or already available segments, cost a significant processing overhead at the startup, this needs to be sorted out. Right now, we keep it to a minimum
 var maxPastSegmentsPerIteration = 2;
@@ -16,6 +16,9 @@ var veryLargeDuration = 86400000; //Lets stick to 10000 days for now, Infinity n
 
 //For MPDs with no MUP
 var maxMUP = 3600;
+var UTCElementArray=[];
+var serverTimeOffsetStatus=false;
+var serverTimeOffset=0;
 
 function createXMLHttpRequestObject(){ 
   var xmlHttp; // xmlHttp will store the reference to the XMLHttpRequest object
@@ -397,15 +400,15 @@ function dispatchChecks()
                    try
             	   	{	
                         var currentSegment = Representation.Segments[i];
-                        currentSegment.SAS.deltaTime = Math.ceil(currentSegment.SAS.time.getTime()- now.getTime());
-                        currentSegment.SAE.deltaTime = Math.ceil(currentSegment.SAE.time.getTime() - saeCheckOffset - now.getTime());
+                        currentSegment.SAS.deltaTime = Math.ceil(currentSegment.SAS.time.getTime()- (now.getTime()+serverTimeOffset));
+                        currentSegment.SAE.deltaTime = Math.ceil(currentSegment.SAE.time.getTime() - saeCheckOffset - (now.getTime()+serverTimeOffset));
                         //printOutput("Index: " + i + ", SAS delta: " + currentSegment.SAS.deltaTime + ", SAE delta: " + currentSegment.SAE.deltaTime + "<br/>");
 
                         if(currentSegment.SAE.deltaTime >= 0)   //Still some time to expiry of segment
                         {
                             if(!currentSegment.SAS.requestDispatched)
                             {
-                                if(currentSegment.SAS.deltaTime > 0)  //Still some time to availabilty of segment
+                                if(currentSegment.SAS.deltaTime >= 0)  //Still some time to availabilty of segment
                                 {
                                     if(currentSegment.SAS.deltaTime < 2000)
                                     {
@@ -628,9 +631,9 @@ function processSegmentTemplate(Representation, Period)
     var init=Representation.SegmentTemplate.getAttribute("initialization");
     var media=Representation.SegmentTemplate.getAttribute("media");
 
-    if(media.indexOf("$Number$") == -1)
+    if(media.indexOf("$Number") == -1)
     {
-        alert("SegmentTemplate with no $Number$ not supported, exiting!");
+        alert("SegmentTemplate with no $Number$/$Number%[width]d$ not supported, exiting!");
         exit();
     }
     
@@ -653,8 +656,8 @@ function processSegmentTemplate(Representation, Period)
         Representation.SSN = 1;
 
     // start to check from the start number, but we need to to calculate the GSN 
-    var LSN            = Math.floor((mpd.FT.getTime()                            - ( getAST(mpd.xmlData).getTime() + Period.PeriodStart*1000 ) - d*1000 )/ (d*1000) ) +  Representation.SSN;  
-    Representation.GSN = Math.ceil(( mpd.FT.getTime() + getMUP(mpd.xmlData)*1000 - ( getAST(mpd.xmlData).getTime() + Period.PeriodStart*1000 ) - d*1000 )/ (d*1000) ) +  Representation.SSN;
+    var LSN            = Math.floor((mpd.FT.getTime()     +serverTimeOffset                      - ( getAST(mpd.xmlData).getTime() + Period.PeriodStart*1000 ) - d*1000 )/ (d*1000) ) +  Representation.SSN;  
+    Representation.GSN = Math.ceil(( mpd.FT.getTime()+serverTimeOffset + getMUP(mpd.xmlData)*1000 - ( getAST(mpd.xmlData).getTime() + Period.PeriodStart*1000 ) - d*1000 )/ (d*1000) ) +  Representation.SSN;
     Representation.firstAvailableSsegment = Math.floor(Math.max(LSN - Math.ceil(getTSBD(mpd.xmlData)+d)/d - 100, Representation.SSN));
 
     var newSegmentCount = 0;
@@ -664,7 +667,18 @@ function processSegmentTemplate(Representation, Period)
     var maxNewSeg = 0;
     
     do{
-        var urlObj = getBaseURL(mpd.xmlData)+((media.replace("$RepresentationID$",Representation.xmlData.getAttribute("id"))).replace("$Number$",num)).replace("$Bandwidth$",Representation.xmlData.getAttribute("bandwidth"));
+        var urlObj = getBaseURL(mpd.xmlData)+((media.replace("$RepresentationID$",Representation.xmlData.getAttribute("id")))).replace("$Bandwidth$",Representation.xmlData.getAttribute("bandwidth"));
+        //Replace Number%[width]d format
+        var str_$Number$ = urlObj.match(/\$(.*)\$/).pop();
+        var width_regex= /\d+/g;
+        var width = str_$Number$.match(width_regex);
+        if(width!=null){
+            var num_to_replace=new Intl.NumberFormat('en-IN', { minimumIntegerDigits: width ,useGrouping:false}).format(num);
+            urlObj=urlObj.replace("$"+str_$Number$+"$",num_to_replace);
+        }
+        else
+            urlObj=urlObj.replace("$Number$",num);
+        //
         var sasObj = {time: new Date((getAST(mpd.xmlData).getTime()+Period.PeriodStart*1000+(num-Representation.SSN)*d*1000)), deltaTime: 0, timeOutRet : 0, xmlHttp: null, requestDispatched: false, intrinsicDispatchTime: null, dispatchTimeOffset: null};
         var saeObj = {time: new Date((getAST(mpd.xmlData).getTime()+Period.PeriodStart*1000+(num-Representation.SSN)*d*1000)+getTSBD(mpd.xmlData)*1000), deltaTime: 0, timeOutRet : 0, xmlHttp: null, requestDispatched: false, intrinsicDispatchTime: null, dispatchTimeOffset: null};
 
@@ -795,14 +809,149 @@ function processPeriod(Period)
     }
 }
 
+function getNTPServerTimeOffset(URLList)
+{
+    var xhttpNTP = createXMLHttpRequestObject();
+    var clientTimestamp = Date.parse(new Date().toUTCString()); 
+    xhttpNTP.onreadystatechange = function() {
+    if (this.readyState == 4 ){
+        if(this.status == 200) {
+      
+            //console.log(this.responseText*1000);
+            var serverTimestamp=this.responseText*1000;
+            var nowTimeStamp  = Date.parse(new Date().toUTCString());
+            if(serverTimeOffsetStatus==false){
+                serverTimeOffset = (serverTimestamp - ((nowTimeStamp-clientTimestamp)/2)-clientTimestamp);
+                serverTimeOffsetStatus=true;
+            }
+            //console.log(serverTimeOffset);
+        }
+        else{
+            URLList.shift(); // remove already used URL from the list and try next URL.
+            if(URLList.length>0)
+                getNTPServerTimeOffset(URLList);
+        }
+    }
+  };
+  xhttpNTP.open("GET", "resources/script/GetServerTime.php?host="+URLList[0], true);
+  xhttpNTP.send();
+
+}
+
+function getServerTimeOffset(URLList, method,schema)
+{   
+        var clientTimestamp = Date.parse(new Date().toUTCString()); 
+        var xmlhttp=createXMLHttpRequestObject();
+      
+        xmlhttp.onreadystatechange = function(){
+            if (xmlhttp.readyState === 4) {
+                if (xmlhttp.status === 200) {
+                    if(method== "HEAD"){
+                        var serverDateStr = xmlhttp.getResponseHeader('Date');
+                        var serverTimestamp = Date.parse(new Date(Date.parse(serverDateStr)).toUTCString());
+                    }
+                    else{
+                        var xmlDocServer=xmlhttp.responseXML.documentElement;
+                        var message=xmlDocServer.getElementsByTagName("message");
+                        var serverDateStr=message[0].getAttribute("generated.on");
+                        if(schema=="urn:mpeg:dash:utc:http-ntp:2014")
+                            var serverTimestamp=serverDateStr*1000;
+                        else
+                            var serverTimestamp = Date.parse(new Date(Date.parse(serverDateStr)).toUTCString());
+    
+                    }                                                
+                    //console.log("serverTimestamp "+serverTimestamp);
+                    var nowTimeStamp  = Date.parse(new Date().toUTCString());
+
+                    // Here http request and response times are assumed equal.
+                    if(serverTimeOffsetStatus==false){
+                        serverTimeOffset = (serverTimestamp - ((nowTimeStamp-clientTimestamp)/2)-clientTimestamp);
+                        serverTimeOffsetStatus=true;
+                        //console.log("serverTimeOffset "+serverTimeOffset);
+                    }
+                    
+                } else {
+                    //console.error(xmlhttp.statusText);
+                    URLList.shift(); // remove already used URL from the list and try next URL.
+                    if(URLList.length>0)
+                        getServerTimeOffset(URLList, method);
+                     
+                }
+            }
+        };
+        if(method=="HEAD")
+            xmlhttp.open("HEAD", URLList[0],true);
+        else
+            xmlhttp.open("GET", URLList[0],true);
+        xmlhttp.send(null);
+}
+
+function processUTCTiming(MPDxmlData)
+{
+    var UTCTiming=MPDxmlData.getElementsByTagName("UTCTiming");
+    // If number of UTCTiming elements is 0, then MPD.FT is not altered.
+    // Otherwise, UTCTiming sync is done here.
+    for(var i=0; i<UTCTiming.length; i++)
+    {
+        if(MPD.UTCTiming[i]==null)
+            MPD.UTCTiming[i]={scheme:"", value:""};
+        
+        MPD.UTCTiming[i].scheme=UTCTiming[i].getAttribute('schemeIdUri');
+        MPD.UTCTiming[i].value=UTCTiming[i].getAttribute('value');
+    }
+    UTCElementArray=MPD.UTCTiming;
+    if(UTCElementArray.length>0)
+        UTCSchemesEvaluate(UTCElementArray[0]);
+
+}
+
+function UTCSchemesEvaluate(UTCElement){
+    var URLList=UTCElement.value.split(" ");// Most of the UTC schemes give white space separated list.
+    switch(UTCElement.scheme)
+    {
+        case "urn:mpeg:dash:utc:ntp:2014" :
+            getNTPServerTimeOffset(URLList);
+            break;
+        case "urn:mpeg:dash:utc:sntp:2014" :
+            getNTPServerTimeOffset(URLList);
+            break;
+        case "urn:mpeg:dash:utc:http-head:2014" : 
+            getServerTimeOffset(URLList,"HEAD",UTCElement.scheme);        
+            break;
+        case "urn:mpeg:dash:utc:http-xsdate:2014" :
+            getServerTimeOffset(URLList,"GET",UTCElement.scheme);
+            break;
+        case "urn:mpeg:dash:utc:http-iso:2014" : 
+            getServerTimeOffset(URLList,"GET",UTCElement.scheme);
+            break;
+        case "urn:mpeg:dash:utc:http-ntp:2014" : 
+            getServerTimeOffset(URLList,"GET",UTCElement.scheme);
+            break;
+        case "urn:mpeg:dash:utc:direct:2014" :
+            serverTimeOffset=Date.parse(new Date(URLList[0]))-Date.parse(MPD.FT);
+            //console.log("serverTimeoffset"+serverTimeOffset);
+            serverTimeOffsetStatus=true;
+            break;
+    }
+    if(serverTimeOffsetStatus==false)
+    {
+        UTCElementArray.shift(); // When first UTCTiming element did not respond, try the clock in the next element.
+        if(UTCElementArray.length>0)
+            setTimeout(function(){UTCSchemesEvaluate(UTCElementArray[0]);},200);
+    }
+                
+}
+
 function processMPD(MPDxmlData)
 {
+    processUTCTiming(MPDxmlData);
+    
     var numPeriods = MPDxmlData.getElementsByTagName("Period").length;
     var currentPeriod = 0;
     
     if(numPeriods > 1){
         currentPeriod = determineCurrentPeriod(MPD, periodInformation(MPD));
-        alert("Found " + numPeriods + "periods, current implementation will only handle Period " + currentPeriod + "!");
+        //alert("Found " + numPeriods + "periods, current implementation will only handle Period " + currentPeriod + "!");
     }
     
     MPD.updatedSegments = 0;
