@@ -489,7 +489,7 @@ function hierarchyLevelInfoGathering(higherLevel, lowerLevel)
             }
             
             if(higherLevel.SegmentTemplate.getElementsByTagName("SegmentTimeline").length != 0){
-                var highSegmentTimeline = higherLevel.SegmentTemplate.getElementsByTagName("SegmentTimeline")[0];
+                var highSegmentTimeline = higherLevel.SegmentTemplate.getElementsByTagName("SegmentTimeline")[0].cloneNode(true);
                 
                 if(lowerLevel.SegmentTemplate.getElementsByTagName("SegmentTimeline").length == 0){
                     lowerLevel.SegmentTemplate.appendChild(highSegmentTimeline);
@@ -533,34 +533,34 @@ function processSegmentTimeline(Representation, Period)
             timescale = 1;  //gitay de khotee uthe he aan khalotee
     }
 
-    var r0 = S[0].getAttribute("r");
+    var r0 = parseFloat(S[0].getAttribute("r"));
 
     if(!r0 || r0 >= 0)
     {
          for(var s = 0; s < S.length ; s++)
          {
             if(S[s].getAttribute("t"))
-                MST[k] = S[s].getAttribute("t") - o;
+                MST[k] = parseFloat(S[s].getAttribute("t")) - o;
             else
             {
                 if(s > 0)
-                    MST[k] = MST[k-1] + S[s].getAttribute("d");
+                    MST[k] = MST[k-1] + parseFloat(S[s].getAttribute("d"));
                 else
                     MST[k] = 0;
             }
 
-            MD[k] = S[s].getAttribute("d");
+            MD[k] = parseFloat(S[s].getAttribute("d"));
             k++;
 
-            var r = S[s].getAttribute("r");
+            var r = parseFloat(S[s].getAttribute("r"));
 
             if(!r)
                 r = 0;
 
             for(var j = 0; j < r ; j++)
             {
-                MST[k] = MST[k-1] + S[s].getAttribute("d");
-                MD[k] = S[s].getAttribute("d");
+                MST[k] = MST[k-1] + parseFloat(S[s].getAttribute("d"));
+                MD[k] = parseFloat(S[s].getAttribute("d"));
                 k++;
             }
          }
