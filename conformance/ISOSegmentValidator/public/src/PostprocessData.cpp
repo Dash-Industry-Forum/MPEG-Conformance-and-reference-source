@@ -63,9 +63,9 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
 
                 if (list[i].type != 'styp' && list[i].type != 'sidx' && list[i].type != 'moof' && list[i].type != 'emsg' && (list[i].type != 'ftyp' || initializationSegment)) {
                     if (list[i].type == 'ftyp' && initializationSegment)
-                        warnprint("ftyp box found in the begining of a media segment while initializatioin segment is provided!\n");
+                        warnprint("Warning: ftyp box found in the begining of a media segment while initializatioin segment is provided!\n");
                     else
-                        warnprint("Unexpected box type %s found at the begining of segment %d.\n", ostypetostr(list[i].type), index + 1);
+                        warnprint("Warning: Unexpected box type %s found at the begining of segment %d.\n", ostypetostr(list[i].type), index + 1);
                 }
 
                 bool fragmentInSegmentFound = false;
@@ -154,14 +154,14 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                     sidxFound = true;
 
                     if (!initializationSegment && !vg.msixInFtyp)
-                        warnprint("msix not found in ftyp of a self-intializing segment %d, indxing info found, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall carry 'msix' as a compatible brand \n", index);
+                        warnprint("Warning: msix not found in ftyp of a self-intializing segment %d, indxing info found, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall carry 'msix' as a compatible brand \n", index);
 
                 }
 
                 if (list[i].type == 'ssix') {
                     ssixFoundInSegment = true;
                     if (!vg.simsInStyp[index])
-                        warnprint("ssix found in Segment %d, but brand 'sims' not found in the styp for the segment, violating: Section 6.3.4.4. of ISO/IEC 23009-1:2012(E): It shall carry 'sims' in the Segment Type box ('styp') as a compatible brand.", index);
+                        warnprint("Warning: ssix found in Segment %d, but brand 'sims' not found in the styp for the segment, violating: Section 6.3.4.4. of ISO/IEC 23009-1:2012(E): It shall carry 'sims' in the Segment Type box ('styp') as a compatible brand.", index);
                 }
             }
 
@@ -213,7 +213,7 @@ OSErr postprocessFragmentInfo(MovieInfoRec *mir) {
                 if (mir->moofInfo[i].trafInfo[j].tfdtFound) {
                     if (mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime != mir->tirList[index].cumulatedTackFragmentDecodeTime) {
                         if (i == 0 && vg.dashSegment) {
-                            warnprint("tfdt base media decode time %Lf not equal to accumulated decode time %Lf for track %d for the first fragment of the movie. This software does not handle incomplete presentations. Applying correction.\n", (long double) mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime / (long double) mir->tirList[index].mediaTimeScale, (long double) mir->tirList[index].cumulatedTackFragmentDecodeTime / (long double) mir->tirList[index].mediaTimeScale, mir->moofInfo[i].trafInfo[j].track_ID);
+                            warnprint("Warning: tfdt base media decode time %Lf not equal to accumulated decode time %Lf for track %d for the first fragment of the movie. \n", (long double) mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime / (long double) mir->tirList[index].mediaTimeScale, (long double) mir->tirList[index].cumulatedTackFragmentDecodeTime / (long double) mir->tirList[index].mediaTimeScale, mir->moofInfo[i].trafInfo[j].track_ID);
                             mir->tirList[index].cumulatedTackFragmentDecodeTime = mir->moofInfo[i].trafInfo[j].baseMediaDecodeTime;
                             mir->moofInfo[i].tfdt[index] = mir->tirList[index].cumulatedTackFragmentDecodeTime;
                         } else
@@ -739,7 +739,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir) {
             long double diff = ABS(segmentDurationSec - firstSidxOfSegment->cumulatedDuration);
 
             if (diff > (long double) 1.0 / (long double) mir->tirList[trackIndex].mediaTimeScale)
-                errprint("numFragments %d Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n",mir->numFragments, i - firstMediaSegment + 1, segmentDurationSec, firstSidxOfSegment->cumulatedDuration, mir->tirList[trackIndex].trackID, diff);
+                errprint("Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): If 'sidx' is present in a Media Segment, the first 'sidx' box ... shall document the entire Segment. Violated for Media Segment %d. Segment duration %Lf, Sidx documents %Lf for track %d, diff %Lf\n", i - firstMediaSegment + 1, segmentDurationSec, firstSidxOfSegment->cumulatedDuration, mir->tirList[trackIndex].trackID, diff);
 
             segmentOffset += vg.segmentSizes[i];
         }
@@ -810,20 +810,20 @@ OSErr processIndexingInfo(MovieInfoRec *mir) {
                     tir->leafInfo[leafsProcessed].hasFragments = true;
 
                 if (moof->compositionInfoMissingPerTrack[trackIndex]) {
-                    warnprint("Composition info of the referred moof %d for sidx %d is missing.\n", moofIndex, i);
+                    warnprint("Warning: Composition info of the referred moof %d for sidx %d is missing.\n", moofIndex, i);
                     continue;
                 }
 
                 long double leafEPT = moof->moofEarliestPresentationTimePerTrack[trackIndex];
 
                 if ((leafsProcessed > 0) && (leafEPT <= lastLeafEPT)) {
-                    warnprint("A referenced leaf has an EPT %Lf less than a previous (in decode order) leaf EPT %Lf, this is not handled yet! The following operation may be unreliable\n", leafEPT, lastLeafEPT);
+                    warnprint("Warning: A referenced leaf has an EPT %Lf less than a previous (in decode order) leaf EPT %Lf, this is not handled yet! The following operation may be unreliable\n", leafEPT, lastLeafEPT);
                     //lastLeafEPT = leafEPT;
                     //continue;
                 }
 
                 if (leafsProcessed > 0 && mir->moofInfo[moofIndex - 1].compositionInfoMissingPerTrack[trackIndex]) {
-                    warnprint("Composition info of the moof %d for sidx %d is missing. The following operation may be unreliable\n", moofIndex - 1, i);
+                    warnprint("Warning: Composition info of the moof %d for sidx %d is missing. The following operation may be unreliable\n", moofIndex - 1, i);
                     //continue;
                 }
 
@@ -852,7 +852,7 @@ OSErr processIndexingInfo(MovieInfoRec *mir) {
                     errprint("Referenced moof earliest_presentation_time %Lf does not match to reference EPT %Lf for sidx number %d at reference count %d\n", leafEPT, (long double) referenceEPT / (long double) mir->sidxInfo[i].timescale, i + 1, j);
 
                 if (mir->sidxInfo[i].references[j].SAP_type > 4) {
-                    warnprint("Sidx %d, index %d: SAP_type %d: \"For SAPs of type 5 and 6, no specific signalling in the ISO base media file format is supported.\" The following operation may be unreliable\n", i + 1, j, mir->sidxInfo[i].references[j].SAP_type);
+                    warnprint("Warning: Sidx %d, index %d: SAP_type %d: \"For SAPs of type 5 and 6, no specific signalling in the ISO base media file format is supported.\" The following operation may be unreliable\n", i + 1, j, mir->sidxInfo[i].references[j].SAP_type);
                     //continue;
                 }
 
@@ -1097,9 +1097,9 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir) {
             if (list[i].offset == offset) {//For live segments, comes here for each Media Segment.
                 if (list[i].type != 'styp' && list[i].type != 'prft' && list[i].type != 'emsg' && (list[i].type != 'moof') && (list[i].type != 'ftyp' || CMAFHeader)){
                     if (list[i].type == 'ftyp' && CMAFHeader)
-                        warnprint("ftyp box found in the begining of a media segment while CMAFHeader is provided!\n");
+                        warnprint("Warning: ftyp box found in the begining of a media segment while CMAFHeader is provided!\n");
                     else
-                        warnprint("Unexpected box type %s found at the begining of segment %d.\n", ostypetostr(list[i].type), index+1);
+                        warnprint("Warning: Unexpected box type %s found at the begining of segment %d.\n", ostypetostr(list[i].type), index+1);
                 }
                 
                 

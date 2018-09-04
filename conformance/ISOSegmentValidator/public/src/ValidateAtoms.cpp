@@ -543,7 +543,7 @@ OSErr Validate_mdia_hdlr_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		//Explicit check for ac-4
 		if(!strcmp(vg.codecs, "ac-4") && strcmp(ostypetostr(hdlrInfo->componentSubType),"soun"))
-		    warnprint("handler_type is not 'soun', 'soun' is expected for 'ac-4'\n" );	
+		    warnprint("Warning: handler_type is not 'soun', 'soun' is expected for 'ac-4'\n" );	
 	
 	tir->hdlrInfo = hdlrInfo;
 	// All done
@@ -3235,7 +3235,7 @@ OSErr Validate_sidx_Atom( atomOffsetEntry *aoe, void *refcon )
     
 
     if(tir->mediaTimeScale != sidxInfo->timescale)
-        warnprint("sidx timescale %d != track timescale %d for track ID %d, Section 8.16.3.3 of ISO/IEC 14496-12 4th edition: it is recommended that this match the timescale of the reference stream or track\n",sidxInfo->timescale,tir->mediaTimeScale,sidxInfo->reference_ID);
+        warnprint("Warning: sidx timescale %d != track timescale %d for track ID %d, Section 8.16.3.3 of ISO/IEC 14496-12 4th edition: it is recommended that this match the timescale of the reference stream or track\n",sidxInfo->timescale,tir->mediaTimeScale,sidxInfo->reference_ID);
         
 	// Get data 
 	if(version == 0)
