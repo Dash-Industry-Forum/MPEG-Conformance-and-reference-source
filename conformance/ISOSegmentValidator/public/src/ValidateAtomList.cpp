@@ -391,7 +391,7 @@ OSErr Validate_minf_Atom( atomOffsetEntry *aoe, void *refcon )
 	}
                  //Explicit check for ac-4
 		if(!strcmp(vg.codecs, "ac-4") && strcmp(ostypetostr(tir->mediaType),"soun"))
-		    warnprint("Media Information Header Box should contain Sound Media Header Box for 'ac-4'\n" );	
+		    warnprint("Warning: Media Information Header Box should contain Sound Media Header Box for 'ac-4'\n" );	
 
 	// Process 'dinf' atoms
 	atomerr = ValidateAtomOfType( 'dinf', kTypeAtomFlagMustHaveOne | kTypeAtomFlagCanHaveAtMostOne, 
@@ -1250,7 +1250,7 @@ OSErr Validate_ftyp_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		if (!majorBrandFoundAmongCompatibleBrands) {
 				
-				warnprint("major brand ('%.4s') not also found in list of compatible brands\n", 
+				warnprint("Warning: major brand ('%.4s') not also found in list of compatible brands\n", 
 						     ostypetostr_r(majorBrand,tempstr2));
 			}
 
@@ -1385,7 +1385,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 
 		if (segmentFound && (segmentNum == (vg.segmentInfoSize - 1)) && (vg.dash264base || vg.dashifbase) && (vg.dynamic || vg.isoLive) && !lmsgFoundInCompatibleBrands) {
 			if (segmentFound && segmentNum != vg.segmentInfoSize)
-				warnprint("Brand 'lmsg' not found as a compatible brand for the last segment (number %d); violates Section 3.2.3. of Interoperability Point DASH264: If the MPD@type is equal to \"dynamic\" or if it includes MPD@profile attribute in-cludes \"urn:mpeg:dash:profile:isoff-live:2011\", then: if the Media Segment is the last Media Segment in the Representation, this Me-dia Segment shall carry the 'lmsg' compatibility brand\n", segmentNum + 1);
+				warnprint("Warning: Brand 'lmsg' not found as a compatible brand for the last segment (number %d); violates Section 3.2.3. of Interoperability Point DASH264: If the MPD@type is equal to \"dynamic\" or if it includes MPD@profile attribute in-cludes \"urn:mpeg:dash:profile:isoff-live:2011\", then: if the Media Segment is the last Media Segment in the Representation, this Me-dia Segment shall carry the 'lmsg' compatibility brand\n", segmentNum + 1);
 		}
 
 		if (!msdhFound) {
@@ -1393,7 +1393,7 @@ OSErr Validate_styp_Atom( atomOffsetEntry *aoe, void *refcon )
 			}
         
 		if (!msixFound && (vg.mir->numSidx > 0)) {
-				warnprint("msix not found in styp of a segment, while indxing info found, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall carry 'msix' as a compatible brand \n");
+				warnprint("Warning: msix not found in styp of a segment, while indxing info found, violating: Section 6.3.4.3. of ISO/IEC 23009-1:2012(E): Each Media Segment shall carry 'msix' as a compatible brand \n");
 			}
 
         if (vg.isomain && (vg.startWithSAP <= 0 || vg.startWithSAP > 3) && !msixFound)

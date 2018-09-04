@@ -516,7 +516,7 @@ static OSErr Validate_Packet_Entry( HintInfoRec *hir, char *inPacketEntry, UInt3
 				temp32 = EndianU32_BtoN(*((UInt32*)tlvdata));
 				H_ATOM_PRINT(("RTP timestamp offset=\"%ld\"\n", temp32));
 			}
-			else warnprint("Unknown packet extra info TLV %s\n",ostypetostr(boxtype));
+			else warnprint("Warning: Unknown packet extra info TLV %s\n",ostypetostr(boxtype));
 			tlv += (boxlen + 3) & (0xFFFFFFFc);		// rounded up to a 4-byte boundary
 		}
 	}
@@ -620,13 +620,13 @@ static OSErr Validate_Data_Entry( HintInfoRec *hir, char *inEntry )
 			H_ATOM_PRINT(("blockSize=\"%d\"\n", temp16));			
 			//@@@ don't check this for .mov files
 			if ((temp16 != 0) && (temp16 != 1)) {
-				warnprint("data entry - blocksize should be 0 or 1");
+				warnprint("Warning: data entry - blocksize should be 0 or 1");
 			}
 			temp16 = EndianU16_BtoN(*((UInt16*)(inEntry+14)));
 			H_ATOM_PRINT(("blockSamples=\"%d\"\n", temp16));			
 			//@@@ don't check this for .mov files
 			if ((temp16 != 0) && (temp16 != 1)) {
-				warnprint("data entry - blockSamples should be 0 or 1");
+				warnprint("Warning: data entry - blockSamples should be 0 or 1");
 			}
 			
 			//@@@ handle blocksize, blocksamples != 0
@@ -700,7 +700,7 @@ static OSErr Validate_Data_Entry( HintInfoRec *hir, char *inEntry )
 			temp32 = EndianU32_BtoN(*((UInt32*)(inEntry+12)));
 			H_ATOM_PRINT(("reserved=\"%ld\"\n", temp32));
 			if (temp32 != 0) {
-				warnprint("reserved in sample desc data entry %ld != 0\n", temp32);
+				warnprint("Warning: reserved in sample desc data entry %ld != 0\n", temp32);
 			}
 			if (hir->constructPacket) {
 				errprint("can't get sample descriptions yet\n");
@@ -712,7 +712,7 @@ static OSErr Validate_Data_Entry( HintInfoRec *hir, char *inEntry )
 		default:
 			H_ATOM_PRINT(("dataSource=unknown=\"%ld\"\n", dataSource));
 			H_ATOM_PRINT_HEXDATA((char*)inEntry+1, kHintDataTableEntrySize-1);
-			warnprint("unknown datasource in data entry\n");
+			warnprint("Warning: unknown datasource in data entry\n");
 			break;
 	
 	}
@@ -1071,7 +1071,7 @@ OSErr Validate_Movie_SDP( char *inSDP )
 					// we didn't find a tag-warning msg already printed in SDP_Get_Tag
 					break;
 				default:
-					warnprint("unknown sdp tag '%c'\n", tag);
+					warnprint("Warning: unknown sdp tag '%c'\n", tag);
 					break;
 			}
 		}
@@ -1248,7 +1248,7 @@ static OSErr Validate_Track_SDP( HintInfoRec *hir, char *inSDP )
 					// we didn't find a tag-warning msg already printed in SDP_Get_Tag
 					break;
 				default:
-					warnprint("unknown sdp tag '%c'", tag);
+					warnprint("Warning: unknown sdp tag '%c'", tag);
 					break;
 			}
 		}
@@ -1269,7 +1269,7 @@ static OSErr Validate_Track_SDP( HintInfoRec *hir, char *inSDP )
 			if (hir->sdpInfo.payloadName[0] == '\0') {
 				errprint("missing rtpmap line for payload num %d", hir->sdpInfo.payloadNum);
 			} else {
-				warnprint("can't handle this payload '%s'", hir->sdpInfo.payloadName);
+				warnprint("Warning: can't handle this payload '%s'", hir->sdpInfo.payloadName);
 			}
 		}	
 	}
@@ -1296,7 +1296,7 @@ static OSErr Validate_SDP_Media_Line( HintInfoRec *hir, char *inLine )
 	next = strchr(current, kSpaceChar);
 	if (next == NULL) {
 		// line contains only the media type?
-		warnprint("sdp media line contains only 1 word");
+		warnprint("Warning: sdp media line contains only 1 word");
 		goto bail;
 	}
 	current = next+1;	// skip over the space char
@@ -1305,7 +1305,7 @@ static OSErr Validate_SDP_Media_Line( HintInfoRec *hir, char *inLine )
 	next = strchr(current, kSpaceChar);
 	if (next == NULL) {
 		// line contains only the media type?
-		warnprint("sdp media line contains only 1 word");
+		warnprint("Warning: sdp media line contains only 1 word");
 		goto bail;
 	}
 	
@@ -1314,7 +1314,7 @@ static OSErr Validate_SDP_Media_Line( HintInfoRec *hir, char *inLine )
 //@@@ err here
 	}
 	if (!is_in_range(temp32, 0, 0x0000ffff)) {
-		warnprint("port out of range %ld\n",temp32);
+		warnprint("Warning: port out of range %ld\n",temp32);
 	}
 	if (temp32 != 0) {
 		warnprint("port should be 0 but is %ld\n", temp32);
@@ -1325,7 +1325,7 @@ static OSErr Validate_SDP_Media_Line( HintInfoRec *hir, char *inLine )
 	next = strchr(current, kSpaceChar);
 	if (next == NULL) {
 		// line contains only the media type?
-		warnprint("sdp media line is too short");
+		warnprint("Warning: sdp media line is too short");
 		goto bail;
 	}
 	//@@@ check this is RTP/AVP
@@ -1678,7 +1678,7 @@ static OSErr Validate_rtpmap_attribute( HintInfoRec *hir, char *inValue)
 		next = current + strlen(current);
 	}
 	if (next-current > kMaxSDPPayloadNameLength) {
-		warnprint("payload name is unusually long");
+		warnprint("Warning: payload name is unusually long");
 	}
 	
 	if (temp32 == hir->sdpInfo.payloadNum) {
