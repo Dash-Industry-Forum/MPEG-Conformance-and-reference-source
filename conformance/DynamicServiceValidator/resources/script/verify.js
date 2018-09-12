@@ -20,8 +20,7 @@ var UTCElementArray=[];
 var serverTimeOffsetStatus=false;
 var serverTimeOffset=0;
 
- var RequestCounter = 0;
- 
+var RequestCounter = 0;
 function createXMLHttpRequestObject(){ 
   var xmlHttp; // xmlHttp will store the reference to the XMLHttpRequest object
   try{         // try to instantiate the native XMLHttpRequest object
@@ -165,6 +164,7 @@ function segmentEventHandler() {
     
     statusReported = true;
 
+    
     if (this.status === 200)
     {
         printString += ", " + '<span style="color:blue">'+"Status: "+this.statusText+'</span>'+"<br/>";	
@@ -192,16 +192,16 @@ function segmentEventHandler() {
             
         if(responseTime && (requestType == "SAS") && responseTime < segment.SAS.time)
 	{
-            printString += '<span style="color:red">'+", <b> Clock skew: response time: " + responseTime.toUTCString() + " msec. </b> </span>";
+            printString += '<span style="color:red">'+", <b> Clock skew: response time: " +  responseTime.toUTCString() + " msec. </b> </span>";  
 	}
         printString += "<br/>";//responseTime.toUTCString() + "<br/>";
 
     }
 
-   // if(!(this.status === 200))	
-    RequestCounter++;
-    console.log(RequestCounter);
-    printOutput(printString);
+    //if(!(this.status === 200))
+       printOutput(printString);
+       RequestCounter++;
+       //console.log(RequestCounter);
 
 
     for(var periodIndex = 0; periodIndex < MPD.Periods.length ; periodIndex++)
@@ -309,7 +309,8 @@ function  mpdReceptionEventHandler(){
 	{
 	    MPD.xmlData = xlink(MPD.xmlData);
 	}
-	processMPD(MPD.xmlData);
+	
+	    processMPD(MPD.xmlData);
 
         mpdStatusUpdate(MPD);
 
@@ -441,6 +442,7 @@ function dispatchChecks()
                 var now = new Date();
                 
                 //alert("To dispatch: " + (GSN - (SSN + Math.max(0,pastSegments-maxPastSegments))));
+		
                 for(var i = Representation.firstAvailableSsegment; i <= GSN ; i ++)
                 {
                   var saeCheckOffset;
@@ -486,12 +488,12 @@ function dispatchChecks()
                                 {	
                                     currentSegment.SAS.xmlHttp = createXMLHttpRequestObject();
                                     currentSegment.SAS.xmlHttp.ref = {period: periodIndex, as: asIndex, rep: repIndex, seg: i, type: "SAS"};
-                                    dispatchRequest(currentSegment,"SAS",currentSegment.SAS.xmlHttp);						 
-                                    currentSegment.SAS.dispatchTimeOffset = csOffset;
+                                    dispatchRequest(currentSegment,"SAS",currentSegment.SAS.xmlHttp);  
+				    currentSegment.SAS.dispatchTimeOffset = csOffset;
                                     currentSegment.SAS.requestDispatched = true;
                                     Representation.dispatchedSASRequests ++;
                                     pastSegmentsDispatched ++;
-				}
+				 }
                             }
 
                             if(currentSegment.SAE.deltaTime < 2000 && !currentSegment.SAE.requestDispatched)
@@ -503,7 +505,7 @@ function dispatchChecks()
                                 currentSegment.SAE.requestDispatched = true;
                                 Representation.dispatchedSAERequests ++;
                             }
-			
+
                         }
                         //else
 			  //printOutput("Expired Segment: "+ currentSegment.url +"<br/>");
