@@ -164,7 +164,7 @@ function segmentEventHandler() {
     
     statusReported = true;
 
-    
+
     if (this.status === 200)
     {
         printString += ", " + '<span style="color:blue">'+"Status: "+this.statusText+'</span>'+"<br/>";	
@@ -184,6 +184,7 @@ function segmentEventHandler() {
     else
     {
         printString += ", " + '<span style="color:red">'+"Status: "+this.statusText+'</span>';
+
 	document.getElementById('access').innerHTML = '<span style= "font-size:40px; color:red">'+"Fail"+'</span>';
         if(responseTime && (requestType == "SAE") && responseTime > segment.SAE.time)
         {
@@ -191,16 +192,15 @@ function segmentEventHandler() {
         }
             
         if(responseTime && (requestType == "SAS") && responseTime < segment.SAS.time)
-	{
-            printString += '<span style="color:red">'+", <b> Clock skew: response time: " +  responseTime.toUTCString() + " msec. </b> </span>";  
-	}
+            printString += '<span style="color:red">'+", <b> Clock skew: response time: " + responseTime.toUTCString() + " msec. </b> </span>";
+
         printString += "<br/>";//responseTime.toUTCString() + "<br/>";
 
     }
 
     //if(!(this.status === 200))
-       printOutput(printString);
-       RequestCounter++;
+        printOutput(printString);
+        RequestCounter++;
        //console.log(RequestCounter);
 
 
@@ -308,9 +308,8 @@ function  mpdReceptionEventHandler(){
         if (MPD.xmlHttpMPD.responseText.search("xlink"))
 	{
 	    MPD.xmlData = xlink(MPD.xmlData);
-	}
-	
-	    processMPD(MPD.xmlData);
+	}    
+		processMPD(MPD.xmlData);
 
         mpdStatusUpdate(MPD);
 
@@ -442,7 +441,7 @@ function dispatchChecks()
                 var now = new Date();
                 
                 //alert("To dispatch: " + (GSN - (SSN + Math.max(0,pastSegments-maxPastSegments))));
-		
+                
                 for(var i = Representation.firstAvailableSsegment; i <= GSN ; i ++)
                 {
                   var saeCheckOffset;
@@ -479,7 +478,8 @@ function dispatchChecks()
 
                                         currentSegment.SAS.xmlHttp = createXMLHttpRequestObject();
                                         currentSegment.SAS.xmlHttp.ref = {period: periodIndex, as: asIndex, rep: repIndex, seg: i, type: "SAS"};
-                                        currentSegment.SAS.timeOutRet=setTimeout(dispatchRequest, currentSegment.SAS.deltaTime,currentSegment,"SAS",currentSegment.SAS.xmlHttp);                                        currentSegment.SAS.dispatchTimeOffset = csOffset;
+                                        currentSegment.SAS.timeOutRet=setTimeout(dispatchRequest, currentSegment.SAS.deltaTime,currentSegment,"SAS",currentSegment.SAS.xmlHttp);
+                                        currentSegment.SAS.dispatchTimeOffset = csOffset;
                                         currentSegment.SAS.requestDispatched = true;
                                         Representation.dispatchedSASRequests ++;
                                     }
@@ -488,12 +488,12 @@ function dispatchChecks()
                                 {	
                                     currentSegment.SAS.xmlHttp = createXMLHttpRequestObject();
                                     currentSegment.SAS.xmlHttp.ref = {period: periodIndex, as: asIndex, rep: repIndex, seg: i, type: "SAS"};
-                                    dispatchRequest(currentSegment,"SAS",currentSegment.SAS.xmlHttp);  
-				    currentSegment.SAS.dispatchTimeOffset = csOffset;
+                                    dispatchRequest(currentSegment,"SAS",currentSegment.SAS.xmlHttp);						 
+                                    currentSegment.SAS.dispatchTimeOffset = csOffset;
                                     currentSegment.SAS.requestDispatched = true;
                                     Representation.dispatchedSASRequests ++;
                                     pastSegmentsDispatched ++;
-				 }
+                                }
                             }
 
                             if(currentSegment.SAE.deltaTime < 2000 && !currentSegment.SAE.requestDispatched)
