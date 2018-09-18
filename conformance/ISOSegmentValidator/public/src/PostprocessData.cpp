@@ -23,8 +23,10 @@ limitations under the License.
 #include "PostprocessData.h"
 #include <math.h> 
 #include <sstream>
+#include <fstream>
 
 #define scaleToTIR(x) ((long double)(x)/(long double)tir->mediaTimeScale)
+using namespace std;
 
 void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bool initializationSegment, UInt64 *segmentSizes, MovieInfoRec *mir) {
     UInt64 offset = 0;
@@ -61,7 +63,7 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
             if (list[i].offset == offset) {
                 boxAtSegmentStartFound = true;
 
-                if (list[i].type != 'styp' && list[i].type != 'sidx' && list[i].type != 'moof' && (list[i].type != 'ftyp' || initializationSegment)) {
+                if (list[i].type != 'styp' && list[i].type != 'sidx' && list[i].type != 'moof' && list[i].type != 'emsg' && (list[i].type != 'ftyp' || initializationSegment)) {
                     if (list[i].type == 'ftyp' && initializationSegment)
                         warnprint("ftyp box found in the begining of a media segment while initializatioin segment is provided!\n");
                     else
@@ -96,6 +98,8 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                                 if(vg.cmafChunk)
                                     errprint("CMAF check violated: Section 7.3.2.3 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but mdat not found following a moof in Chunk %d (at file absolute offset %lld).\n", index, list[j].offset);
                             }
+                            if(vg.hbbtv)
+                                errprint("### HbbTV check violated Section E.3.2: 'Each Segment shall consists of a whole self-contained movie fragment', mdat not found following a moof in segment %d (at file absolute offset %lld),\n", index, list[j].offset);
 			}
 
                         fragmentInSegmentFound = true;
@@ -124,9 +128,9 @@ void checkDASHBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bo
                 if (!fragmentInSegmentFound && !initializationSegment){
                     errprint("No fragment found in segment %d\n", index + 1);
                     if(vg.cmaf){
-                        errprint("CMAF check violated: Section 7.3.2.4 \"A CMAF Fragment SHALL consist of one or more ISO Base Media segments that contains one MovieFragmentBox followed by one or more Media Data Box(es)\", but moof not found in Segment/Fragment %d .\n",index+1);
+                        errprint("CMAF check violated: Section 7.3.2.4 \"A CMAF Fragment SHALL consist of one or more ISO Base Media segments that contains one MovieFragmentBox followed by one or more Media Data Box(es)\", but moof not found in Segment/Fragment %d \n",index);
                         if(vg.cmafChunk)
-                            errprint("CMAF check violated: Section 7.3.2.3 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but moof not found in Chunk %d .\n", index+1);
+                            errprint("CMAF check violated: Section 7.3.2.3 \"A CMAF Chunk SHALL contain one ISOBMFF segment contraints to include one MovieFragmentBox followed by one Media Data Box\", but moof not found in Chunk %d \n", index);
                     }
                 }
 
@@ -939,6 +943,19 @@ OSErr processIndexingInfo(MovieInfoRec *mir) {
 void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir) {
 
     SInt64 initSize = 0;
+    SInt64 offset;
+    int rename_result;
+    ofstream sample_data;
+    sample_data.open("sample_data.txt");
+    if (sample_data.is_open()) 
+    {
+        sample_data<<"<?xml version='1.0' encoding='utf-8'?>\n";
+        sample_data<<"<Document>";
+    }
+    else
+    {
+        errprint("Could not open file to dump sample data.");
+    }
 
     //Find initialization information size, we remove initialization from this, otherwise this becomes too complex and confusing: initialization info is necessary for random access but fetching this is a clearly separate part of the process (most often if not always this is a 2-step fetch)
     for (int i = 0; i < cnt; i++) {
@@ -951,53 +968,83 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir) {
         exit(-1);
     }
 
-    for (int i = 0; i < mir->numTIRs; i++) {
-        bool trackNonConforming = false;
-        long double currentBandwidth = (long double) vg.bandwidth;
-        long double bandwidthIncrement = 100;
+        sample_data<<"<MPDInfo minBufferTime='"<<vg.minBufferTime<<"' bandwidth='"<<vg.bandwidth<<"' >\n";
+        sample_data<<"<Representation initSize='"<<initSize<<"' timescale='"<<mir->tirList[0].mediaTimeScale<<"' >\n";
+
+    for (int i = 0; i < mir->numTIRs; i++) 
+    {
+        bool trackNonConforming = false; 
+        long double currentBandwidth = (long double) vg.bandwidth; 
+        long double bandwidthIncrement = 100; 
         std::stringstream errStr;
 
         do {
             TrackInfoRec *tir = &(mir->tirList[i]);
-            long double bufferFullness = currentBandwidth * vg.minBufferTime; //bits (not Bytes)
-            SInt64 lastOffset = initSize;
-            SInt64 timeNowInTicks = (SInt64) (vg.minBufferTime * (long double) tir->mediaTimeScale);
-
-            long double totalDataRemoved = 0;
-            long double totalBitsAdded = 0;
+            long double bufferFullness = currentBandwidth * vg.minBufferTime; //bits (not Bytes) 
+            SInt64 lastOffset = initSize; 
+            SInt64 timeNowInTicks = (SInt64) (vg.minBufferTime * (long double) tir->mediaTimeScale); 
+            long double totalDataRemoved = 0; 
+            long double totalBitsAdded = 0; 
             trackNonConforming = false;
 
-            for (UInt32 j = 0; j < mir->numFragments; j++) {
+            for (UInt32 j = 0; j < mir->numFragments; j++) 
+            {
+
                 MoofInfoRec *moof = &mir->moofInfo[j];
+                offset = moof->offset - initSize;
 
-                SInt64 offset = moof->offset - initSize;
-
+                int SAP;
+                if(moof->announcedSAP)
+                    SAP = 1;
+                else
+                    SAP = 0;
+                sample_data<<"<moof a='"<<SAP<<"'>\n";
+                
                 if (moof->announcedSAP && bufferFullness > currentBandwidth * vg.minBufferTime) //There is no buffer overflow for DASH buffer model, only case is on a SAP, as DASH spec. defines the requiremnt that the playback could be from any SAP and at the SAP, the buffer fullness is bandwidth*minBufferTime
                 {
                     totalDataRemoved += ((bufferFullness - currentBandwidth * vg.minBufferTime) / 8.0); //The clipped data, for debug information
                     bufferFullness = currentBandwidth * vg.minBufferTime;
                 }
 
-                for (UInt32 k = 0; k < moof->numTrackFragments; k++) {
+                for (UInt32 k = 0; k < moof->numTrackFragments; k++) 
+                {
+                    
+                    sample_data<<"<traf>\n";
+                    
                     if (moof->trafInfo[k].track_ID == tir->trackID && moof->trafInfo[k].numTrun > 0) //Assuming 'trun' cannot be empty, 14496-12 version 4 does not indicate such a possiblity.
                     {
-                        for (UInt32 l = 0; l < moof->trafInfo[k].numTrun; l++) {
+                        for (UInt32 l = 0; l < moof->trafInfo[k].numTrun; l++) 
+                        {                            
+                             sample_data<<"<trun>\n";
+                            
                             if (moof->trafInfo[k].trunInfo[l].data_offset_present)
                                 offset = moof->offset - initSize + moof->trafInfo[k].trunInfo[l].data_offset;
                             else if (l == 0)
                                 errprint("data_offset absent for the first run of fragment number %d (absolute moof file offset %lld), unexpected!\n", k + 1, moof->offset);
 
-                            for (UInt32 m = 0; m < moof->trafInfo[k].trunInfo[l].sample_count; m++) {
+                            for (UInt32 m = 0; m < moof->trafInfo[k].trunInfo[l].sample_count; m++) 
+                            {
                                 //bool sample_is_non_sync_sample = (moof->trafInfo[k].trunInfo[l].sample_flags[m] & 0x10000 >> 16) != 0;
                                 //bool sample_is_SAP = !sample_is_non_sync_sample || moof->trafInfo[k].trunInfo[l].sap3[m] || moof->trafInfo[k].trunInfo[l].sap4[m];
 
                                 offset += moof->trafInfo[k].trunInfo[l].sample_size[m];
-
                                 long double dataSizeToRemove = (long double) (offset - lastOffset);
+                                
+                                if(m == 0)
+                                {    
+                                    if((k == 0) && (l == 0))
+                                        sample_data<<"<s z='"<<dataSizeToRemove<<"' d='"<<moof->trafInfo[k].trunInfo[l].sample_duration[m]<<"'/>\n";
+                                    else
+                                        sample_data<<"<s z='"<<dataSizeToRemove<<"' d='"<<moof->trafInfo[k].trunInfo[l].sample_duration[m]<<"'/>\n";
+                                }
+                                else
+                                    sample_data<<"<s z='"<<dataSizeToRemove<<"' d='"<<moof->trafInfo[k].trunInfo[l].sample_duration[m]<<"'/>\n";
+                                
                                 totalDataRemoved += dataSizeToRemove;
+                                lastOffset = offset;
                                 //fprintf(stderr,"Total bits removed: %Lf, Size to remove: %Lf, Buffer Fullness: %Lf, average input rate: %Lf, duration: %Lf, sample %d, run %d, track fragment %d, fragment %d, track id %d (sample absolute offset %lld, fragment absolute file offset %lld)\n",totalDataRemoved,dataSizeToRemove,bufferFullness/8.0,totalBitsAdded/(((long double)timeNowInTicks/(long double)tir->mediaTimeScale)-0),((long double)moof->trafInfo[k].trunInfo[l].sample_duration[m]/(long double)tir->mediaTimeScale),m+1,l+1,k+1,j+1,tir->trackID,offset - moof->trafInfo[k].trunInfo[l].sample_size[m] + initSize, moof->offset);
 
-                                lastOffset = offset;
+
 
                                 if (dataSizeToRemove * 8 > bufferFullness) //Bufferfullness is in bits
                                 {
@@ -1006,11 +1053,11 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir) {
                                             errStr << "Buffer underrun conformance error: first (and only one reported here) for sample " << m + 1 << " of run " << l + 1 << " of track fragment " << k + 1 << " of fragment " << j + 1 << " of track id " << tir->trackID << " (sample absolute file offset " << offset - moof->trafInfo[k].trunInfo[l].sample_size[m] + initSize << ", fragment absolute file offset " << moof->offset << ", bandwidth: " << (UInt64) currentBandwidth;
 
                                         trackNonConforming = true;
-                                        break;
+                                        //break;
                                     }
 
-                                    long double finalBufferFullness = bufferFullness - dataSizeToRemove * 8;
-                                    long double targetBitrate = (long double) (8 * (offset - initSize)) / ((long double) timeNowInTicks / (long double) tir->mediaTimeScale); // Direct bitrate calculation
+                                    long double finalBufferFullness = bufferFullness - dataSizeToRemove * 8; //unused
+                                    long double targetBitrate = (long double) (8 * (offset - initSize)) / ((long double) timeNowInTicks / (long double) tir->mediaTimeScale); // unused //Direct bitrate calculation
 
                                     //fprintf(stderr,"Recalculated: targetBitrate %Lf, byte offset %lld, time %lld: %Lf, total removed %Lf\n",targetBitrate,offset - initSize,timeNowInTicks,((long double)timeNowInTicks/(long double)tir->mediaTimeScale),totalDataRemoved,((long double)offset - initSize)-totalDataRemoved);
 
@@ -1023,20 +1070,21 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir) {
                                 }
 
                                 bufferFullness -= (dataSizeToRemove * 8);
-
                                 bufferFullness += (currentBandwidth * ((long double) moof->trafInfo[k].trunInfo[l].sample_duration[m] / (long double) tir->mediaTimeScale));
                                 totalBitsAdded += (currentBandwidth * ((long double) moof->trafInfo[k].trunInfo[l].sample_duration[m] / (long double) tir->mediaTimeScale));
                                 timeNowInTicks += moof->trafInfo[k].trunInfo[l].sample_duration[m];
                             }
-                            if (trackNonConforming) break;
+                            //if (trackNonConforming) break;
+                            sample_data<<"</trun>\n";
                         }
-                        if (trackNonConforming) break;
+                        //if (trackNonConforming) break;
                     }
-                    if (trackNonConforming) break;
+                    //if (trackNonConforming) break;
+                    sample_data<<"</traf>\n";
                 }
-                if (trackNonConforming) break;
+            //if (trackNonConforming) break;
+            sample_data<<"</moof>\n";
             }
-
             if (trackNonConforming) {
                 currentBandwidth += bandwidthIncrement;
             }
@@ -1051,9 +1099,17 @@ void processBuffering(long cnt, atomOffsetEntry *list, MovieInfoRec *mir) {
             errprint(errStr.str().c_str());
         }
     }
-
+    sample_data<<"</Representation>\n";
+    sample_data<<"</MPDInfo>\n";
+    sample_data<<"</Document>\n";
+    sample_data.close();
+    /*rename_result = rename( "sample_data.txt" , "sample_data.xml" );
+    if ( rename_result != 0 )
+        errprint("Error renaming file: 'sample_data.txt' into 'sample_data.xml'");*/
+    
     return;
-}void checkCMAFBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bool CMAFHeader, UInt64 *segmentSizes)
+}
+void checkCMAFBoxOrder(long cnt, atomOffsetEntry *list, long segmentInfoSize, bool CMAFHeader, UInt64 *segmentSizes)
 {
     UInt64 offset = 0;
     //In this function,all top level boxes like ftyp, moov , moof etc are checked for order. Other lower level boxes have separate functions.
