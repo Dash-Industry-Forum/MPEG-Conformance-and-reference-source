@@ -56,8 +56,8 @@ function process()
       {
         now = new Date(now - getCSOffset());
       }
-	 // MPD.xmlHttpMPD.open("GET", mpd_url += (mpd_url.match(/\?/) == null ? "?" : "&") + now.getTime(), false);  // initiate server request, trying to bypass cache using tip
-	   MPD.xmlHttpMPD.open("GET", mpd_url, false);                                                                                                         // from 
+	  MPD.xmlHttpMPD.open("GET", mpd_url += (mpd_url.match(/\?/) == null ? "?" : "&") + now.getTime(), false);  // initiate server request, trying to bypass cache using tip
+	   //MPD.xmlHttpMPD.open("GET", mpd_url, false);                                                                                                         // from 
 	                                                                                                            // https://developer.mozilla.org/es/docs/XMLHttpRequest/Usar_XMLHttpRequest#Bypassing_the_cache,
 	                                                                                                            // same technique used for segment request
       MPD.xmlHttpMPD.onreadystatechange = mpdReceptionEventHandler;
@@ -201,7 +201,6 @@ function segmentEventHandler() {
     //if(!(this.status === 200))
         printOutput(printString);
         RequestCounter++;
-       //console.log(RequestCounter);
 
 
     for(var periodIndex = 0; periodIndex < MPD.Periods.length ; periodIndex++)
@@ -304,11 +303,10 @@ function  mpdReceptionEventHandler(){
         {
             MPD.mpdDispatch = setTimeout(process,getMUP(MPD.xmlData)*1000);
         }
-        
         if (MPD.xmlHttpMPD.responseText.search("xlink"))
 	{
 	    MPD.xmlData = xlink(MPD.xmlData);
-	}    
+	} 
 		processMPD(MPD.xmlData);
 
         mpdStatusUpdate(MPD);
@@ -343,17 +341,12 @@ function xlink(MPDxmlData)
 	
 	    var numPeriods = MPDxmlData.getElementsByTagName("Period").length;
 	    for(i=0; i<numPeriods; i++){
-		console.log(MPDxmlData);
 		while (MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href')){
 		  var xlinkrequest = new XMLHttpRequest();
 		  xlinkrequest.open("GET", MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href'), false);
-		  console.log(MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href'));
 		  xlinkrequest.send(null);
 		  parser = new DOMParser();
 		  xmlHttpPeriod = parser.parseFromString(xlinkrequest.responseText, "text/xml");
-		  //xmlHttpPeriod = xlinkrequest.responseXML;
-		  //console.log(MPDxmlData.getElementsByTagName("Period")[i]);
-		  //console.log(xmlHttpPeriod.documentElement);
 		  MPDxmlData.getElementsByTagName("Period")[i].parentNode.replaceChild(xmlHttpPeriod.documentElement, MPDxmlData.getElementsByTagName("Period")[i]);  
 		}
 		adaptationSets = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet");
@@ -507,8 +500,6 @@ function dispatchChecks()
                             }
 
                         }
-                        //else
-			  //printOutput("Expired Segment: "+ currentSegment.url +"<br/>");
             		}
                    catch(e)
                     {
@@ -846,10 +837,11 @@ function processPeriod(Period)
     
     var id = Period.xmlData.getAttribute('id');
 
-    if(Period.id != "" && Period.id != id)
+    //Removing this block as we are processing current period and it should be continued if current period is updated.
+    /*if(Period.id != "" && Period.id != id)
     {
         throw("A different period with id " + id + " found, previous period id was " + Period.id + ", not handled, returning!");
-    }
+    }*/
     
     Period.id = id;
     
@@ -1032,7 +1024,6 @@ function processMPD(MPDxmlData)
 
         //Initializations
         MPD.Periods[periodIndex].xmlData = MPDxmlData.getElementsByTagName("Period")[currentPeriod];
-        
         processPeriod(MPD.Periods[periodIndex]);
     }
 
