@@ -52,7 +52,9 @@ UInt64 inflateOffset(UInt64 offset64)
 
 		for (index = 0; adjustedOffset >= vg.offsetEntries[index].offset; index++)
 		{
-			adjustedOffset += vg.offsetEntries[index].sizeRemoved;
+                    if(index == vg.numOffsetEntries)
+                        break; 
+                    adjustedOffset += vg.offsetEntries[index].sizeRemoved;
 		}
 	}
 
@@ -228,7 +230,7 @@ int GetFileUTFString( atomOffsetEntry *aoe, char **strP, UInt64 offset64, UInt64
 		else {
 			int ix;
 			
-			// ¥¥ clf -- The right solution is probably to generate "\uNNNN" for Unicode characters not in the range 0-0x7f. That
+			// ï¿½ï¿½ clf -- The right solution is probably to generate "\uNNNN" for Unicode characters not in the range 0-0x7f. That
 			// will require the array be 5 times as large in the worst case.
 			pASCII= noticeP; *pASCII = 0;
 			
