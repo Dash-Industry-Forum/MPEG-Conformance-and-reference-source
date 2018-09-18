@@ -56,8 +56,8 @@ function process()
       {
         now = new Date(now - getCSOffset());
       }
-	 // MPD.xmlHttpMPD.open("GET", mpd_url += (mpd_url.match(/\?/) == null ? "?" : "&") + now.getTime(), false);  // initiate server request, trying to bypass cache using tip
-	   MPD.xmlHttpMPD.open("GET", mpd_url, false);                                                                                                         // from 
+	  MPD.xmlHttpMPD.open("GET", mpd_url += (mpd_url.match(/\?/) == null ? "?" : "&") + now.getTime(), false);  // initiate server request, trying to bypass cache using tip
+	   //MPD.xmlHttpMPD.open("GET", mpd_url, false);                                                                                                         // from 
 	                                                                                                            // https://developer.mozilla.org/es/docs/XMLHttpRequest/Usar_XMLHttpRequest#Bypassing_the_cache,
 	                                                                                                            // same technique used for segment request
       MPD.xmlHttpMPD.onreadystatechange = mpdReceptionEventHandler;
@@ -500,8 +500,6 @@ function dispatchChecks()
                             }
 
                         }
-                        //else
-			  //printOutput("Expired Segment: "+ currentSegment.url +"<br/>");
             		}
                    catch(e)
                     {
