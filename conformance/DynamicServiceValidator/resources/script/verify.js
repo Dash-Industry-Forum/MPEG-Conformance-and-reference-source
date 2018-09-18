@@ -20,6 +20,7 @@ var UTCElementArray=[];
 var serverTimeOffsetStatus=false;
 var serverTimeOffset=0;
 
+var RequestCounter = 0;
 function createXMLHttpRequestObject(){ 
   var xmlHttp; // xmlHttp will store the reference to the XMLHttpRequest object
   try{         // try to instantiate the native XMLHttpRequest object
@@ -56,7 +57,7 @@ function process()
         now = new Date(now - getCSOffset());
       }
 	  MPD.xmlHttpMPD.open("GET", mpd_url += (mpd_url.match(/\?/) == null ? "?" : "&") + now.getTime(), false);  // initiate server request, trying to bypass cache using tip
-	                                                                                                            // from 
+	   //MPD.xmlHttpMPD.open("GET", mpd_url, false);                                                                                                         // from 
 	                                                                                                            // https://developer.mozilla.org/es/docs/XMLHttpRequest/Usar_XMLHttpRequest#Bypassing_the_cache,
 	                                                                                                            // same technique used for segment request
       MPD.xmlHttpMPD.onreadystatechange = mpdReceptionEventHandler;
@@ -171,11 +172,20 @@ function segmentEventHandler() {
             MPD.numSuccessfulChecksSAS++;
         if(requestType == "SAE")
             MPD.numSuccessfulChecksSAE++;
+	if(RequestCounter <= 10 && document.getElementById('access').innerText != "Fail" ) 
+	{
+	  document.getElementById('access').innerHTML = '<span style= "font-size:40px; color:blue">'+"Processing"+'</span>';
+	}
+	if ( RequestCounter > 10 && document.getElementById('access').innerText != "Fail")
+	{
+	  document.getElementById('access').innerHTML = '<span style= "font-size:40px; color:green">'+"Pass"+'</span>';
+	}
     }
     else
     {
         printString += ", " + '<span style="color:red">'+"Status: "+this.statusText+'</span>';
 
+	document.getElementById('access').innerHTML = '<span style= "font-size:40px; color:red">'+"Fail"+'</span>';
         if(responseTime && (requestType == "SAE") && responseTime > segment.SAE.time)
         {
             printString += '<span style="color:red">'+", <b>Clock skew: response time: " + responseTime.toUTCString() + " msec. </b> </span>";
@@ -188,8 +198,9 @@ function segmentEventHandler() {
 
     }
 
-    if(!(this.status === 200))
+    //if(!(this.status === 200))
         printOutput(printString);
+        RequestCounter++;
 
 
     for(var periodIndex = 0; periodIndex < MPD.Periods.length ; periodIndex++)
@@ -292,7 +303,10 @@ function  mpdReceptionEventHandler(){
         {
             MPD.mpdDispatch = setTimeout(process,getMUP(MPD.xmlData)*1000);
         }
-        
+        if (MPD.xmlHttpMPD.responseText.search("xlink"))
+	{
+	    MPD.xmlData = xlink(MPD.xmlData);
+	} 
 		processMPD(MPD.xmlData);
 
         mpdStatusUpdate(MPD);
@@ -317,7 +331,49 @@ function  mpdReceptionEventHandler(){
     }
   }
 }
+/*******************************************************************************************************************************
+make a modified MPD if there was a xlink 
+********************************************************************************************************************************/
 
+function xlink(MPDxmlData)
+{
+  	
+	
+	    var numPeriods = MPDxmlData.getElementsByTagName("Period").length;
+	    for(i=0; i<numPeriods; i++){
+		while (MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href')){
+		  var xlinkrequest = new XMLHttpRequest();
+		  xlinkrequest.open("GET", MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href'), false);
+		  xlinkrequest.send(null);
+		  parser = new DOMParser();
+		  xmlHttpPeriod = parser.parseFromString(xlinkrequest.responseText, "text/xml");
+		  MPDxmlData.getElementsByTagName("Period")[i].parentNode.replaceChild(xmlHttpPeriod.documentElement, MPDxmlData.getElementsByTagName("Period")[i]);  
+		}
+		adaptationSets = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet");
+		for( j=0; j< adaptationSets.length; j++){
+		    while (MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getAttribute('xlink:href')){
+			var xlinkrequest = new XMLHttpRequest();
+			xlinkrequest.open("GET", MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getAttribute('xlink:href'), false);
+			xlinkrequest.send(null);
+			parser = new DOMParser();
+			xmlHttpAdaptation = parser.parseFromString(xlinkrequest.responseText, "text/xml");
+			MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].parentNode.replaceChild(xmlHttpAdaptation.documentElement, MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j]);
+		    }
+		    representationSets = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getElementsByTagName("Representation");
+			for (k=0; k< representationSets.length; k++){
+			    while(MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getElementsByTagName("Representation")[k].getAttribute('xllink:href')){
+				var xlinkrequest = new XMLHttpRequest();
+				xlinkrequest.open("GET", MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href'), false);
+				xlinkrequest.send(null);
+				parser = new DOMParser();
+				xmlHttpRepresentation = parser.parseFromString(xlinkrequest.responseText, "text/xml");
+				MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getElementsByTagName("Representation")[k].parentNode.replaceChild(xmlHttpRepresentation.documentElement, MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName(AdaptationSet)[j].getElementsByTagName("Representation")[k]); 
+			     }
+			}
+		 }
+	    }
+	    return MPDxmlData;
+}  
 /*******************************************************************************************************************************
 Dispatch URL request of a single time (either SAS or SAE)
 ********************************************************************************************************************************/
@@ -781,10 +837,11 @@ function processPeriod(Period)
     
     var id = Period.xmlData.getAttribute('id');
 
-    if(Period.id != "" && Period.id != id)
+    //Removing this block as we are processing current period and it should be continued if current period is updated.
+    /*if(Period.id != "" && Period.id != id)
     {
         throw("A different period with id " + id + " found, previous period id was " + Period.id + ", not handled, returning!");
-    }
+    }*/
     
     Period.id = id;
     
@@ -967,7 +1024,6 @@ function processMPD(MPDxmlData)
 
         //Initializations
         MPD.Periods[periodIndex].xmlData = MPDxmlData.getElementsByTagName("Period")[currentPeriod];
-        
         processPeriod(MPD.Periods[periodIndex]);
     }
 
@@ -1030,7 +1086,7 @@ function periodInformation(MPD)
         else{
             if(i > 0){
                 if(periods[i-1].getAttribute("duration"))
-                    start = getTiming(starts[i-1]) + getTiming(periods[i-1].getAttribute("duration"));
+                    start = starts[i-1] + getTiming(periods[i-1].getAttribute("duration"));
             }
             else{
                 if(MPD.xmlData.getAttribute("type") == "static"){
