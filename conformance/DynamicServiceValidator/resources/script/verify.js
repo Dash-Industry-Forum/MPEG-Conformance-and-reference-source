@@ -201,7 +201,6 @@ function segmentEventHandler() {
     //if(!(this.status === 200))
         printOutput(printString);
         RequestCounter++;
-       //console.log(RequestCounter);
 
 
     for(var periodIndex = 0; periodIndex < MPD.Periods.length ; periodIndex++)
@@ -304,13 +303,10 @@ function  mpdReceptionEventHandler(){
         {
             MPD.mpdDispatch = setTimeout(process,getMUP(MPD.xmlData)*1000);
         }
-        console.log("CurrentTime "+(MPD.FT).getTime())
-        console.log(MPD.xmlData);
         if (MPD.xmlHttpMPD.responseText.search("xlink"))
 	{
 	    MPD.xmlData = xlink(MPD.xmlData);
 	} 
-	//console.log(MPD.xmlData);
 		processMPD(MPD.xmlData);
 
         mpdStatusUpdate(MPD);
@@ -345,17 +341,12 @@ function xlink(MPDxmlData)
 	
 	    var numPeriods = MPDxmlData.getElementsByTagName("Period").length;
 	    for(i=0; i<numPeriods; i++){
-		//console.log(MPDxmlData);
 		while (MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href')){
 		  var xlinkrequest = new XMLHttpRequest();
 		  xlinkrequest.open("GET", MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href'), false);
-		  console.log(MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href'));
 		  xlinkrequest.send(null);
 		  parser = new DOMParser();
 		  xmlHttpPeriod = parser.parseFromString(xlinkrequest.responseText, "text/xml");
-		  //xmlHttpPeriod = xlinkrequest.responseXML;
-		  //console.log(MPDxmlData.getElementsByTagName("Period")[i]);
-		  //console.log(xmlHttpPeriod.documentElement);
 		  MPDxmlData.getElementsByTagName("Period")[i].parentNode.replaceChild(xmlHttpPeriod.documentElement, MPDxmlData.getElementsByTagName("Period")[i]);  
 		}
 		adaptationSets = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet");
@@ -1035,7 +1026,6 @@ function processMPD(MPDxmlData)
 
         //Initializations
         MPD.Periods[periodIndex].xmlData = MPDxmlData.getElementsByTagName("Period")[currentPeriod];
-        console.log("Current period is "+currentPeriod)
         processPeriod(MPD.Periods[periodIndex]);
     }
 
@@ -1363,3 +1353,4 @@ function printOutput(string)
     theD =document.getElementById('SegmentOutput');
     theD.innerHTML=string + theD.innerHTML;						 
 }
+
