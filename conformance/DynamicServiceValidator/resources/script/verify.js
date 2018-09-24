@@ -44,7 +44,7 @@ Entry and re-entry (for MPD updates) point
 ********************************************************************************************************************************/
 
 function process()
-{
+{ 
   if (MPD.xmlHttpMPD)     // continue only if xmlHttp isn't void
   {
     try          // try to connect to the server
@@ -303,13 +303,10 @@ function  mpdReceptionEventHandler(){
         {
             MPD.mpdDispatch = setTimeout(process,getMUP(MPD.xmlData)*1000);
         }
-        console.log("CurrentTime "+(MPD.FT).getTime())
-        console.log(MPD.xmlData);
         if (MPD.xmlHttpMPD.responseText.search("xlink"))
 	{
 	    MPD.xmlData = xlink(MPD.xmlData);
 	}
-	console.log(MPD.xmlData);
 		processMPD(MPD.xmlData);
 
         mpdStatusUpdate(MPD);
@@ -794,7 +791,6 @@ function processSegmentTemplate(Representation, Period)
     //printOutput(Representation.firstAvailableSsegment + " - " + Representation.GSN + "; diff: " + (Representation.GSN - Representation.firstAvailableSsegment)+ ", new: " + minNewSeg + " - " + maxNewSeg + "; diff: " + (maxNewSeg-minNewSeg) + "<br/>");
 
     MPD.updatedSegments += newSegmentCount;
-    console.log(newSegmentCount);
 
 }
 
@@ -871,7 +867,6 @@ function processAdaptationSet(AdaptationSet,Period)
 
 function processPeriod(Period)
 {
-    console.log("PROCESS");
     Period.SegmentTemplate = getChildByTagName(Period,"SegmentTemplate");
     Period.SegmentBase = getChildByTagName(Period,"SegmentBase");
     
@@ -1064,7 +1059,6 @@ function processMPD(MPDxmlData)
 
         //Initializations
         MPD.Periods[periodIndex].xmlData = MPDxmlData.getElementsByTagName("Period")[currentPeriod];
-	 console.log("Current period is "+currentPeriod);
         processPeriod(MPD.Periods[periodIndex]);
     }
 
