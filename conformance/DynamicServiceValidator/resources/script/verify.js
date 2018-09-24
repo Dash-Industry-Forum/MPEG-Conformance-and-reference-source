@@ -44,7 +44,7 @@ Entry and re-entry (for MPD updates) point
 ********************************************************************************************************************************/
 
 function process()
-{  
+{
   if (MPD.xmlHttpMPD)     // continue only if xmlHttp isn't void
   {
     try          // try to connect to the server
@@ -303,10 +303,13 @@ function  mpdReceptionEventHandler(){
         {
             MPD.mpdDispatch = setTimeout(process,getMUP(MPD.xmlData)*1000);
         }
+        console.log("CurrentTime "+(MPD.FT).getTime())
+        console.log(MPD.xmlData);
         if (MPD.xmlHttpMPD.responseText.search("xlink"))
 	{
 	    MPD.xmlData = xlink(MPD.xmlData);
-	} 
+	}
+	console.log(MPD.xmlData);
 		processMPD(MPD.xmlData);
 
         mpdStatusUpdate(MPD);
@@ -339,8 +342,9 @@ function xlink(MPDxmlData)
 {
   	
 	
-	    var numPeriods = MPDxmlData.getElementsByTagName("Period").length;
+	    numPeriods = MPDxmlData.getElementsByTagName("Period").length;
 	    for(i=0; i<numPeriods; i++){
+	      try{
 		while (MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href')){
 		  var xlinkrequest = new XMLHttpRequest();
 		  xlinkrequest.open("GET", MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href'), false);
@@ -348,9 +352,21 @@ function xlink(MPDxmlData)
 		  parser = new DOMParser();
 		  xmlHttpPeriod = parser.parseFromString(xlinkrequest.responseText, "text/xml");
 		  MPDxmlData.getElementsByTagName("Period")[i].parentNode.replaceChild(xmlHttpPeriod.documentElement, MPDxmlData.getElementsByTagName("Period")[i]);  
+		  }
 		}
+		  catch(e)
+		  {
+		    x = MPDxmlData.getElementsByTagName("Period")[i];
+		    x.parentNode.removeChild(x);
+		    i--;
+		    numPeriods--;
+		    alert("xlink Period not found(404)");
+		    continue;
+		  }
 		adaptationSets = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet");
-		for( j=0; j< adaptationSets.length; j++){
+		numadaptations = adaptationSets.length;
+		for( j=0; j< numadaptations ; j++){
+		  try{
 		    while (MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getAttribute('xlink:href')){
 			var xlinkrequest = new XMLHttpRequest();
 			xlinkrequest.open("GET", MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getAttribute('xlink:href'), false);
@@ -359,8 +375,20 @@ function xlink(MPDxmlData)
 			xmlHttpAdaptation = parser.parseFromString(xlinkrequest.responseText, "text/xml");
 			MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].parentNode.replaceChild(xmlHttpAdaptation.documentElement, MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j]);
 		    }
+		  }
+		  catch(e)
+		  {
+		      x = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j];
+		      x.parentNode.removeChild(x);
+		      j--;
+		      numadaptations--;
+		      alert("xlink AdaptationSet not found(404)");
+		      continue;
+		  }
 		    representationSets = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getElementsByTagName("Representation");
-			for (k=0; k< representationSets.length; k++){
+		    numrepresentations = representationSets.length;
+			for (k=0; k< numrepresentations ; k++){
+			  try{
 			    while(MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getElementsByTagName("Representation")[k].getAttribute('xllink:href')){
 				var xlinkrequest = new XMLHttpRequest();
 				xlinkrequest.open("GET", MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href'), false);
@@ -369,6 +397,16 @@ function xlink(MPDxmlData)
 				xmlHttpRepresentation = parser.parseFromString(xlinkrequest.responseText, "text/xml");
 				MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getElementsByTagName("Representation")[k].parentNode.replaceChild(xmlHttpRepresentation.documentElement, MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName(AdaptationSet)[j].getElementsByTagName("Representation")[k]); 
 			     }
+			  }
+			  catch(e)
+			  {
+			     x = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName(AdaptationSet)[j].getElementsByTagName("Representation")[k];
+			     x.parentNode.removeChild(x);
+			     k--;
+			     numrepresentations--;
+			     alert("xlink Representation not found(404)");
+			     continue;
+			  }
 			}
 		 }
 	    }
@@ -756,6 +794,7 @@ function processSegmentTemplate(Representation, Period)
     //printOutput(Representation.firstAvailableSsegment + " - " + Representation.GSN + "; diff: " + (Representation.GSN - Representation.firstAvailableSsegment)+ ", new: " + minNewSeg + " - " + maxNewSeg + "; diff: " + (maxNewSeg-minNewSeg) + "<br/>");
 
     MPD.updatedSegments += newSegmentCount;
+    console.log(newSegmentCount);
 
 }
 
@@ -832,6 +871,7 @@ function processAdaptationSet(AdaptationSet,Period)
 
 function processPeriod(Period)
 {
+    console.log("PROCESS");
     Period.SegmentTemplate = getChildByTagName(Period,"SegmentTemplate");
     Period.SegmentBase = getChildByTagName(Period,"SegmentBase");
     
@@ -1024,6 +1064,7 @@ function processMPD(MPDxmlData)
 
         //Initializations
         MPD.Periods[periodIndex].xmlData = MPDxmlData.getElementsByTagName("Period")[currentPeriod];
+	 console.log("Current period is "+currentPeriod);
         processPeriod(MPD.Periods[periodIndex]);
     }
 
