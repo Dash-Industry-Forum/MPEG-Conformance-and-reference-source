@@ -298,12 +298,13 @@ function  mpdReceptionEventHandler(){
                 
         // do something with the response
         MPD.xmlData = MPD.xmlHttpMPD.responseXML.documentElement;	
-                
-        if(getMUP(MPD.xmlData) < maxMUP)
-        {
+         
+        //Removing this if, to ensure MPD is updated after MUP and processed.
+        //if(getMUP(MPD.xmlData) < maxMUP)
+        //{
             MPD.mpdDispatch = setTimeout(process,getMUP(MPD.xmlData)*1000);
-        }
-        if (MPD.xmlHttpMPD.responseText.search("xlink"))
+        //}
+        if (MPD.xmlHttpMPD.responseText.search("xlink")!==-1)
 	{
 	    MPD.xmlData = xlink(MPD.xmlData);
 	}
@@ -1340,6 +1341,7 @@ if(mpd.getAttribute("minimumUpdatePeriod")){
 //	mup=mup+parseFloat(mup_string[i])*Math.pow(60,mup_len-i-1);
 //   }
     mup = getTiming(mpd.getAttribute("minimumUpdatePeriod"));
+    mup= Math.min(mup, 24*60*60);
 }else{
    mup=maxMUP;
 }

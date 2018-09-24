@@ -197,18 +197,18 @@ OSErr Validate_iods_OD_Bits( Ptr odDataP, unsigned long odSize, Boolean fileForm
 						"High Efficiency AAC@L5" };
 		VALIDATE_FIELD  ("%2.2x",  ODProfileLevelIndication, 8 );
 		if (ODProfileLevelIndication!=0xFF)
-			warnprint("Validate_IODS: ISMA expects no-capability(0xFF) for ODProfileLevelIndication\n");
+			warnprint("Warning: Validate_IODS: ISMA expects no-capability(0xFF) for ODProfileLevelIndication\n");
 
 		VALIDATE_FIELD  ("%2.2x",  sceneProfileLevelIndication, 8 );
 		if (sceneProfileLevelIndication!=0xFF)
-			warnprint("Validate_IODS: ISMA expects no-capability(0xFF) for sceneProfileLevelIndication\n");
+			warnprint("Warning: Validate_IODS: ISMA expects no-capability(0xFF) for sceneProfileLevelIndication\n");
 
 		VALIDATE_FIELD  ("%2.2x",  audioProfileLevelIndication, 8 );
 		if ((audioProfileLevelIndication!=0xFF) && 
 			(audioProfileLevelIndication!=0x0F) && 
 			(audioProfileLevelIndication!=0x0E) &&
 			(audioProfileLevelIndication!=0x2a) && (audioProfileLevelIndication!=0x2c))
-			warnprint("Validate_IODS: ISMA expects no-capability(0xFF) or Hi-Quality@L1/L2 (0x0E, 0x0F) or AAC@L4 (0x2a) or HE-AAC@L2 (0x2c) for audioProfileLevelIndication\n");
+			warnprint("Warning: Validate_IODS: ISMA expects no-capability(0xFF) or Hi-Quality@L1/L2 (0x0E, 0x0F) or AAC@L4 (0x2a) or HE-AAC@L2 (0x2c) for audioProfileLevelIndication\n");
 		if (audioProfileLevelIndication<(sizeof(audio_profiles)/sizeof(char*))) 
 			atomprint("Comment=\"audio profile/level is %s\"\n",audio_profiles[audioProfileLevelIndication]);
 	
@@ -219,7 +219,7 @@ OSErr Validate_iods_OD_Bits( Ptr odDataP, unsigned long odSize, Boolean fileForm
 			(!( (visualProfileLevelIndication>=0xf0) && (visualProfileLevelIndication<=0xf3) )) &&
 			(visualProfileLevelIndication!=0xF7) &&
 			(visualProfileLevelIndication!=0x7F))
-			warnprint("Validate_IODS: ISMA expects no-capability(0xFF) or Simple@L0-3 (0x08,01-03) or AdvSimple@L0-3b (0xF0-3,0xF7), or AVC (0x7f) for visualProfileLevelIndication\n");
+			warnprint("Warning: Validate_IODS: ISMA expects no-capability(0xFF) or Simple@L0-3 (0x08,01-03) or AdvSimple@L0-3b (0xF0-3,0xF7), or AVC (0x7f) for visualProfileLevelIndication\n");
 		/*if( visualProfileLevelIndication != vg.visualProfileLevelIndication) {
 		  if( vg.visualProfileLevelIndication == 0xFF )
 			errprint("Validate_IODS: visualProfileLevelIndication ( IOD: %lu (0x%2.2x) ) signalled .. but there seems to be no video track\n",visualProfileLevelIndication, visualProfileLevelIndication);
@@ -229,7 +229,7 @@ OSErr Validate_iods_OD_Bits( Ptr odDataP, unsigned long odSize, Boolean fileForm
 
 		VALIDATE_FIELD  ("%2.2x",  graphicsProfileLevelIndication, 8 );
 		if (graphicsProfileLevelIndication!=0xFF)
-			warnprint("Validate_IODS: ISMA expects no-capability(0xFF) for graphicsProfileLevelIndication\n");
+			warnprint("Warning: Validate_IODS: ISMA expects no-capability(0xFF) for graphicsProfileLevelIndication\n");
 
 		atomprint(">\n");
 
@@ -546,9 +546,10 @@ OSErr Validate_ES_Descriptor(BitBuffer *inbb, UInt8 Expect_ObjectType, UInt8 Exp
 
 	err = SkipBytes(inbb, size); if (err) goto bail;
 		
-	--vg.tabcnt; atomprint("</ES_descriptor>\n");
+	--vg.tabcnt; //atomprint("</ES_descriptor>\n");
 
 bail:
+        atomprint("</ES_descriptor>\n");
 	if (err) {
             bailprint("Validate_ES_Descriptor", err);
 	}
@@ -3320,7 +3321,7 @@ OSErr Validate_DecSpecific_Descriptor( BitBuffer *inbb, UInt8 ObjectType, UInt8 
 			break;
 	}
 	
-	if (bb->bits_left != 0) warnprint("Validate DecoderSpecificInfo didn't use %ld bits\n", bb->bits_left);
+	if (bb->bits_left != 0) warnprint("Warning: Validate DecoderSpecificInfo didn't use %ld bits\n", bb->bits_left);
 
 	err = SkipBytes(inbb, size); if (err) goto bail;
 	
