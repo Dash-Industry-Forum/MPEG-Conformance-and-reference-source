@@ -339,65 +339,65 @@ function xlink(MPDxmlData)
 {
   	
 	
-	    numPeriods = MPDxmlData.getElementsByTagName("Period").length;
+	    var numPeriods = MPDxmlData.getElementsByTagName("Period").length;
 	    for(i=0; i<numPeriods; i++){
 	      try{
 		while (MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href')){
 		  var xlinkrequest = new XMLHttpRequest();
 		  xlinkrequest.open("GET", MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href'), false);
 		  xlinkrequest.send(null);
-		  parser = new DOMParser();
-		  xmlHttpPeriod = parser.parseFromString(xlinkrequest.responseText, "text/xml");
+		  var parser = new DOMParser();
+		  var xmlHttpPeriod = parser.parseFromString(xlinkrequest.responseText, "text/xml");
 		  MPDxmlData.getElementsByTagName("Period")[i].parentNode.replaceChild(xmlHttpPeriod.documentElement, MPDxmlData.getElementsByTagName("Period")[i]);  
 		  }
 		}
 		  catch(e)
 		  {
-		    x = MPDxmlData.getElementsByTagName("Period")[i];
+		    var x = MPDxmlData.getElementsByTagName("Period")[i];
 		    x.parentNode.removeChild(x);
 		    i--;
 		    numPeriods--;
 		    alert("xlink Period not found(404)");
 		    continue;
 		  }
-		adaptationSets = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet");
-		numadaptations = adaptationSets.length;
+		var adaptationSets = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet");
+		var numadaptations = adaptationSets.length;
 		for( j=0; j< numadaptations ; j++){
 		  try{
 		    while (MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getAttribute('xlink:href')){
 			var xlinkrequest = new XMLHttpRequest();
 			xlinkrequest.open("GET", MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getAttribute('xlink:href'), false);
 			xlinkrequest.send(null);
-			parser = new DOMParser();
-			xmlHttpAdaptation = parser.parseFromString(xlinkrequest.responseText, "text/xml");
+			var parser = new DOMParser();
+			var xmlHttpAdaptation = parser.parseFromString(xlinkrequest.responseText, "text/xml");
 			MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].parentNode.replaceChild(xmlHttpAdaptation.documentElement, MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j]);
 		    }
 		  }
 		  catch(e)
 		  {
-		      x = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j];
+		      var x = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j];
 		      x.parentNode.removeChild(x);
 		      j--;
 		      numadaptations--;
 		      alert("xlink AdaptationSet not found(404)");
 		      continue;
 		  }
-		    representationSets = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getElementsByTagName("Representation");
-		    numrepresentations = representationSets.length;
+		    var representationSets = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getElementsByTagName("Representation");
+		    var numrepresentations = representationSets.length;
 			for (k=0; k< numrepresentations ; k++){
 			  try{
 			    while(MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getElementsByTagName("Representation")[k].getAttribute('xllink:href')){
 				var xlinkrequest = new XMLHttpRequest();
 				xlinkrequest.open("GET", MPDxmlData.getElementsByTagName("Period")[i].getAttribute('xlink:href'), false);
 				xlinkrequest.send(null);
-				parser = new DOMParser();
-				xmlHttpRepresentation = parser.parseFromString(xlinkrequest.responseText, "text/xml");
+				var parser = new DOMParser();
+				var xmlHttpRepresentation = parser.parseFromString(xlinkrequest.responseText, "text/xml");
 				MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName("AdaptationSet")[j].getElementsByTagName("Representation")[k].parentNode.replaceChild(xmlHttpRepresentation.documentElement, MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName(AdaptationSet)[j].getElementsByTagName("Representation")[k]); 
 			     }
 			  }
 			  catch(e)
 			  {
-			     x = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName(AdaptationSet)[j].getElementsByTagName("Representation")[k];
+			     var x = MPDxmlData.getElementsByTagName("Period")[i].getElementsByTagName(AdaptationSet)[j].getElementsByTagName("Representation")[k];
 			     x.parentNode.removeChild(x);
 			     k--;
 			     numrepresentations--;
